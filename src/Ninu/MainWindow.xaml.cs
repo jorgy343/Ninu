@@ -24,12 +24,12 @@ namespace Ninu
             var cartridge = new Cartridge(image);
             var console = new Console(cartridge);
 
-            console.Cpu.TotalCycles = 8;
-            console.Cpu.CpuState.S = 0xfd;
-            console.Cpu.CpuState.Flags = CpuFlags.U | CpuFlags.I;
-            console.Cpu.CpuState.PC = 0xc000;
+            //console.Cpu.TotalCycles = 8;
+            //console.Cpu.CpuState.S = 0xfd;
+            //console.Cpu.CpuState.Flags = CpuFlags.U | CpuFlags.I;
+            //console.Cpu.CpuState.PC = 0xc000;
 
-            //console.Reset();
+            console.Reset();
 
             // Pattern table bitmap pixels.
             var pixels1 = new byte[128 * 128 * 4];

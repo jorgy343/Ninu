@@ -1,5 +1,4 @@
-﻿using Ninu.Emulator.Instructions;
-using System;
+﻿using System;
 using System.Text;
 
 namespace Ninu.Emulator
