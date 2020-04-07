@@ -294,6 +294,11 @@ namespace Ninu.Emulator
             return _instructionExecutor(AddressingMode, BaseCycles, bus, cpuState);
         }
 
+        public override string ToString()
+        {
+            return $"{Name}";
+        }
+
         public static Instruction GetInstruction(byte opCode) => Instructions[opCode];
 
         public static (ushort Address, int AdditionalCycles) GetAddress(AddressingMode addressingMode, IBus bus,

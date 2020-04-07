@@ -1,6 +1,6 @@
 ﻿namespace Ninu.Emulator
 {
-    public enum ColorIndex : byte
+    public enum PaletteIndex : byte
     {
         Color0 = 0,
         Color1 = 1,

@@ -1,9 +1,11 @@
-﻿using Ninu.Emulator;
+﻿using System;
+using Ninu.Emulator;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Ninu.ViewModels;
+using Console = Ninu.Emulator.Console;
 
 namespace Ninu
 {
@@ -30,6 +32,15 @@ namespace Ninu
             //console.Cpu.CpuState.PC = 0xc000;
 
             console.Reset();
+
+            // Run some instructions.
+            for (var i = 0; i < 100_000; i++)
+            {
+                console.Clock();
+            }
+
+            // Get the palette.
+            var palette = console.Ppu.PaletteRam.GetEntry(0);
 
             // Pattern table bitmap pixels.
             var pixels1 = new byte[128 * 128 * 4];
@@ -64,19 +75,29 @@ namespace Ninu
                         {
                             var index = ((y + yOffset) * 128 + (x + xOffset)) * 4;
 
-                            pixels1[index + 0] = pixels1[index + 1] = pixels1[index + 2] = tile.GetColorIndex(x, y) == ColorIndex.Transparent ? (byte)255 : (byte)0;
+                            var paletteIndex = tile.GetPaletteIndex(x, y);
+
+                            var colorIndex = paletteIndex switch
+                            {
+                                PaletteIndex.Color0 => palette.Byte1,
+                                PaletteIndex.Color1 => palette.Byte2,
+                                PaletteIndex.Color2 => palette.Byte3,
+                                PaletteIndex.Color3 => palette.Byte4,
+                                _ => throw new ArgumentOutOfRangeException(),
+                            };
+
+                            var color = SystemPalette.Colors[colorIndex];
+
+                            pixels1[index + 0] = color.B;
+                            pixels1[index + 1] = color.G;
+                            pixels1[index + 2] = color.R;
+                            pixels1[index + 3] = 255;
                         }
                     }
                 }
             }
 
             PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels1, 128 * 4, 0);
-
-            // Run some instructions.
-            for (var i = 0; i < 27_000; i++)
-            {
-                console.Clock();
-            }
 
             CpuState.Update(console.Cpu.CpuState);
 

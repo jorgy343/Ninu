@@ -6,7 +6,8 @@ namespace Ninu.Emulator
     {
         private readonly Cartridge _cartridge;
         private readonly NameTableRam _nameTableRam = new NameTableRam();
-        private readonly PaletteRam _paletteRam = new PaletteRam();
+
+        public PaletteRam PaletteRam { get; } = new PaletteRam();
 
         private int _currentCycle;
         private int _currentScanline;
@@ -95,7 +96,7 @@ namespace Ninu.Emulator
                 return data;
             }
 
-            if (_paletteRam.PpuRead(address, out data))
+            if (PaletteRam.PpuRead(address, out data))
             {
                 return data;
             }
@@ -109,7 +110,8 @@ namespace Ninu.Emulator
 
             _cartridge.PpuWrite(address, data);
             _nameTableRam.PpuWrite(address, data);
-            _paletteRam.PpuWrite(address, data);
+
+            PaletteRam.PpuWrite(address, data);
         }
     }
 }
