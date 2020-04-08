@@ -5,16 +5,45 @@ namespace Ninu.Emulator
 {
     public delegate int InstructionExecutor(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState);
 
-    public class Instruction
+    public sealed class Instruction
     {
+        /// <summary>
+        /// Gets the three character name of the instruction in lower case.
+        /// </summary>
         public string Name { get; }
+
+        /// <summary>
+        /// Gets the opcode of the instruction.
+        /// </summary>
         public byte OpCode { get; }
+
+        /// <summary>
+        /// Gets the size of the instruction in bytes. This will be either 1, 2, or 3.
+        /// </summary>
         public int Size { get; }
+
+        /// <summary>
+        /// Gets the number of cycles required to fully execute the instruction. This does not
+        /// include any potential penalties.
+        /// </summary>
         public int BaseCycles { get; }
+
+        /// <summary>
+        /// The addressing mode used when executing the instruction.
+        /// </summary>
         public AddressingMode AddressingMode { get; }
 
+        /// <summary>
+        /// The function that performs the instructions operation upon execution.
+        /// </summary>
         private readonly InstructionExecutor _instructionExecutor;
 
+        /// <summary>
+        /// An array of all 256 possible instructions. The position in the array represents
+        /// the instructions opcode. For example, the opcode 0x00 is the BRK instruction. The
+        /// opcode 0x60 is the BVC instruction. A lot of opcodes are not officially defined,
+        /// but are still accounted for and often implemented.
+        /// </summary>
         private static readonly Instruction[] Instructions =
         {
             new Instruction("brk", 0x00, 1, 7, AddressingMode.Implied, Brk),
@@ -275,7 +304,7 @@ namespace Ninu.Emulator
             new Instruction("???", 0xff, 1, 2, AddressingMode.Implied, Nop),
         };
 
-        public Instruction(string name, byte opCode, int size, int baseCycles, AddressingMode addressingMode, InstructionExecutor instructionExecutor)
+        private Instruction(string name, byte opCode, int size, int baseCycles, AddressingMode addressingMode, InstructionExecutor instructionExecutor)
         {
             if (!Enum.IsDefined(typeof(AddressingMode), addressingMode))
                 throw new InvalidEnumArgumentException(nameof(addressingMode), (int)addressingMode, typeof(AddressingMode));
@@ -294,6 +323,7 @@ namespace Ninu.Emulator
             return _instructionExecutor(AddressingMode, BaseCycles, bus, cpuState);
         }
 
+        /// <inheritdoc/>
         public override string ToString()
         {
             return $"{Name}";
@@ -301,8 +331,15 @@ namespace Ninu.Emulator
 
         public static Instruction GetInstruction(byte opCode) => Instructions[opCode];
 
-        public static (ushort Address, int AdditionalCycles) GetAddress(AddressingMode addressingMode, IBus bus,
-            CpuState cpuState)
+        /// <summary>
+        /// Gets a 16-bit address from memory based on the addressing mode. Addressing modes <see cref="AddressingMode.Implied"/>,
+        /// <see cref="AddressingMode.Accumulator"/>, and <see cref="AddressingMode.Immediate"/> are not valid modes for this method.
+        /// </summary>
+        /// <param name="addressingMode">The addressing mode that determines how to access memory.</param>
+        /// <param name="bus">The bus used to perform reads. The bus is never written to.</param>
+        /// <param name="cpuState">The CPU state.</param>
+        /// <returns>A tuple containing the 16-bit address and the amount of penalty cycles incurred, if any.</returns>
+        public static (ushort Address, int AdditionalCycles) GetAddress(AddressingMode addressingMode, IBus bus, CpuState cpuState)
         {
             switch (addressingMode)
             {
@@ -506,27 +543,50 @@ namespace Ninu.Emulator
             return bus.Read((ushort)(0x0100 + cpuState.S));
         }
 
+        /// <summary>
+        /// Determines if two addresses are different pages. Pages are defined by the high byte of the 16-bit address.
+        /// If the high byte of two 16-bit addresses are different, they are on two separate pages.
+        /// </summary>
+        /// <param name="address1">The first address to compare.</param>
+        /// <param name="address2">The second address to compare.</param>
+        /// <returns>true if the addresses are on separate pages; otherwise, false.</returns>
         private static bool IsDifferentPage(ushort address1, ushort address2) => (address1 & 0xff00) != (address2 & 0xff00);
 
-        private static int PerformConditionalJump(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, bool condition)
+        /// <summary>
+        /// Performs a jump if <paramref name="condition"/> is true. Conditional branch instructions only use the
+        /// relative addressing mode which gives them a range of -128 bytes to +127 bytes. If a branch is taken,
+        /// an additional cycle is added as a penalty. If a branch is taken and the target address is in a different
+        /// page than page the PC currently resides in, another penalty cycle is added for a maximum of two penalty
+        /// cycles added onto the base cycle cost.
+        /// </summary>
+        /// <param name="baseCycles">The number of cycles the instruction would take without penalties.</param>
+        /// <param name="bus">The bus used to perform reads and writes.</param>
+        /// <param name="cpuState">The CPU state.</param>
+        /// <param name="condition">true if the jump is to be taken; otherwise, false.</param>
+        /// <returns>The number of cycles used to execute this instruction taking into account any penalties.</returns>
+        private static int PerformConditionalJump(int baseCycles, IBus bus, CpuState cpuState, bool condition)
         {
-            var (address, additionalCycles) = GetAddress(addressingMode, bus, cpuState);
+            var (address, _) = GetAddress(AddressingMode.Relative, bus, cpuState);
+
+            var totalCycles = baseCycles;
 
             if (condition)
             {
+                totalCycles++;
+
                 var oldPc = cpuState.PC;
                 cpuState.PC = address;
 
                 // If the new PC is on a different page, add an additional cycle penalty.
                 if (IsDifferentPage(oldPc, address))
                 {
-                    additionalCycles++;
+                    totalCycles++;
                 }
 
-                return baseCycles + additionalCycles + 1;
+                return totalCycles;
             }
 
-            return baseCycles + additionalCycles;
+            return totalCycles;
         }
 
         public static int Adc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
@@ -546,6 +606,91 @@ namespace Ninu.Emulator
             return baseCycles + additionalCycles;
         }
 
+        /// <summary>
+        /// <para>
+        ///     Performs a bitwise 'and' operation between the accumulator (on the left) and memory (on the right).
+        ///     The result is stored in the accumulator.
+        /// </para>
+        /// <para>
+        ///     Available addressing modes:
+        ///     <list type="table">
+        ///         <listheader>
+        ///             <term>Addressing Mode</term>
+        ///             <term>Assembly</term>
+        ///         </listheader>
+        ///         <item>
+        ///             <term>Immediate</term>
+        ///             <term>AND #oper</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Zero Page</term>
+        ///             <term>AND oper</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Zero Page X</term>
+        ///             <term>AND oper,x</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Absolute</term>
+        ///             <term>AND oper</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Absolute X</term>
+        ///             <term>AND oper,x</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Absolute Y</term>
+        ///             <term>AND oper,y</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Indirect X</term>
+        ///             <term>AND (oper,x)</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Indirect Y</term>
+        ///             <term>AND (oper),y</term>
+        ///         </item>
+        ///     </list>
+        /// </para>
+        /// <para>
+        ///     Effect on flags:
+        ///     <list type="table">
+        ///         <listheader>
+        ///             <term>Flag</term>
+        ///             <term>Result</term>
+        ///         </listheader>
+        ///         <item>
+        ///             <term>N (Negative)</term>
+        ///             <term>Set based on result in A</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>Z (Zero)</term>
+        ///             <term>Set based on result in A</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>C (Carry)</term>
+        ///             <term>Unchanged</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>I (Interrupt)</term>
+        ///             <term>Unchanged</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>D (Decimal)</term>
+        ///             <term>Unchanged</term>
+        ///         </item>
+        ///         <item>
+        ///             <term>V (Overflow)</term>
+        ///             <term>Unchanged</term>
+        ///         </item>
+        ///     </list>
+        /// </para>
+        /// </summary>
+        /// <param name="addressingMode">The addressing mode.</param>
+        /// <param name="baseCycles">The number of cycles the instruction would take without penalties.</param>
+        /// <param name="bus">The bus used to perform reads and writes.</param>
+        /// <param name="cpuState">The CPU state.</param>
+        /// <returns>The number of cycles used to execute this instruction taking into account any penalties.</returns>
         public static int And(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
@@ -586,17 +731,17 @@ namespace Ninu.Emulator
 
         public static int Bcc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.C));
+            return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.C));
         }
 
         public static int Bcs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.C));
+            return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.C));
         }
 
         public static int Beq(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.Z));
+            return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.Z));
         }
 
         public static int Bit(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
@@ -612,17 +757,17 @@ namespace Ninu.Emulator
 
         public static int Bmi(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.N));
+            return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.N));
         }
 
         public static int Bne(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.Z));
+            return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.Z));
         }
 
         public static int Bpl(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.N));
+            return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.N));
         }
 
         public static int Brk(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
@@ -653,12 +798,12 @@ namespace Ninu.Emulator
 
         public static int Bvc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.V));
+            return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.V));
         }
 
         public static int Bvs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            return PerformConditionalJump(addressingMode, baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.V));
+            return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.V));
         }
 
         public static int Clc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
