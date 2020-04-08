@@ -1,10 +1,10 @@
-﻿using System;
-using Ninu.Emulator;
+﻿using Ninu.Emulator;
+using Ninu.ViewModels;
+using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Ninu.ViewModels;
 using Console = Ninu.Emulator.Console;
 
 namespace Ninu

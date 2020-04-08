@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ninu.Emulator.PpuRegisters;
+using System;
 
 namespace Ninu.Emulator
 {
@@ -8,6 +9,8 @@ namespace Ninu.Emulator
         private readonly NameTableRam _nameTableRam = new NameTableRam();
 
         public PaletteRam PaletteRam { get; } = new PaletteRam();
+
+        public PpuRegisterState Registers { get; } = new PpuRegisterState();
 
         private int _currentCycle;
         private int _currentScanline;
@@ -101,6 +104,19 @@ namespace Ninu.Emulator
                 return data;
             }
 
+            if (address >= 0x2000 && address <= 0x3fff)
+            {
+                switch (address & 0x7)
+                {
+                    case 2:
+                        data = Registers.Status.Data; // Make a copy of data before we modify it.
+
+                        Registers.Status.ClearVerticalBlank();
+
+                        return data;
+                }
+            }
+
             return 0;
         }
 
@@ -112,6 +128,20 @@ namespace Ninu.Emulator
             _nameTableRam.PpuWrite(address, data);
 
             PaletteRam.PpuWrite(address, data);
+
+            if (address >= 0x2000 && address <= 0x3fff)
+            {
+                switch (address & 0x7)
+                {
+                    case 0:
+                        Registers.Control.Data = data;
+                        break;
+
+                    case 1:
+                        Registers.Mask.Data = data;
+                        break;
+                }
+            }
         }
     }
 }
