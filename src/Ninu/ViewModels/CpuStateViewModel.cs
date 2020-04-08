@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Ninu.Emulator;
@@ -50,6 +51,15 @@ namespace Ninu.ViewModels
         {
             get => _pc;
             set => SetField(ref _pc, value);
+        }
+
+        public ObservableCollection<string> Instructions { get; } = new ObservableCollection<string>();
+
+        private string? _selectedInstruction;
+        public string? SelectedInstruction
+        {
+            get => _selectedInstruction;
+            set => SetField(ref _selectedInstruction, value);
         }
 
         public void Update(CpuState cpuState)

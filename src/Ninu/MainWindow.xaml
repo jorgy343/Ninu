@@ -7,44 +7,50 @@
         mc:Ignorable="d"
         Title="Ninu" Width="1200" Height="800" SnapsToDevicePixels="True" UseLayoutRounding="True">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="110" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="200" />
         </Grid.ColumnDefinitions>
-        <!-- CPU State -->
+        <!-- Right Sidebar -->
         <Grid Grid.Row="0" Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
-                <RowDefinition />
+                <RowDefinition Height="160" />
+                <RowDefinition Height="400" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto" />
-                <ColumnDefinition />
-            </Grid.ColumnDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="0" Margin="0 0 12 0">A:</TextBlock>
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Path=CpuState.A, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            <TextBlock Grid.Row="1" Grid.Column="0">X:</TextBlock>
-            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Path=CpuState.X, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            <TextBlock Grid.Row="2" Grid.Column="0">Y:</TextBlock>
-            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Path=CpuState.Y, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            <TextBlock Grid.Row="3" Grid.Column="0">S:</TextBlock>
-            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Path=CpuState.S, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            <TextBlock Grid.Row="4" Grid.Column="0">P:</TextBlock>
-            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Path=CpuState.P, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            <TextBlock Grid.Row="5" Grid.Column="0">PC:</TextBlock>
-            <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=CpuState.PC, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+            <!-- CPU State -->
+            <Grid Grid.Row="0" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0 0 12 0">A:</TextBlock>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Path=CpuState.A, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                <TextBlock Grid.Row="1" Grid.Column="0">X:</TextBlock>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Path=CpuState.X, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                <TextBlock Grid.Row="2" Grid.Column="0">Y:</TextBlock>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Path=CpuState.Y, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                <TextBlock Grid.Row="3" Grid.Column="0">S:</TextBlock>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Path=CpuState.S, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                <TextBlock Grid.Row="4" Grid.Column="0">P:</TextBlock>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Path=CpuState.P, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                <TextBlock Grid.Row="5" Grid.Column="0">PC:</TextBlock>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=CpuState.PC, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+            </Grid>
+            <!-- Instructions -->
+            <ListBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
+            <!-- Palettes -->
+            <Border Grid.Row="2" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
+                <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneTime}" />
+            </Border>
         </Grid>
-        <!-- Palettes -->
-        <Border Grid.Row="1" Grid.Column="1" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
-            <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneTime}" />
-        </Border>
     </Grid>
 </Window>

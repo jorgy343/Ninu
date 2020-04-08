@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Ninu.Emulator
@@ -46,6 +47,27 @@ namespace Ninu.Emulator
 
             TotalCycles++;
             _remainingCycles--;
+        }
+
+        public string DecodeInstruction(ushort address)
+        {
+            var opCode = _cpuBus.Read(address);
+            var instruction = Instruction.GetInstruction(opCode);
+
+            return instruction.Name;
+        }
+
+        public IEnumerable<string> DecodeInstructions(ushort address, int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var opCode = _cpuBus.Read(address);
+                var instruction = Instruction.GetInstruction(opCode);
+
+                yield return instruction.Name;
+
+                address += (ushort)instruction.Size;
+            }
         }
 
         public void Reset()

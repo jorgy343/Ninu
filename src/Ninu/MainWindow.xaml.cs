@@ -36,6 +36,8 @@ namespace Ninu
             // Run some instructions.
             for (var i = 0; i < 100_000; i++)
             {
+                UpdateInstructions(console.Cpu);
+
                 console.Clock();
             }
 
@@ -102,6 +104,16 @@ namespace Ninu
             CpuState.Update(console.Cpu.CpuState);
 
             File.WriteAllText(@"C:\Users\Jorgy\Desktop\cpu.log.txt", console.Cpu._log.ToString());
+        }
+
+        private void UpdateInstructions(Cpu cpu)
+        {
+            CpuState.Instructions.Clear();
+
+            foreach (var decodedInstruction in cpu.DecodeInstructions(cpu.CpuState.PC, 300))
+            {
+                CpuState.Instructions.Add(decodedInstruction);
+            }
         }
     }
 }
