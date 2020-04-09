@@ -14,8 +14,8 @@
         <!-- Right Sidebar -->
         <Grid Grid.Row="0" Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="160" />
-                <RowDefinition Height="400" />
+                <RowDefinition Height="120" />
+                <RowDefinition Height="300" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <!-- CPU State -->
@@ -48,9 +48,18 @@
             <!-- Instructions -->
             <ListBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
             <!-- Palettes -->
-            <Border Grid.Row="2" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
-                <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneTime}" />
-            </Border>
+            <Grid Grid.Row="2" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="180" />
+                    <RowDefinition Height="180" />
+                </Grid.RowDefinitions>
+                <Border Grid.Row="0" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
+                    <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneWay}" />
+                </Border>
+                <Border Grid.Row="1" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
+                    <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable2Bitmap, Mode=OneWay}" />
+                </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

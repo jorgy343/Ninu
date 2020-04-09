@@ -12,7 +12,7 @@ namespace Ninu.Emulator
         public int MapperType { get; }
         public TvSystem CartridgeType { get; }
 
-        public ImageMirroring Mirroring { get; }
+        public NameTableMirrorMode Mirroring { get; }
         public bool BatteryBackedRam { get; }
         public bool FourScreenVramLayout { get; }
 
@@ -47,7 +47,7 @@ namespace Ninu.Emulator
             var flags9 = reader.ReadByte();
 
             // Handle flags 6.
-            Mirroring = (flags6 & 0b0000_0001) == 0 ? ImageMirroring.Horizontal : ImageMirroring.Vertical;
+            Mirroring = (flags6 & 0b0000_0001) == 0 ? NameTableMirrorMode.Horizontal : NameTableMirrorMode.Vertical;
             BatteryBackedRam = (flags6 & 0b0000_0010) == 1;
             FourScreenVramLayout = (flags6 & 0b0000_1000) == 1;
 

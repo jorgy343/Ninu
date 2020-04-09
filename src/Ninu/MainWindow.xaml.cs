@@ -34,12 +34,12 @@ namespace Ninu
             console.Reset();
 
             // Run some instructions.
-            for (var i = 0; i < 100_000; i++)
+            for (var i = 0; i < 1_000_000; i++)
             {
-                UpdateInstructions(console.Cpu);
-
                 console.Clock();
             }
+
+            UpdateInstructions(console.Cpu);
 
             // Get the palette.
             var palette = console.Ppu.PaletteRam.GetEntry(0);
@@ -59,6 +59,11 @@ namespace Ninu
                     pixels1[index + 1] = 255;
                     pixels1[index + 2] = 255;
                     pixels1[index + 3] = 255;
+
+                    pixels2[index + 0] = 255;
+                    pixels2[index + 1] = 255;
+                    pixels2[index + 2] = 255;
+                    pixels2[index + 3] = 255;
                 }
             }
 
@@ -66,7 +71,8 @@ namespace Ninu
             {
                 for (var tileX = 0; tileX < 16; tileX++)
                 {
-                    var tile = console.Ppu.GetPatternTile(tileY * 16 + tileX);
+                    var leftTile = console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
+                    var rightTile = console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
 
                     var xOffset = tileX * 8;
                     var yOffset = tileY * 8;
@@ -77,29 +83,52 @@ namespace Ninu
                         {
                             var index = ((y + yOffset) * 128 + (x + xOffset)) * 4;
 
-                            var paletteIndex = tile.GetPaletteIndex(x, y);
-
-                            var colorIndex = paletteIndex switch
                             {
-                                PaletteIndex.Color0 => palette.Byte1,
-                                PaletteIndex.Color1 => palette.Byte2,
-                                PaletteIndex.Color2 => palette.Byte3,
-                                PaletteIndex.Color3 => palette.Byte4,
-                                _ => throw new ArgumentOutOfRangeException(),
-                            };
+                                var paletteIndex = leftTile.GetPaletteIndex(x, y);
 
-                            var color = SystemPalette.Colors[colorIndex];
+                                var colorIndex = paletteIndex switch
+                                {
+                                    PaletteIndex.Color0 => palette.Byte1,
+                                    PaletteIndex.Color1 => palette.Byte2,
+                                    PaletteIndex.Color2 => palette.Byte3,
+                                    PaletteIndex.Color3 => palette.Byte4,
+                                    _ => throw new ArgumentOutOfRangeException(),
+                                };
 
-                            pixels1[index + 0] = color.B;
-                            pixels1[index + 1] = color.G;
-                            pixels1[index + 2] = color.R;
-                            pixels1[index + 3] = 255;
+                                var color = SystemPalette.Colors[colorIndex];
+
+                                pixels1[index + 0] = color.B;
+                                pixels1[index + 1] = color.G;
+                                pixels1[index + 2] = color.R;
+                                pixels1[index + 3] = 255;
+                            }
+
+                            {
+                                var paletteIndex = rightTile.GetPaletteIndex(x, y);
+
+                                var colorIndex = paletteIndex switch
+                                {
+                                    PaletteIndex.Color0 => palette.Byte1,
+                                    PaletteIndex.Color1 => palette.Byte2,
+                                    PaletteIndex.Color2 => palette.Byte3,
+                                    PaletteIndex.Color3 => palette.Byte4,
+                                    _ => throw new ArgumentOutOfRangeException(),
+                                };
+
+                                var color = SystemPalette.Colors[colorIndex];
+
+                                pixels2[index + 0] = color.B;
+                                pixels2[index + 1] = color.G;
+                                pixels2[index + 2] = color.R;
+                                pixels2[index + 3] = 255;
+                            }
                         }
                     }
                 }
             }
 
             PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels1, 128 * 4, 0);
+            PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels2, 128 * 4, 0);
 
             CpuState.Update(console.Cpu.CpuState);
 

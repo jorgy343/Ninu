@@ -14,6 +14,7 @@
 
         public override string ToString() => $"0x{Data:x2}";
 
+        public void SetVerticalBlank() => Data |= (byte)_verticalBlankStartedMask;
         public void ClearVerticalBlank() => Data &= (byte)(~_verticalBlankStartedMask);
     }
 }

@@ -38,6 +38,14 @@ namespace Ninu.Emulator
                 Cpu.Clock();
             }
 
+            // TODO: Are we supposed to trigger the nmi after the CPU clocks?
+            if (Ppu.CallNmi)
+            {
+                Cpu.NonMaskableInterrupt();
+
+                Ppu.CallNmi = false;
+            }
+
             TotalCycles++;
         }
 
@@ -61,7 +69,7 @@ namespace Ninu.Emulator
 
             if (Ppu.CpuRead(address, out data))
             {
-
+                return data;
             }
 
             // TODO: Go through the rest of the devices.

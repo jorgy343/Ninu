@@ -1,6 +1,6 @@
 ﻿namespace Ninu.Emulator
 {
-    public enum ImageMirroring
+    public enum NameTableMirrorMode
     {
         Horizontal,
         Vertical
