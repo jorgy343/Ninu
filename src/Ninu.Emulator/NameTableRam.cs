@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Text;
 
 namespace Ninu.Emulator
 {
@@ -19,6 +20,8 @@ namespace Ninu.Emulator
 
             _mirrorMode = mirrorMode;
         }
+
+
 
         public bool PpuRead(ushort address, out byte data)
         {
@@ -76,6 +79,8 @@ namespace Ninu.Emulator
         {
             if (address >= 0x2000 && address <= 0x3eff)
             {
+                address -= 0x2000;
+
                 if (_mirrorMode == NameTableMirrorMode.Horizontal)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.

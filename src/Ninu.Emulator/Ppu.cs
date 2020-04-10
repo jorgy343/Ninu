@@ -3,6 +3,8 @@ using System;
 
 namespace Ninu.Emulator
 {
+    public delegate void FrameCompleteHandler(object source, EventArgs e);
+
     public class Ppu : ICpuBusComponent
     {
         private readonly Cartridge _cartridge;
@@ -16,6 +18,8 @@ namespace Ninu.Emulator
 
         private int _currentCycle;
         private int _currentScanline;
+
+        public event FrameCompleteHandler FrameComplete;
 
         public Ppu(Cartridge cartridge)
         {
@@ -35,12 +39,16 @@ namespace Ninu.Emulator
 
             if (_currentScanline == -1 && _currentCycle == 1)
             {
-                Registers.Status.ClearVerticalBlank();
+                Registers.Status.SpriteOverflow = false;
+                Registers.Status.Sprite0Hit = false;
+                Registers.Status.VerticalBlankStarted = false;
             }
 
             if (_currentScanline == 241 && _currentCycle == 1)
             {
-                Registers.Status.SetVerticalBlank();
+                FrameComplete?.Invoke(this, EventArgs.Empty);
+
+                Registers.Status.VerticalBlankStarted = true;
 
                 // TODO: Is this the proper scanline and cycle to call the NMI on?
                 if (Registers.Control.GenerateVerticalBlankingIntervalNmi)
@@ -78,12 +86,34 @@ namespace Ninu.Emulator
 
             for (var i = 0; i < 8; i++)
             {
-                // Pattern memory starts at 0x0000.
                 plane1[i] = PpuRead((ushort)(entryOffset + index * 16 + i));
                 plane2[i] = PpuRead((ushort)(entryOffset + index * 16 + 8 + i)); // Add 8 bytes to skip the first plane.
             }
 
             return new PatternTile(plane1, plane2);
+        }
+
+        public PatternTile GetPatternTileFromNameTable(int nameTableEntryIndex)
+        {
+            if (nameTableEntryIndex < 0 && nameTableEntryIndex > 959) throw new ArgumentOutOfRangeException(nameof(nameTableEntryIndex));
+
+            // TODO: We're just getting data from the first name table. The correct name table needs
+            // to be determined somehow.
+            var patternTableIndex = PpuRead((ushort)(0x2000 + nameTableEntryIndex));
+
+            var patternTableEntry = Registers.Control.BackgroundPatternTableAddress == 0x000 ? PatternTableEntry.Left : PatternTableEntry.Right;
+
+            return GetPatternTile(patternTableEntry, patternTableIndex);
+        }
+
+        public BackgroundSprite GetBackgroundSprite(int nameTableEntryIndex)
+        {
+            var patternTile = GetPatternTileFromNameTable(nameTableEntryIndex);
+            var palette = PaletteRam.GetEntry(0); // TODO: Get the correct palette from the name table attributes.
+
+            var backgroundSprite = new BackgroundSprite(patternTile, palette);
+
+            return backgroundSprite;
         }
 
         public bool CpuRead(ushort address, out byte data)
@@ -99,7 +129,7 @@ namespace Ninu.Emulator
 
                         // When the status register is read, the vertical blank flag is cleared and the
                         // VRAM address is reset to zero.
-                        Registers.Status.ClearVerticalBlank();
+                        Registers.Status.VerticalBlankStarted = false;
                         Registers.VramAddress = 0;
 
                         return true;
