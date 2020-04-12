@@ -45,6 +45,8 @@ namespace Ninu.Emulator
 
         }
 
+        private ushort _readAddress;
+
         public PpuClockResult Clock()
         {
             if (_scanline == -1 && _cycle == 1)
@@ -54,58 +56,108 @@ namespace Ninu.Emulator
                 Registers.VerticalBlankStarted = false;
             }
 
-            if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
+            if (Registers.RenderBackground || Registers.RenderSprites)
             {
-                if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 321 && _cycle <= 337))
+                if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
-                    UpdateShiftRegisters();
-
-                    switch ((_cycle - 1) % 8)
+                    // Update the shift registers.
+                    if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 322 && _cycle <= 337))
                     {
-                        case 0:
-                            LoadShiftRegisters();
-                            _nextNameTableTileId = FetchNameTableTileId();
+                        UpdateShiftRegisters();
+                    }
 
-                            break;
+                    if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 321 && _cycle <= 337))
+                    {
+                        switch ((_cycle - 1) % 8)
+                        {
+                            case 0:
+                                LoadShiftRegisters();
 
-                        case 2:
-                            _nextNameTableAttribute = FetchNameTableAttribute();
-                            break;
+                                _readAddress = 0x2000 | (Registers.CurrentAddress & 0x0fff);
+                                break;
 
-                        case 4:
-                            _nextLowPatternByte = FetchLowPatternByte(_nextNameTableTileId);
-                            break;
+                            case 1:
+                                _nextNameTableTileId = PpuRead(_readAddress);
+                                break;
 
-                        case 6:
-                            _nextHighPatternByte = FetchHighPatternByte(_nextNameTableTileId);
-                            break;
+                            case 2:
+                                _readAddress = 0x23c0 | (Registers.CurrentAddress & 0x0c00) | ((Registers.CurrentAddress >> 4) & 0x38) | ((Registers.CurrentAddress >> 2) & 0x07);
+                                break;
 
-                        case 7:
-                            Registers.IncrementX();
-                            break;
+                            case 3:
+                                var attribute = PpuRead(_readAddress);
+
+                                if ((Registers.CurrentAddress.CourseY & 0x02) != 0)
+                                {
+                                    attribute >>= 4;
+                                }
+
+                                if ((Registers.CurrentAddress.CourseX & 0x02) != 0)
+                                {
+                                    attribute >>= 2;
+                                }
+
+                                _nextNameTableAttribute = (byte)(attribute & 0x03);
+                                break;
+
+                            case 4:
+                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.CurrentAddress.FineY + 0);
+
+                                if (Registers.BackgroundPatternTableAddress)
+                                {
+                                    _readAddress += 0x1000;
+                                }
+
+                                break;
+
+                            case 5:
+                                _nextLowPatternByte = PpuRead(_readAddress);
+                                break;
+
+                            case 6:
+                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.CurrentAddress.FineY + 8);
+
+                                if (Registers.BackgroundPatternTableAddress)
+                                {
+                                    _readAddress += 0x1000;
+                                }
+
+                                break;
+
+                            case 7:
+                                _nextHighPatternByte = PpuRead(_readAddress);
+
+                                Registers.IncrementX();
+                                break;
+                        }
+                    }
+
+                    if (_cycle == 256)
+                    {
+                        Registers.IncrementY();
+                    }
+
+                    if (_cycle == 257)
+                    {
+                        Registers.TransferX();
+                    }
+
+                    // These reads do nothing but the real PPU does perform them.
+                    if (_cycle == 337 || _cycle == 339)
+                    {
+                        _readAddress = _readAddress = 0x2000 | (Registers.CurrentAddress & 0x0fff);
+                    }
+
+                    if (_cycle == 338 || _cycle == 340)
+                    {
+                        _nextNameTableTileId = PpuRead(_readAddress);
                     }
                 }
 
-                if (_cycle == 256)
+                if (_scanline == -1 && _cycle >= 280 && _cycle <= 304)
                 {
-                    Registers.IncrementY();
+                    Registers.TransferY();
                 }
-
-                if (_cycle == 257)
-                {
-                    Registers.TransferX();
-                }
-
-                // These reads do nothing but the real PPU does perform them.
-                if (_cycle == 338 || _cycle == 340)
-                {
-                    FetchNameTableTileId();
-                }
-            }
-
-            if (_scanline == -1 && _cycle >= 280 && _cycle <= 304)
-            {
-                Registers.TransferY();
             }
 
             if (_scanline == 241 && _cycle == 1)
@@ -118,7 +170,7 @@ namespace Ninu.Emulator
                 }
             }
 
-            if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
+            if ((Registers.RenderBackground || Registers.RenderSprites) && _scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
                 var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
 
@@ -177,60 +229,6 @@ namespace Ninu.Emulator
             {
                 return PpuClockResult.NormalCycle;
             }
-        }
-
-        private byte FetchNameTableTileId()
-        {
-            // This code was directly taken from https://wiki.nesdev.com/w/index.php/PPU_scrolling.
-
-            var address = (ushort)(0x2000 | (Registers.CurrentAddress & 0x0fff));
-
-            return PpuRead(address);
-        }
-
-        private byte FetchNameTableAttribute()
-        {
-            // This code was directly taken from https://wiki.nesdev.com/w/index.php/PPU_scrolling with some additions at the end.
-
-            var address = (ushort)(0x23c0 | (Registers.CurrentAddress & 0x0c00) | ((Registers.CurrentAddress >> 4) & 0x38) | ((Registers.CurrentAddress >> 2) & 0x07));
-            var attribute = PpuRead(address);
-
-
-            if ((Registers.CurrentAddress.CourseY & 0x02) != 0)
-            {
-                attribute >>= 4;
-            }
-
-            if ((Registers.CurrentAddress.CourseX & 0x02) != 0)
-            {
-                attribute >>= 2;
-            }
-
-            return (byte)(attribute & 0x03);
-        }
-
-        private byte FetchLowPatternByte(byte nameTableTileId)
-        {
-            var address = (ushort)((nameTableTileId << 4) + Registers.CurrentAddress.FineY + 0);
-
-            if (Registers.BackgroundPatternTableAddress)
-            {
-                address += 0x1000;
-            }
-
-            return PpuRead(address);
-        }
-
-        private byte FetchHighPatternByte(byte nameTableTileId)
-        {
-            var address = (ushort)((nameTableTileId << 4) + Registers.CurrentAddress.FineY + 8);
-
-            if (Registers.BackgroundPatternTableAddress)
-            {
-                address += 0x1000;
-            }
-
-            return PpuRead(address);
         }
 
         private void LoadShiftRegisters()

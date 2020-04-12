@@ -1,8 +1,10 @@
-﻿using Ninu.Emulator;
+﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
+using Ninu.Emulator;
 using Ninu.ViewModels;
 using System;
-using System.IO;
+using System.Timers;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Console = Ninu.Emulator.Console;
@@ -20,56 +22,91 @@ namespace Ninu
 
         private readonly Console _console;
 
+        private readonly byte[] _patternRom1Pixels = new byte[128 * 128 * 4];
+        private readonly byte[] _patternRom2Pixels = new byte[128 * 128 * 4];
+
         public MainWindow()
         {
             InitializeComponent();
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Ice Climber (USA, Europe).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\nestest.nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
-
-            _console.Ppu.FrameComplete += Ppu_FrameComplete;
-
-            //console.Cpu.TotalCycles = 8;
-            //console.Cpu.CpuState.S = 0xfd;
-            //console.Cpu.CpuState.Flags = CpuFlags.U | CpuFlags.I;
-            //console.Cpu.CpuState.PC = 0xc000;
-
             _console.Reset();
 
-            // Run some instructions.
-            for (var i = 0; i < 50; i++)
+            const double fps = 1000.0 / 10.0;
+
+            var timer = new Timer(fps);
+            timer.Elapsed += TimerTick;
+
+            timer.Start();
+        }
+
+        private void TimerTick(object sender, ElapsedEventArgs e)
+        {
+            lock (_console)
             {
+                // Update the controller state.
+                Dispatcher.Invoke(() =>
+                {
+                    _console.ControllerData[0] = 0;
+
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.S) ? (byte)(1 << 7) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.D) ? (byte)(1 << 6) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.W) ? (byte)(1 << 5) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.E) ? (byte)(1 << 4) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Up) ? (byte)(1 << 3) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Down) ? (byte)(1 << 2) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Left) ? (byte)(1 << 1) : (byte)0x00;
+                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
+                });
+
                 _console.CompleteFrame();
+
+                var pixels = new byte[256 * 240 * 4];
+
+                for (var i = 0; i < 256 * 240; i++)
+                {
+                    var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i]];
+
+                    var pixelIndex = i * 4;
+
+                    pixels[pixelIndex + 0] = color.B;
+                    pixels[pixelIndex + 1] = color.G;
+                    pixels[pixelIndex + 2] = color.R;
+                    pixels[pixelIndex + 3] = 255;
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    CpuState.Update(_console.Cpu.CpuState);
+
+                    UpdateInstructions(_console.Cpu);
+
+                    UpdatePatternRoms();
+
+                    GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
+                });
             }
+        }
 
-            var pixels = new byte[256 * 240 * 4];
+        private void UpdateInstructions(Cpu cpu)
+        {
+            CpuState.Instructions.Clear();
 
-            for (var i = 0; i < 256 * 240; i++)
+            foreach (var decodedInstruction in cpu.DecodeInstructions(cpu.CpuState.PC, 16))
             {
-                var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i]];
-
-                var pixelIndex = i * 4;
-
-                pixels[pixelIndex + 0] = color.B;
-                pixels[pixelIndex + 1] = color.G;
-                pixels[pixelIndex + 2] = color.R;
-                pixels[pixelIndex + 3] = 255;
+                CpuState.Instructions.Add(decodedInstruction);
             }
+        }
 
-            GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
-
-            UpdateInstructions(_console.Cpu);
-
+        private void UpdatePatternRoms()
+        {
             // Get the palette.
-            var palette = _console.Ppu.PaletteRam.GetEntry(0);
-
-            // Pattern table bitmap pixels.
-            var pixels1 = new byte[128 * 128 * 4];
-            var pixels2 = new byte[128 * 128 * 4];
+            var palette = _console.Ppu.PaletteRam.GetEntry(CpuState.SelectedPalette);
 
             // Clear both pattern bitmaps.
             for (var y = 0; y < 128; y++)
@@ -78,15 +115,15 @@ namespace Ninu
                 {
                     var index = (y * 128 + x) * 4;
 
-                    pixels1[index + 0] = 255;
-                    pixels1[index + 1] = 255;
-                    pixels1[index + 2] = 255;
-                    pixels1[index + 3] = 255;
+                    _patternRom1Pixels[index + 0] = 255;
+                    _patternRom1Pixels[index + 1] = 255;
+                    _patternRom1Pixels[index + 2] = 255;
+                    _patternRom1Pixels[index + 3] = 255;
 
-                    pixels2[index + 0] = 255;
-                    pixels2[index + 1] = 255;
-                    pixels2[index + 2] = 255;
-                    pixels2[index + 3] = 255;
+                    _patternRom2Pixels[index + 0] = 255;
+                    _patternRom2Pixels[index + 1] = 255;
+                    _patternRom2Pixels[index + 2] = 255;
+                    _patternRom2Pixels[index + 3] = 255;
                 }
             }
 
@@ -120,10 +157,10 @@ namespace Ninu
 
                                 var color = SystemPalette.Colors[colorIndex];
 
-                                pixels1[index + 0] = color.B;
-                                pixels1[index + 1] = color.G;
-                                pixels1[index + 2] = color.R;
-                                pixels1[index + 3] = 255;
+                                _patternRom1Pixels[index + 0] = color.B;
+                                _patternRom1Pixels[index + 1] = color.G;
+                                _patternRom1Pixels[index + 2] = color.R;
+                                _patternRom1Pixels[index + 3] = 255;
                             }
 
                             {
@@ -140,37 +177,18 @@ namespace Ninu
 
                                 var color = SystemPalette.Colors[colorIndex];
 
-                                pixels2[index + 0] = color.B;
-                                pixels2[index + 1] = color.G;
-                                pixels2[index + 2] = color.R;
-                                pixels2[index + 3] = 255;
+                                _patternRom2Pixels[index + 0] = color.B;
+                                _patternRom2Pixels[index + 1] = color.G;
+                                _patternRom2Pixels[index + 2] = color.R;
+                                _patternRom2Pixels[index + 3] = 255;
                             }
                         }
                     }
                 }
             }
 
-            PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels1, 128 * 4, 0);
-            PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels2, 128 * 4, 0);
-
-            CpuState.Update(_console.Cpu.CpuState);
-
-            File.WriteAllText(@"C:\Users\Jorgy\Desktop\cpu.log.txt", _console.Cpu._log.ToString());
-        }
-
-        private void Ppu_FrameComplete(object source, EventArgs e)
-        {
-            var ppu = (Ppu)source;
-        }
-
-        private void UpdateInstructions(Cpu cpu)
-        {
-            CpuState.Instructions.Clear();
-
-            foreach (var decodedInstruction in cpu.DecodeInstructions(cpu.CpuState.PC, 300))
-            {
-                CpuState.Instructions.Add(decodedInstruction);
-            }
+            PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom1Pixels, 128 * 4, 0);
+            PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom2Pixels, 128 * 4, 0);
         }
     }
 }

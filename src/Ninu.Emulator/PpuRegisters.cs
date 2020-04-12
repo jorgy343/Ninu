@@ -132,11 +132,6 @@ namespace Ninu.Emulator
         // Rendering Methods.
         public void IncrementX()
         {
-            if (!RenderBackground && !RenderSprites)
-            {
-                return;
-            }
-
             if (CurrentAddress.CourseX == 31)
             {
                 CurrentAddress.CourseX = 0;
@@ -150,11 +145,6 @@ namespace Ninu.Emulator
 
         public void IncrementY()
         {
-            if (!RenderBackground && !RenderSprites)
-            {
-                return;
-            }
-
             if (CurrentAddress.FineY < 7)
             {
                 CurrentAddress.FineY++;
@@ -181,22 +171,12 @@ namespace Ninu.Emulator
 
         public void TransferX()
         {
-            if (!RenderBackground && !RenderSprites)
-            {
-                return;
-            }
-
             CurrentAddress.CourseX = TemporaryAddress.CourseX;
             CurrentAddress.NameTableSelectX = TemporaryAddress.NameTableSelectX;
         }
 
         public void TransferY()
         {
-            if (!RenderBackground && !RenderSprites)
-            {
-                return;
-            }
-
             CurrentAddress.CourseY = TemporaryAddress.CourseY;
             CurrentAddress.FineY = TemporaryAddress.FineY;
             CurrentAddress.NameTableSelectY = TemporaryAddress.NameTableSelectY;

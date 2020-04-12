@@ -74,6 +74,15 @@ namespace Ninu.ViewModels
             PC = cpuState.PC;
         }
 
+        // TODO: Move these out.
+        private int _selectedPalette;
+
+        public int SelectedPalette
+        {
+            get => _selectedPalette;
+            set => SetField(ref _selectedPalette, value);
+        }
+
         protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
