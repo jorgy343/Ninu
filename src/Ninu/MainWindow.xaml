@@ -12,7 +12,7 @@
             <ColumnDefinition Width="360" />
         </Grid.ColumnDefinitions>
         <!-- Game Image -->
-        <Image Grid.Row="0" Grid.Column="0" Width="768" Height="720" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding Path=GameImageBitmap, Mode=OneWay}" MouseLeftButtonDown="Image_MouseLeftButtonDown" />
+        <Image Grid.Row="0" Grid.Column="0" Width="768" Height="720" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding Path=GameImageBitmap, Mode=OneWay}" />
         <!-- Right Sidebar -->
         <Grid Grid.Row="0" Grid.Column="1">
             <Grid.RowDefinitions>

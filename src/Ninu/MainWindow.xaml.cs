@@ -37,7 +37,7 @@ namespace Ninu
             _console = new Console(cartridge);
             _console.Reset();
 
-            const double fps = 1000.0 / 10.0;
+            const double fps = 1000.0 / 60.0;
 
             var timer = new Timer(fps);
             timer.Elapsed += TimerTick;
