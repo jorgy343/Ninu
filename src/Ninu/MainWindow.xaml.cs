@@ -18,86 +18,56 @@ namespace Ninu
 
         public WriteableBitmap GameImageBitmap { get; } = new WriteableBitmap(256, 240, 96, 96, PixelFormats.Bgra32, null);
 
+        private readonly Console _console;
+
         public MainWindow()
         {
             InitializeComponent();
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Donkey Kong (World) (Rev A).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\nestest.nes");
             var cartridge = new Cartridge(image);
-            var console = new Console(cartridge);
 
-            console.Ppu.FrameComplete += Ppu_FrameComplete;
+            _console = new Console(cartridge);
+
+            _console.Ppu.FrameComplete += Ppu_FrameComplete;
 
             //console.Cpu.TotalCycles = 8;
             //console.Cpu.CpuState.S = 0xfd;
             //console.Cpu.CpuState.Flags = CpuFlags.U | CpuFlags.I;
             //console.Cpu.CpuState.PC = 0xc000;
 
-            console.Reset();
+            _console.Reset();
 
             // Run some instructions.
-            for (var i = 0; i < 1_000_000; i++)
+            for (var i = 0; i < 50; i++)
             {
-                console.Clock();
+                _console.CompleteFrame();
             }
 
-            var backgroundSprite0 = console.Ppu.GetBackgroundSprite(0);
-            var backgroundSprite1 = console.Ppu.GetBackgroundSprite(1);
-            var backgroundSprite2 = console.Ppu.GetBackgroundSprite(2);
-            var backgroundSprite3 = console.Ppu.GetBackgroundSprite(3);
+            _console.CompleteFrame();
 
             var pixels = new byte[256 * 240 * 4];
 
-            for (var y = 0; y < 240; y++)
+            for (var i = 0; i < 256 * 240; i++)
             {
-                for (var x = 0; x < 256; x++)
-                {
-                    var index = (y * 256 + x) * 4;
+                var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i] % SystemPalette.Colors.Length];
 
-                    pixels[index + 0] = 0;
-                    pixels[index + 1] = 0;
-                    pixels[index + 2] = 0;
-                    pixels[index + 3] = 255;
-                }
-            }
+                var pixelIndex = i * 4;
 
-            for (var row = 0; row < 30; row++)
-            {
-                for (var column = 0; column < 32; column++)
-                {
-                    var nameTableEntryIndex = row * 32 + column;
-
-                    var offsetX = column * 8;
-                    var offsetY = row * 8;
-
-                    var backgroundSprite = console.Ppu.GetBackgroundSprite(nameTableEntryIndex);
-
-                    for (var y = 0; y < 8; y++)
-                    {
-                        for (var x = 0; x < 8; x++)
-                        {
-                            var pixelIndex = ((offsetY + y) * 256 + (offsetX + x)) * 4;
-                            var colorIndex = backgroundSprite.Colors[y * 8 + x];
-
-                            var color = SystemPalette.Colors[colorIndex % SystemPalette.Colors.Length];
-
-                            pixels[pixelIndex + 0] = color.B;
-                            pixels[pixelIndex + 1] = color.G;
-                            pixels[pixelIndex + 2] = color.R;
-                            pixels[pixelIndex + 3] = 255;
-                        }
-                    }
-                }
+                pixels[pixelIndex + 0] = color.B;
+                pixels[pixelIndex + 1] = color.G;
+                pixels[pixelIndex + 2] = color.R;
+                pixels[pixelIndex + 3] = 255;
             }
 
             GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
 
-            UpdateInstructions(console.Cpu);
+            UpdateInstructions(_console.Cpu);
 
             // Get the palette.
-            var palette = console.Ppu.PaletteRam.GetEntry(0);
+            var palette = _console.Ppu.PaletteRam.GetEntry(0);
 
             // Pattern table bitmap pixels.
             var pixels1 = new byte[128 * 128 * 4];
@@ -126,8 +96,8 @@ namespace Ninu
             {
                 for (var tileX = 0; tileX < 16; tileX++)
                 {
-                    var leftTile = console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
-                    var rightTile = console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
+                    var leftTile = _console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
+                    var rightTile = _console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
 
                     var xOffset = tileX * 8;
                     var yOffset = tileY * 8;
@@ -185,9 +155,9 @@ namespace Ninu
             PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels1, 128 * 4, 0);
             PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), pixels2, 128 * 4, 0);
 
-            CpuState.Update(console.Cpu.CpuState);
+            CpuState.Update(_console.Cpu.CpuState);
 
-            File.WriteAllText(@"C:\Users\Jorgy\Desktop\cpu.log.txt", console.Cpu._log.ToString());
+            File.WriteAllText(@"C:\Users\Jorgy\Desktop\cpu.log.txt", _console.Cpu._log.ToString());
         }
 
         private void Ppu_FrameComplete(object source, EventArgs e)

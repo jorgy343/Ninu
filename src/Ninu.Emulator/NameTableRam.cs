@@ -1,6 +1,6 @@
-﻿using System;
+﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
+using System;
 using System.ComponentModel;
-using System.Text;
 
 namespace Ninu.Emulator
 {
@@ -21,13 +21,13 @@ namespace Ninu.Emulator
             _mirrorMode = mirrorMode;
         }
 
-
-
         public bool PpuRead(ushort address, out byte data)
         {
             if (address >= 0x2000 && address <= 0x3eff)
             {
                 data = 0;
+
+                address -= 0x2000;
 
                 if (_mirrorMode == NameTableMirrorMode.Horizontal)
                 {

@@ -49,6 +49,33 @@ namespace Ninu.Emulator
             TotalCycles++;
         }
 
+        public void CompleteFrame()
+        {
+            var ppuClockResult = PpuClockResult.NormalCycle;
+
+            while (ppuClockResult != PpuClockResult.FrameComplete)
+            {
+                ppuClockResult = Ppu.Clock();
+
+                // The CPU gets clocked every third system clock. This means that the CPU will
+                // get clocked on the first system clock.
+                if (TotalCycles % 3 == 0)
+                {
+                    Cpu.Clock();
+                }
+
+                // TODO: Are we supposed to trigger the nmi after the CPU clocks?
+                if (Ppu.CallNmi)
+                {
+                    Cpu.NonMaskableInterrupt();
+
+                    Ppu.CallNmi = false;
+                }
+
+                TotalCycles++;
+            }
+        }
+
         /// <summary>
         /// Routes the read request to the appropriate device or area of memory. If no device
         /// or area of memory handles the given address, 0 is returned.
