@@ -47,13 +47,68 @@ namespace Ninu.Emulator
 
         public PpuClockResult Clock()
         {
-            _currentCycle++;
-
             if (_currentScanline == -1 && _currentCycle == 1)
             {
                 Registers.SpriteOverflow = false;
                 Registers.Sprite0Hit = false;
                 Registers.VerticalBlankStarted = false;
+            }
+
+            if (_currentScanline >= -1 && _currentScanline <= 239) // All of the rendering scanlines.
+            {
+                if ((_currentCycle >= 2 && _currentCycle <= 257) || (_currentCycle >= 322 && _currentCycle <= 337))
+                {
+                    UpdateShiftRegisters();
+                }
+
+                if ((_currentCycle >= 2 && _currentCycle <= 256) || (_currentCycle >= 321 && _currentCycle <= 337))
+                {
+                    if (_currentCycle != 1 && _currentCycle != 321 && _currentCycle % 8 == 1)
+                    {
+                        LoadShiftRegisters();
+                    }
+
+                    if (_currentCycle % 8 == 2)
+                    {
+                        // Read the next name table byte.
+                        _nextNameTableTileId = FetchNameTableTileId();
+                    }
+
+                    if (_currentCycle % 8 == 4)
+                    {
+                        // Read the name table attribute byte.
+                        _nextNameTableAttribute = FetchNameTableAttribute();
+                    }
+
+                    if (_currentCycle % 8 == 6)
+                    {
+                        // Load the low pattern tile byte.
+                        _nextLowPatternByte = FetchLowPatternByte(_nextNameTableTileId);
+                    }
+
+                    if (_currentCycle % 8 == 0)
+                    {
+                        // Load the high pattern tile byte.
+                        _nextHighPatternByte = FetchHighPatternByte(_nextNameTableTileId);
+
+                        Registers.IncrementX();
+                    }
+                }
+
+                if (_currentCycle == 256)
+                {
+                    Registers.IncrementY();
+                }
+
+                if (_currentCycle == 257)
+                {
+                    Registers.TransferX();
+                }
+            }
+
+            if (_currentScanline == -1 && _currentCycle >= 280 && _currentCycle <= 304)
+            {
+                Registers.TransferY();
             }
 
             if (_currentScanline == 241 && _currentCycle == 1)
@@ -64,11 +119,6 @@ namespace Ninu.Emulator
                 {
                     CallNmi = true;
                 }
-            }
-
-            if (_currentScanline == 261 && _currentCycle == 1)
-            {
-                Registers.Status = 0;
             }
 
             if (_currentScanline >= 0 && _currentScanline <= 239 && _currentCycle >= 1 && _currentCycle <= 256)
@@ -106,64 +156,9 @@ namespace Ninu.Emulator
                 CurrentImageBuffer[pixelIndex] = color;
             }
 
-            if (Registers.RenderBackground && _currentScanline >= -1 && _currentScanline <= 239) // All of the rendering scanlines.
-            {
-                if ((_currentCycle >= 2 && _currentCycle <= 257) || (_currentCycle >= 322 && _currentCycle <= 337))
-                {
-                    UpdateShiftRegisters();
-                }
-
-                if ((_currentCycle >= 1 && _currentCycle <= 256) || (_currentCycle >= 321 && _currentCycle <= 337))
-                {
-                    if (_currentCycle != 1 && _currentCycle != 321 && _currentCycle % 8 == 1)
-                    {
-                        LoadShiftRegisters();
-                    }
-
-                    if (_currentCycle % 8 == 2)
-                    {
-                        // Read the next name table byte.
-                        _nextNameTableTileId = FetchNameTableTileId();
-                    }
-
-                    if (_currentCycle % 8 == 4)
-                    {
-                        // Read the name table attribute byte.
-                        _nextNameTableAttribute = FetchNameTableAttribute();
-                    }
-
-                    if (_currentCycle % 8 == 6)
-                    {
-                        // Load the low pattern tile byte.
-                        _nextLowPatternByte = FetchLowPatternByte(_nextNameTableTileId);
-                    }
-
-                    if (_currentCycle % 8 == 0)
-                    {
-                        // Load the high pattern tile byte.
-                        _nextHighPatternByte = FetchHighPatternByte(_nextNameTableTileId);
-
-                        Registers.IncrementX();
-
-                        if (_currentCycle == 256)
-                        {
-                            Registers.IncrementY();
-                        }
-                    }
-                }
-
-                if (_currentCycle == 257)
-                {
-                    Registers.TransferX();
-                }
-            }
-
-            if (_currentScanline == -1 && _currentCycle >= 280 && _currentCycle <= 304)
-            {
-                Registers.TransferY();
-            }
-
             // Increment the scanline and cycle.
+            _currentCycle++;
+
             if (_currentCycle > 340)
             {
                 _currentCycle = 0;
