@@ -15,8 +15,8 @@ namespace Ninu.Emulator
 
         public bool CallNmi { get; set; }
 
-        private int _currentCycle;
-        private int _currentScanline;
+        private int _cycle;
+        private int _scanline;
 
         public event FrameCompleteHandler? FrameComplete;
 
@@ -47,71 +47,68 @@ namespace Ninu.Emulator
 
         public PpuClockResult Clock()
         {
-            if (_currentScanline == -1 && _currentCycle == 1)
+            if (_scanline == -1 && _cycle == 1)
             {
                 Registers.SpriteOverflow = false;
                 Registers.Sprite0Hit = false;
                 Registers.VerticalBlankStarted = false;
             }
 
-            if (_currentScanline >= -1 && _currentScanline <= 239) // All of the rendering scanlines.
+            if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
             {
-                if ((_currentCycle >= 2 && _currentCycle <= 257) || (_currentCycle >= 322 && _currentCycle <= 337))
+                if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 321 && _cycle <= 337))
                 {
                     UpdateShiftRegisters();
-                }
 
-                if ((_currentCycle >= 2 && _currentCycle <= 256) || (_currentCycle >= 321 && _currentCycle <= 337))
-                {
-                    if (_currentCycle != 1 && _currentCycle != 321 && _currentCycle % 8 == 1)
+                    switch ((_cycle - 1) % 8)
                     {
-                        LoadShiftRegisters();
-                    }
+                        case 0:
+                            LoadShiftRegisters();
+                            _nextNameTableTileId = FetchNameTableTileId();
 
-                    if (_currentCycle % 8 == 2)
-                    {
-                        // Read the next name table byte.
-                        _nextNameTableTileId = FetchNameTableTileId();
-                    }
+                            break;
 
-                    if (_currentCycle % 8 == 4)
-                    {
-                        // Read the name table attribute byte.
-                        _nextNameTableAttribute = FetchNameTableAttribute();
-                    }
+                        case 2:
+                            _nextNameTableAttribute = FetchNameTableAttribute();
+                            break;
 
-                    if (_currentCycle % 8 == 6)
-                    {
-                        // Load the low pattern tile byte.
-                        _nextLowPatternByte = FetchLowPatternByte(_nextNameTableTileId);
-                    }
+                        case 4:
+                            _nextLowPatternByte = FetchLowPatternByte(_nextNameTableTileId);
+                            break;
 
-                    if (_currentCycle % 8 == 0)
-                    {
-                        // Load the high pattern tile byte.
-                        _nextHighPatternByte = FetchHighPatternByte(_nextNameTableTileId);
+                        case 6:
+                            _nextHighPatternByte = FetchHighPatternByte(_nextNameTableTileId);
+                            break;
 
-                        Registers.IncrementX();
+                        case 7:
+                            Registers.IncrementX();
+                            break;
                     }
                 }
 
-                if (_currentCycle == 256)
+                if (_cycle == 256)
                 {
                     Registers.IncrementY();
                 }
 
-                if (_currentCycle == 257)
+                if (_cycle == 257)
                 {
                     Registers.TransferX();
                 }
+
+                // These reads do nothing but the real PPU does perform them.
+                if (_cycle == 338 || _cycle == 340)
+                {
+                    FetchNameTableTileId();
+                }
             }
 
-            if (_currentScanline == -1 && _currentCycle >= 280 && _currentCycle <= 304)
+            if (_scanline == -1 && _cycle >= 280 && _cycle <= 304)
             {
                 Registers.TransferY();
             }
 
-            if (_currentScanline == 241 && _currentCycle == 1)
+            if (_scanline == 241 && _cycle == 1)
             {
                 Registers.VerticalBlankStarted = true;
 
@@ -121,7 +118,7 @@ namespace Ninu.Emulator
                 }
             }
 
-            if (_currentScanline >= 0 && _currentScanline <= 239 && _currentCycle >= 1 && _currentCycle <= 256)
+            if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
                 var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
 
@@ -141,37 +138,30 @@ namespace Ninu.Emulator
                 var nameTableAttribute = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit);
 
                 // Set the pixel color.
-                var palette = PaletteRam.GetEntry(nameTableAttribute);
+                var paletteAddress = (ushort)(0x3F00 + (nameTableAttribute << 2) + patternTileByte);
+                var color = (byte)(PpuRead(paletteAddress) & 0x3F);
 
-                var color = patternTileByte switch
-                {
-                    0 => palette.Byte1,
-                    1 => palette.Byte2,
-                    2 => palette.Byte3,
-                    3 => palette.Byte4,
-                    _ => throw new InvalidOperationException(),
-                };
+                var pixelIndex = _scanline * 256 + (_cycle - 1);
 
-                var pixelIndex = _currentScanline * 256 + (_currentCycle - 1);
                 CurrentImageBuffer[pixelIndex] = color;
             }
 
             // Increment the scanline and cycle.
-            _currentCycle++;
+            _cycle++;
 
-            if (_currentCycle > 340)
+            if (_cycle > 340)
             {
-                _currentCycle = 0;
-                _currentScanline++;
+                _cycle = 0;
+                _scanline++;
 
-                if (_currentScanline > 260)
+                if (_scanline > 260)
                 {
-                    _currentScanline = -1;
+                    _scanline = -1;
                 }
             }
 
             // Determine what value to return.
-            if (_currentScanline == -1 && _currentCycle == 0)
+            if (_scanline == 260 && _cycle == 340)
             {
                 (CurrentImageBuffer, PreviousImageBuffer) = (PreviousImageBuffer, CurrentImageBuffer); // Swap the buffers.
 
@@ -179,7 +169,7 @@ namespace Ninu.Emulator
 
                 return PpuClockResult.FrameComplete;
             }
-            else if (_currentScanline == 241 && _currentCycle == 1)
+            else if (_scanline == 241 && _cycle == 1)
             {
                 return PpuClockResult.VBlankStart;
             }

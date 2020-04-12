@@ -26,7 +26,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\nestest.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Ice Climber (USA, Europe).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
@@ -46,13 +46,11 @@ namespace Ninu
                 _console.CompleteFrame();
             }
 
-            _console.CompleteFrame();
-
             var pixels = new byte[256 * 240 * 4];
 
             for (var i = 0; i < 256 * 240; i++)
             {
-                var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i] % SystemPalette.Colors.Length];
+                var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i]];
 
                 var pixelIndex = i * 4;
 
@@ -120,7 +118,7 @@ namespace Ninu
                                     _ => throw new ArgumentOutOfRangeException(),
                                 };
 
-                                var color = SystemPalette.Colors[colorIndex % SystemPalette.Colors.Length];
+                                var color = SystemPalette.Colors[colorIndex];
 
                                 pixels1[index + 0] = color.B;
                                 pixels1[index + 1] = color.G;
@@ -140,7 +138,7 @@ namespace Ninu
                                     _ => throw new ArgumentOutOfRangeException(),
                                 };
 
-                                var color = SystemPalette.Colors[colorIndex % SystemPalette.Colors.Length];
+                                var color = SystemPalette.Colors[colorIndex];
 
                                 pixels2[index + 0] = color.B;
                                 pixels2[index + 1] = color.G;

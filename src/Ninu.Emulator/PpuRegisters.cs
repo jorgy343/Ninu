@@ -137,16 +137,14 @@ namespace Ninu.Emulator
                 return;
             }
 
-            // This code was directly taken from https://wiki.nesdev.com/w/index.php/PPU_scrolling.
-
-            if ((CurrentAddress & 0x001F) == 31) // if coarse X == 31
+            if (CurrentAddress.CourseX == 31)
             {
-                CurrentAddress = (ushort)(CurrentAddress & ~0x001F); // coarse X = 0
-                CurrentAddress ^= 0x0400; // switch horizontal name table
+                CurrentAddress.CourseX = 0;
+                CurrentAddress.NameTableSelectX = (byte)~CurrentAddress.NameTableSelectX; // This simply flips the name table select X bit.
             }
             else
             {
-                CurrentAddress += 1; // increment coarse X
+                CurrentAddress.CourseX += 1;
             }
         }
 
@@ -157,35 +155,28 @@ namespace Ninu.Emulator
                 return;
             }
 
-            // This code was directly taken from https://wiki.nesdev.com/w/index.php/PPU_scrolling.
-
-            if ((CurrentAddress & 0x7000) != 0x7000) // if fine Y < 7
+            if (CurrentAddress.FineY < 7)
             {
-                CurrentAddress += 0x1000; // increment fine Y
+                CurrentAddress.FineY++;
             }
             else
             {
-                CurrentAddress = (ushort)(CurrentAddress & ~0x7000); // fine Y = 0
-            }
+                CurrentAddress.FineY = 0;
 
-            var y = (CurrentAddress & 0x03E0) >> 5; // let y = coarse Y
-
-            if (y == 29)
-            {
-                y = 0; // coarse Y = 0
-
-                CurrentAddress ^= 0x0800; // switch vertical name table
+                if (CurrentAddress.CourseY == 29)
+                {
+                    CurrentAddress.CourseY = 0;
+                    CurrentAddress.NameTableSelectY = (byte)~CurrentAddress.NameTableSelectY; // This simply flips the name table select Y bit.
+                }
+                else if (CurrentAddress.CourseY == 31)
+                {
+                    CurrentAddress.CourseY = 0;
+                }
+                else
+                {
+                    CurrentAddress.CourseY++;
+                }
             }
-            else if (y == 31)
-            {
-                y = 0; // coarse Y = 0, name table not switched
-            }
-            else
-            {
-                y += 1; // increment coarse Y
-            }
-
-            CurrentAddress = (ushort)((CurrentAddress & ~0x03E0) | (y << 5)); // put coarse Y back into CurrentAddress
         }
 
         public void TransferX()
