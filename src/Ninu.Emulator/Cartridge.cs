@@ -15,6 +15,7 @@ namespace Ninu.Emulator
             Mapper = Image.MapperType switch
             {
                 000 => new Mapper000(Image.ProgramRomBankCount, Image.PatternRomBankCount),
+                001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount),
                 _ => throw new Exception(), // TODO: Throw a better exception.
             };
         }

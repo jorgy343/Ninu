@@ -31,7 +31,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\nestest.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\1.Branch_Basics.nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);

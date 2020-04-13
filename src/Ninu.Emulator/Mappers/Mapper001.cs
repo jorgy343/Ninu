@@ -2,12 +2,12 @@
 
 namespace Ninu.Emulator.Mappers
 {
-    public class Mapper001 : Mapper
+    public class Mapper000 : Mapper
     {
         public int ProgramRomBankCount { get; }
         public int PatternRomBankCount { get; }
 
-        public Mapper001(int programRomBankCount, int patternRomBankCount)
+        public Mapper000(int programRomBankCount, int patternRomBankCount)
         {
             ProgramRomBankCount = programRomBankCount;
             PatternRomBankCount = patternRomBankCount;
