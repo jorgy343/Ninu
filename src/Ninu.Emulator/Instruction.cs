@@ -49,11 +49,11 @@ namespace Ninu.Emulator
             new Instruction("brk", 0x00, 1, 7, AddressingMode.Implied, Brk),
             new Instruction("ora", 0x01, 2, 6, AddressingMode.IndirectZeroPageWithXOffset, Ora),
             new Instruction("???", 0x02, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x03, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x03, 2, 8, AddressingMode.IndirectZeroPageWithXOffset, Slo),
             new Instruction("dop", 0x04, 2, 3, AddressingMode.ZeroPage, Dop),
             new Instruction("ora", 0x05, 2, 3, AddressingMode.ZeroPage, Ora),
             new Instruction("asl", 0x06, 2, 5, AddressingMode.ZeroPage, Asl),
-            new Instruction("???", 0x07, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x07, 2, 5, AddressingMode.ZeroPage, Slo),
             new Instruction("php", 0x08, 1, 3, AddressingMode.Implied, Php),
             new Instruction("ora", 0x09, 2, 2, AddressingMode.Immediate, Ora),
             new Instruction("asl", 0x0a, 1, 2, AddressingMode.Accumulator, Asl),
@@ -61,23 +61,23 @@ namespace Ninu.Emulator
             new Instruction("top", 0x0c, 3, 4, AddressingMode.Absolute, Top),
             new Instruction("ora", 0x0d, 3, 4, AddressingMode.Absolute, Ora),
             new Instruction("asl", 0x0e, 3, 6, AddressingMode.Absolute, Asl),
-            new Instruction("???", 0x0f, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x0f, 3, 6, AddressingMode.Absolute, Slo),
             new Instruction("bpl", 0x10, 2, 2, AddressingMode.Relative, Bpl),
             new Instruction("ora", 0x11, 2, 5, AddressingMode.IndirectZeroPageWithYOffset, Ora),
             new Instruction("???", 0x12, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x13, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x13, 2, 8, AddressingMode.IndirectZeroPageWithYOffset, Slo),
             new Instruction("dop", 0x14, 2, 4, AddressingMode.ZeroPageWithXOffset, Dop),
             new Instruction("ora", 0x15, 2, 4, AddressingMode.ZeroPageWithXOffset, Ora),
             new Instruction("asl", 0x16, 2, 6, AddressingMode.ZeroPageWithXOffset, Asl),
-            new Instruction("???", 0x17, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x17, 2, 6, AddressingMode.ZeroPageWithXOffset, Slo),
             new Instruction("clc", 0x18, 1, 2, AddressingMode.Implied, Clc),
             new Instruction("ora", 0x19, 3, 4, AddressingMode.AbsoluteWithYOffset, Ora),
             new Instruction("nop", 0x1a, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x1b, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x1b, 3, 7, AddressingMode.AbsoluteWithYOffset, Slo),
             new Instruction("top", 0x1c, 3, 4, AddressingMode.AbsoluteWithXOffset, Top),
             new Instruction("ora", 0x1d, 3, 4, AddressingMode.AbsoluteWithXOffset, Ora),
             new Instruction("asl", 0x1e, 3, 7, AddressingMode.AbsoluteWithXOffset, Asl),
-            new Instruction("???", 0x1f, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("slo", 0x1f, 3, 7, AddressingMode.AbsoluteWithXOffset, Slo),
             new Instruction("jsr", 0x20, 3, 6, AddressingMode.Absolute, Jsr),
             new Instruction("and", 0x21, 2, 6, AddressingMode.IndirectZeroPageWithXOffset, And),
             new Instruction("???", 0x22, 1, 2, AddressingMode.Implied, Nop),
@@ -145,11 +145,11 @@ namespace Ninu.Emulator
             new Instruction("rts", 0x60, 1, 6, AddressingMode.Implied, Rts),
             new Instruction("adc", 0x61, 2, 6, AddressingMode.IndirectZeroPageWithXOffset, Adc),
             new Instruction("???", 0x62, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x63, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x63, 2, 8, AddressingMode.IndirectZeroPageWithXOffset, Rra),
             new Instruction("dop", 0x64, 2, 3, AddressingMode.ZeroPage, Dop),
             new Instruction("adc", 0x65, 2, 3, AddressingMode.ZeroPage, Adc),
             new Instruction("ror", 0x66, 2, 5, AddressingMode.ZeroPage, Ror),
-            new Instruction("???", 0x67, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x67, 2, 5, AddressingMode.ZeroPage, Rra),
             new Instruction("pla", 0x68, 1, 4, AddressingMode.Implied, Pla),
             new Instruction("adc", 0x69, 2, 2, AddressingMode.Immediate, Adc),
             new Instruction("ror", 0x6a, 1, 2, AddressingMode.Accumulator, Ror),
@@ -157,23 +157,23 @@ namespace Ninu.Emulator
             new Instruction("jmp", 0x6c, 3, 5, AddressingMode.Indirect, Jmp),
             new Instruction("adc", 0x6d, 3, 4, AddressingMode.Absolute, Adc),
             new Instruction("ror", 0x6e, 3, 6, AddressingMode.Absolute, Ror),
-            new Instruction("???", 0x6f, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x6f, 3, 6, AddressingMode.Absolute, Rra),
             new Instruction("bvs", 0x70, 2, 2, AddressingMode.Relative, Bvs),
             new Instruction("adc", 0x71, 2, 5, AddressingMode.IndirectZeroPageWithYOffset, Adc),
             new Instruction("???", 0x72, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x73, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x73, 2, 8, AddressingMode.IndirectZeroPageWithYOffset, Rra),
             new Instruction("dop", 0x74, 2, 4, AddressingMode.ZeroPageWithXOffset, Dop),
             new Instruction("adc", 0x75, 2, 4, AddressingMode.ZeroPageWithXOffset, Adc),
             new Instruction("ror", 0x76, 2, 6, AddressingMode.ZeroPageWithXOffset, Ror),
-            new Instruction("???", 0x77, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x77, 2, 6, AddressingMode.ZeroPageWithXOffset, Rra),
             new Instruction("sei", 0x78, 1, 2, AddressingMode.Implied, Sei),
             new Instruction("adc", 0x79, 3, 4, AddressingMode.AbsoluteWithYOffset, Adc),
             new Instruction("nop", 0x7a, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0x7b, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x7b, 3, 7, AddressingMode.AbsoluteWithYOffset, Rra),
             new Instruction("top", 0x7c, 3, 4, AddressingMode.AbsoluteWithXOffset, Top),
             new Instruction("adc", 0x7d, 3, 4, AddressingMode.AbsoluteWithXOffset, Adc),
             new Instruction("ror", 0x7e, 3, 7, AddressingMode.AbsoluteWithXOffset, Ror),
-            new Instruction("???", 0x7f, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("rra", 0x7f, 3, 7, AddressingMode.AbsoluteWithXOffset, Rra),
             new Instruction("dop", 0x80, 2, 2, AddressingMode.Immediate, Dop),
             new Instruction("sta", 0x81, 2, 6, AddressingMode.IndirectZeroPageWithXOffset, Sta),
             new Instruction("dop", 0x82, 2, 2, AddressingMode.Immediate, Dop),
@@ -281,7 +281,7 @@ namespace Ninu.Emulator
             new Instruction("inx", 0xe8, 1, 2, AddressingMode.Implied, Inx),
             new Instruction("sbc", 0xe9, 2, 2, AddressingMode.Immediate, Sbc),
             new Instruction("nop", 0xea, 1, 2, AddressingMode.Implied, Nop),
-            new Instruction("???", 0xeb, 1, 2, AddressingMode.Implied, Nop),
+            new Instruction("sbc", 0xeb, 2, 2, AddressingMode.Immediate, Sbc),
             new Instruction("cpx", 0xec, 3, 4, AddressingMode.Absolute, Cpx),
             new Instruction("sbc", 0xed, 3, 4, AddressingMode.Absolute, Sbc),
             new Instruction("inc", 0xee, 3, 6, AddressingMode.Absolute, Inc),
@@ -483,6 +483,11 @@ namespace Ninu.Emulator
                         return (address, 0);
                     }
 
+                case AddressingMode.Dummy:
+                    {
+                        return (0, 0);
+                    }
+
                 default:
                     throw new InvalidAddressingModeException();
             }
@@ -524,6 +529,11 @@ namespace Ninu.Emulator
                         var data = bus.Read(address);
 
                         return (data, address, additionalCycles);
+                    }
+
+                case AddressingMode.Dummy:
+                    {
+                        return (0, 0, 0);
                     }
 
                 default:
@@ -602,6 +612,30 @@ namespace Ninu.Emulator
             cpuState.SetNegativeFlag(resultByte);
 
             cpuState.A = resultByte;
+
+            return baseCycles + additionalCycles;
+        }
+
+        public static int Adc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        {
+            var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
+
+            if (dataIn != null)
+            {
+                data = dataIn.Value;
+            }
+
+            var resultTemp = cpuState.A + data + (cpuState.GetFlag(CpuFlags.C) ? 1 : 0);
+            var resultByte = (byte)(resultTemp & 0xff);
+
+            cpuState.SetFlag(CpuFlags.C, resultTemp > 0xff);
+            cpuState.SetZeroFlag(resultByte);
+            cpuState.SetFlag(CpuFlags.V, ((cpuState.A ^ data) & 0x80) == 0 && ((cpuState.A ^ resultTemp) & 0x80) != 0);
+            cpuState.SetNegativeFlag(resultByte);
+
+            cpuState.A = resultByte;
+
+            result = resultByte;
 
             return baseCycles + additionalCycles;
         }
@@ -1182,6 +1216,55 @@ namespace Ninu.Emulator
             return baseCycles;
         }
 
+        public static int Ror(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        {
+            // Note: This instruction operators on and stores the result to either memory or accumulator.
+            // Note: This instruction always takes a constant amount of cycles to complete.
+
+            var (data, address, _) = FetchData(addressingMode, bus, cpuState);
+
+            if (dataIn != null)
+            {
+                data = dataIn.Value;
+            }
+
+            var newCarry = (data & 0x01) != 0;
+
+            data = (byte)(data >> 1);
+
+            if (cpuState.GetFlag(CpuFlags.C))
+            {
+                data |= 0x80;
+            }
+
+            cpuState.SetFlag(CpuFlags.C, newCarry);
+            cpuState.SetZeroFlag(data);
+            cpuState.SetNegativeFlag(data);
+
+            if (addressingMode == AddressingMode.Accumulator)
+            {
+                cpuState.A = data;
+            }
+            else
+            {
+                bus.Write(address, data);
+            }
+
+            result = data;
+
+            return baseCycles;
+        }
+
+        public static int Rra(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        {
+            // Note: This instruction always takes a constant amount of cycles to complete.
+
+            Ror(addressingMode, baseCycles, bus, cpuState, null, out var result);
+            Adc(AddressingMode.Dummy, baseCycles, bus, cpuState, result, out _);
+
+            return baseCycles;
+        }
+
         public static int Rti(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.Flags = (CpuFlags)Pop(bus, cpuState);
@@ -1240,6 +1323,30 @@ namespace Ninu.Emulator
         public static int Sei(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.I, true);
+            return baseCycles;
+        }
+
+        public static int Slo(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        {
+            // Note: This instruction always takes a constant amount of cycles to complete.
+
+            // Perform the ASL.
+            var (data, address, _) = FetchData(addressingMode, bus, cpuState);
+
+            cpuState.SetFlag(CpuFlags.C, (data & 0x80) != 0); // Carry flag is set to the bit that is being shifted out.
+
+            data = (byte)(data << 1);
+
+            bus.Write(address, data);
+
+            // Perform the OR.
+            data = bus.Read(address); // We could just use data from above, but it appears the 6502 does an actual memory read.
+
+            cpuState.A |= data;
+
+            cpuState.SetZeroFlag(cpuState.A);
+            cpuState.SetNegativeFlag(cpuState.A);
+
             return baseCycles;
         }
 

@@ -15,5 +15,6 @@
         IndirectZeroPageWithXOffset,
         IndirectZeroPageWithYOffset,
         Relative,
+        Dummy, // Does nothing. This is used to simplify undocumneted instructions.
     }
 }
