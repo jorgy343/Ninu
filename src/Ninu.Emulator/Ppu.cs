@@ -56,7 +56,7 @@ namespace Ninu.Emulator
                 Registers.VerticalBlankStarted = false;
             }
 
-            if (Registers.RenderBackground || Registers.RenderSprites)
+            if (Registers.RenderingEnabled)
             {
                 if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
@@ -170,7 +170,7 @@ namespace Ninu.Emulator
                 }
             }
 
-            if ((Registers.RenderBackground || Registers.RenderSprites) && _scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
+            if (Registers.RenderBackground && _scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
                 var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
 

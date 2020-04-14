@@ -31,7 +31,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\1.Branch_Basics.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Donkey Kong (World) (Rev A).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);

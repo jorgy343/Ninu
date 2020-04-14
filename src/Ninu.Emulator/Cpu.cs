@@ -77,7 +77,7 @@ namespace Ninu.Emulator
             CpuState.Y = 0;
 
             CpuState.S = 0xfd;
-            CpuState.Flags = 0x00 | CpuFlags.U;
+            CpuState.Flags = 0x00 | CpuFlags.U | CpuFlags.I;
 
             var pcLow = (ushort)_cpuBus.Read(0xfffc);
             var pcHigh = (ushort)_cpuBus.Read(0xfffd);

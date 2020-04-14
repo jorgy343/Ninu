@@ -182,6 +182,8 @@ namespace Ninu.Emulator
             CurrentAddress.NameTableSelectY = TemporaryAddress.NameTableSelectY;
         }
 
+        public bool RenderingEnabled => RenderBackground || RenderSprites;
+
         // Control Register
         private const int VramAddressIncrementMask = 1 << 2;
         private const int SpritePatternTableAddressFor8X8Mask = 1 << 3;
