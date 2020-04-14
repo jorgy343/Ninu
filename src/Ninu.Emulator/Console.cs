@@ -10,8 +10,7 @@ namespace Ninu.Emulator
         private readonly Cartridge _cartridge;
         private readonly CpuRam _internalRam;
 
-        public byte[] ControllerData { get; } = new byte[2];
-        public byte[] ControllerDataSnapshot { get; } = new byte[2];
+        public Controllers Controllers { get; } = new Controllers();
 
         public long TotalCycles { get; set; }
 
@@ -102,13 +101,8 @@ namespace Ninu.Emulator
                 return data;
             }
 
-            if (address >= 0x4016 && address <= 0x4017)
+            if (Controllers.CpuRead(address, out data))
             {
-                // The first controller on address 0x4016 has its least significant bit set to zero.
-                data = (byte)((uint)ControllerDataSnapshot[address & 0x0001] >> 7); // Output the most significant bit by logical left shifting the MSB to bit 0.
-
-                ControllerDataSnapshot[address & 0x0001] <<= 1; // Shift the register one bit.
-
                 return data;
             }
 
@@ -122,14 +116,7 @@ namespace Ninu.Emulator
 
             Ppu.CpuWrite(address, data);
 
-            if (address >= 0x4016 && address <= 0x4017)
-            {
-                if ((data & 0x01) != 0) // Only poll the controller if the first bit is set.
-                {
-                    // The first controller on address 0x4016 has its least significant bit set to zero.
-                    ControllerDataSnapshot[address & 0x0001] = ControllerData[address & 0x0001];
-                }
-            }
+            Controllers.CpuWrite(address, data);
         }
     }
 }

@@ -2,6 +2,7 @@
 using Ninu.Emulator;
 using Ninu.ViewModels;
 using System;
+using System.IO;
 using System.Timers;
 using System.Windows;
 using System.Windows.Input;
@@ -31,7 +32,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Donkey Kong (World) (Rev A).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Ice Climber (USA, Europe).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
@@ -49,20 +50,22 @@ namespace Ninu
         {
             lock (_console)
             {
+                byte controllerData = 0;
+
                 // Update the controller state.
                 Dispatcher.Invoke(() =>
                 {
-                    _console.ControllerData[0] = 0;
-
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.S) ? (byte)(1 << 7) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.D) ? (byte)(1 << 6) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.W) ? (byte)(1 << 5) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.E) ? (byte)(1 << 4) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Up) ? (byte)(1 << 3) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Down) ? (byte)(1 << 2) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Left) ? (byte)(1 << 1) : (byte)0x00;
-                    _console.ControllerData[0] |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.S) ? (byte)(1 << 7) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.D) ? (byte)(1 << 6) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.W) ? (byte)(1 << 5) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.E) ? (byte)(1 << 4) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.Up) ? (byte)(1 << 3) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.Down) ? (byte)(1 << 2) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.Left) ? (byte)(1 << 1) : (byte)0x00;
+                    controllerData |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
                 });
+
+                _console.Controllers.SetControllerData(0, controllerData);
 
                 _console.CompleteFrame();
 
