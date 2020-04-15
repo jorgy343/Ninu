@@ -77,7 +77,7 @@ namespace Ninu.Emulator
             CpuState.Y = 0;
 
             CpuState.S = 0xfd;
-            CpuState.Flags = 0x00 | CpuFlags.U | CpuFlags.I;
+            CpuState.P = 0x00 | CpuFlags.U | CpuFlags.I;
 
             var pcLow = (ushort)_cpuBus.Read(0xfffc);
             var pcHigh = (ushort)_cpuBus.Read(0xfffd);
@@ -100,7 +100,7 @@ namespace Ninu.Emulator
                 CpuState.SetFlag(CpuFlags.U, true);
                 CpuState.SetFlag(CpuFlags.I, true);
 
-                Push((byte)CpuState.Flags);
+                Push((byte)CpuState.P);
 
                 // Read the interrupt address at 0xfffe.
                 var pcLow = (ushort)_cpuBus.Read(0xfffe);
@@ -123,7 +123,7 @@ namespace Ninu.Emulator
             CpuState.SetFlag(CpuFlags.U, true);
             CpuState.SetFlag(CpuFlags.I, true);
 
-            Push((byte)CpuState.Flags);
+            Push((byte)CpuState.P);
 
             // Read the interrupt address at 0xfffa.
             var pcLow = (ushort)_cpuBus.Read(0xfffa);

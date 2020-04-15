@@ -13,38 +13,38 @@ namespace Ninu.Emulator
 
         public byte CourseX
         {
-            get => (byte)((Data & 0x001f) >> 0);
-            set => Data = (ushort)((Data & ~0x001f) | ((value << 0) & 0x001f));
+            get => (byte)Bits.GetBits(Data, 5, 0);
+            set => Data = (ushort)Bits.SetBits(Data, value, 5, 0);
         }
 
         public byte CourseY
         {
-            get => (byte)((Data & 0x03e0) >> 5);
-            set => Data = (ushort)((Data & ~0x03e0) | ((value << 5) & 0x03e0));
+            get => (byte)Bits.GetBits(Data, 5, 5);
+            set => Data = (ushort)Bits.SetBits(Data, value, 5, 5);
         }
 
         public byte NameTableSelect
         {
-            get => (byte)((Data & 0x0c00) >> 10);
-            set => Data = (ushort)((Data & ~0x0c00) | ((value << 10) & 0x0c00));
+            get => (byte)Bits.GetBits(Data, 2, 10);
+            set => Data = (ushort)Bits.SetBits(Data, value, 2, 10);
         }
 
         public byte NameTableSelectX
         {
-            get => (byte)((Data & 0x0400) >> 10);
-            set => Data = (ushort)((Data & ~0x0400) | ((value << 10) & 0x0400));
+            get => (byte)Bits.GetBits(Data, 1, 10);
+            set => Data = (ushort)Bits.SetBits(Data, value, 1, 10);
         }
 
         public byte NameTableSelectY
         {
-            get => (byte)((Data & 0x0800) >> 11);
-            set => Data = (ushort)((Data & ~0x0800) | ((value << 11) & 0x0800));
+            get => (byte)Bits.GetBits(Data, 1, 11);
+            set => Data = (ushort)Bits.SetBits(Data, value, 1, 11);
         }
 
         public byte FineY
         {
-            get => (byte)((Data & 0x7000) >> 12);
-            set => Data = (ushort)((Data & ~0x7000) | ((value << 12) & 0x7000));
+            get => (byte)Bits.GetBits(Data, 3, 12);
+            set => Data = (ushort)Bits.SetBits(Data, value, 3, 12);
         }
 
         public static VRamAddressRegister operator ~(VRamAddressRegister value) => new VRamAddressRegister((ushort)~value.Data);

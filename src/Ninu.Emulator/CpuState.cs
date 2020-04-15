@@ -6,20 +6,20 @@
         public byte X { get; set; }
         public byte Y { get; set; }
         public byte S { get; set; }
+        public CpuFlags P { get; set; }
         public ushort PC { get; set; }
-        public CpuFlags Flags { get; set; }
 
-        public bool GetFlag(CpuFlags flag) => (Flags & flag) != 0;
+        public bool GetFlag(CpuFlags flag) => (P & flag) != 0;
 
         public void SetFlag(CpuFlags flag, bool value)
         {
             if (value)
             {
-                Flags |= flag;
+                P |= flag;
             }
             else
             {
-                Flags &= ~flag;
+                P &= ~flag;
             }
         }
 

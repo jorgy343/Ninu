@@ -70,7 +70,7 @@ namespace Ninu.ViewModels
             X = cpuState.X;
             Y = cpuState.Y;
             S = cpuState.S;
-            P = (byte)cpuState.Flags;
+            P = (byte)cpuState.P;
             PC = cpuState.PC;
         }
 

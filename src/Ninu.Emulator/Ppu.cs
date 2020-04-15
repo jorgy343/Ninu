@@ -11,14 +11,16 @@ namespace Ninu.Emulator
 
         public PaletteRam PaletteRam { get; } = new PaletteRam();
 
+        public Oam Oam { get; } = new Oam();
+
+        private byte _oamAddress;
+
         public PpuRegisters Registers { get; } = new PpuRegisters();
 
         public bool CallNmi { get; set; }
 
         private int _cycle;
         private int _scanline;
-
-        public event FrameCompleteHandler? FrameComplete;
 
         private byte _nextNameTableTileId;
         private byte _nextNameTableAttribute;
@@ -217,8 +219,6 @@ namespace Ninu.Emulator
             {
                 (CurrentImageBuffer, PreviousImageBuffer) = (PreviousImageBuffer, CurrentImageBuffer); // Swap the buffers.
 
-                FrameComplete?.Invoke(this, EventArgs.Empty);
-
                 return PpuClockResult.FrameComplete;
             }
             else if (_scanline == 241 && _cycle == 1)
@@ -278,6 +278,11 @@ namespace Ninu.Emulator
                         data = Registers.ReadStatusRegister();
                         return true;
 
+                    case 4:
+                        // TODO: Implement the weirdness of reading this register.
+                        data = Oam.CpuRead(_oamAddress);
+                        return true;
+
                     case 7:
                         // TODO: There is some tricky stuff that needs to be handled here dealing with what
                         // the PPU is currently doing.
@@ -324,6 +329,14 @@ namespace Ninu.Emulator
 
                     case 1:
                         Registers.WriteMaskRegister(data);
+                        break;
+
+                    case 3:
+                        _oamAddress = data;
+                        break;
+
+                    case 4:
+                        Oam.CpuWrite(_oamAddress++, data); // Writing increments the OAM address, reading does not.
                         break;
 
                     case 5:
