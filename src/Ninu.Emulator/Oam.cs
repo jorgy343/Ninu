@@ -5,25 +5,55 @@ namespace Ninu.Emulator
 {
     public class Oam
     {
-        private readonly byte[] _data = new byte[256];
+        public Sprite8x8[] Sprites { get; } = new Sprite8x8[64];
 
-        public Sprite8x8 Get8x8Sprite(int index)
+        public Oam()
         {
-            if (index < 0 || index > 63) throw new ArgumentOutOfRangeException(nameof(index));
-
-            var byteIndex = index * 4;
-
-            return new Sprite8x8(_data[byteIndex + 0], _data[byteIndex + 1], _data[byteIndex + 2], _data[byteIndex + 3]);
+            for (var i = 0; i < 64; i++)
+            {
+                Sprites[i] = new Sprite8x8(0, 0, 0, 0);
+            }
         }
 
         public byte CpuRead(byte address)
         {
-            return _data[address];
+            var sprite = Sprites[address / 4];
+
+            return (address % 4) switch
+            {
+                0 => sprite.Y,
+                1 => sprite.TileIndex,
+                2 => sprite.Attributes,
+                3 => sprite.X,
+                _ => throw new InvalidOperationException(), // This isn't possible.
+            };
         }
 
         public void CpuWrite(byte address, byte data)
         {
-            _data[address] = data;
+            var sprite = Sprites[address / 4];
+
+            switch (address % 4)
+            {
+                case 0:
+                    sprite.Y = data;
+                    break;
+
+                case 1:
+                    sprite.TileIndex = data;
+                    break;
+
+                case 2:
+                    sprite.Attributes = data;
+                    break;
+
+                case 3:
+                    sprite.X = data;
+                    break;
+
+                default:
+                    throw new InvalidOperationException(); // This isn't possible.
+            }
         }
     }
 }

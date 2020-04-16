@@ -3,7 +3,7 @@
     /// <summary>
     /// Represents an 8x8 sprite in OAM memory.
     /// </summary>
-    public struct Sprite8x8
+    public class Sprite8x8
     {
         public Sprite8x8(byte byte0, byte byte1, byte byte2, byte byte3)
         {
@@ -73,6 +73,18 @@
         {
             get => Bits.GetBit(Attributes, 7);
             set => Attributes = (byte)Bits.SetBit(Attributes, value, 7);
+        }
+
+        /// <summary>
+        /// Copies the data from the sprite this method is being called on to <paramref name="otherSprite"/>.
+        /// </summary>
+        /// <param name="otherSprite">The sprite that will receive the copied data.</param>
+        public void CopyTo(Sprite8x8 otherSprite)
+        {
+            otherSprite.Y = Y;
+            otherSprite.TileIndex = TileIndex;
+            otherSprite.Attributes = Attributes;
+            otherSprite.X = X;
         }
     }
 }

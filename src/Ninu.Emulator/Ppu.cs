@@ -13,6 +13,18 @@ namespace Ninu.Emulator
 
         public Oam Oam { get; } = new Oam();
 
+        private readonly Sprite8x8[] _nextScanlineSprites = new[]
+        {
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
+        };
+
         private byte _oamAddress;
 
         public PpuRegisters Registers { get; } = new PpuRegisters();
@@ -160,6 +172,45 @@ namespace Ninu.Emulator
                 {
                     Registers.TransferY();
                 }
+
+                if (Registers.RenderSprites && _cycle == 340)
+                {
+                    // TODO: Should this be called on the final visible scanline? It would load sprites for the
+                    // next scanline which isn't visible.
+
+                    // Initialize the temporary OAM to 0xff.
+                    foreach (var sprite in _nextScanlineSprites)
+                    {
+                        sprite.Y = 0xff;
+                        sprite.TileIndex = 0xff;
+                        sprite.Attributes = 0xff;
+                        sprite.X = 0xff;
+                    }
+
+                    // Find all sprites that will need to be rendered for the next scanline.
+                    var insertIndex = 0;
+
+                    foreach (var sprite in Oam.Sprites)
+                    {
+                        var nextScanline = _scanline + 1;
+
+                        // TODO: Are we checking the correct Y coordinate? This could be off by one.
+                        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + 7)
+                        {
+                            if (insertIndex == 8)
+                            {
+                                // We have overflowed. No need to check any other sprites.
+
+                                // TODO: Set the overflow flag?
+                                break;
+                            }
+
+                            sprite.CopyTo(_nextScanlineSprites[insertIndex]);
+
+                            insertIndex++;
+                        }
+                    }
+                }
             }
 
             if (_scanline == 241 && _cycle == 1)
@@ -172,32 +223,167 @@ namespace Ninu.Emulator
                 }
             }
 
-            if (Registers.RenderBackground && _scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
+            if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
-                var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
+                PaletteColor backgroundColorIndex = PaletteColor.Transparent;
+                PaletteColor spriteColorIndex = PaletteColor.Transparent;
 
-                // The fine X register controls our offset into the shift registers.
-                shiftSelect >>= Registers.FineX;
+                byte backgroundColor = 0;
+                byte spriteColor = 0;
 
-                // Extract the data from the pattern tile shift registers.
-                var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
-                var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
+                bool spritePriority = true;
 
-                var patternTileByte = (byte)(patternTileLowBit | patternTileHighBit);
+                if (Registers.RenderBackground)
+                {
+                    var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
 
-                // Extract the data from the name table attribute shift registers.
-                var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
-                var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
+                    // The fine X register controls our offset into the shift registers.
+                    shiftSelect >>= Registers.FineX;
 
-                var nameTableAttribute = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit);
+                    // Extract the data from the pattern tile shift registers.
+                    var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
+                    var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
 
-                // Set the pixel color.
-                var paletteAddress = (ushort)(0x3F00 + (nameTableAttribute << 2) + patternTileByte);
-                var color = (byte)(PpuRead(paletteAddress) & 0x3F);
+                    var patternTileByte = (byte)(patternTileLowBit | patternTileHighBit);
+
+                    backgroundColorIndex = (PaletteColor)patternTileByte;
+
+                    // Extract the data from the name table attribute shift registers.
+                    var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
+                    var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
+
+                    var nameTableAttribute = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit);
+
+                    // Set the pixel color.
+                    var paletteAddress = (ushort)(0x3F00 + (nameTableAttribute << 2) + patternTileByte);
+                    backgroundColor = (byte)(PpuRead(paletteAddress) & 0x3F);
+                }
+
+                // Calculate sprite zero hit.
+                if (Registers.RenderingEnabled && !Registers.Sprite0Hit)
+                {
+                    if (_cycle >= 0 && _cycle <= 7 && (!Registers.RenderBackgroundInLeftMost8PixelsOfScreen || !Registers.RenderSpritesInLeftMost8PixelsOfScreen))
+                    {
+                        goto skipSpriteZero;
+                    }
+
+                    if (_cycle == 255)
+                    {
+                        goto skipSpriteZero;
+                    }
+
+                    if (backgroundColorIndex == PaletteColor.Transparent)
+                    {
+                        goto skipSpriteZero;
+                    }
+
+                    var sprite0 = Oam.Sprites[0];
+
+                    if (_scanline >= sprite0.Y && _scanline <= sprite0.Y + 7)
+                    {
+                        if (_cycle >= sprite0.X && _cycle <= sprite0.X + 7)
+                        {
+                            // TODO: Handle the reading of the pattern through the bus.
+                            var tile = GetPatternTile(PatternTableEntry.Left, sprite0.TileIndex);
+
+                            var xIndex = _cycle - sprite0.X;
+                            var yIndex = _scanline - sprite0.Y;
+
+                            if (sprite0.FlipHorizontal)
+                            {
+                                xIndex = 7 - xIndex;
+                            }
+
+                            if (sprite0.FlipVertical)
+                            {
+                                yIndex = 7 - yIndex;
+                            }
+
+                            var colorIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+
+                            if (colorIndex != PaletteColor.Transparent)
+                            {
+                                Registers.Sprite0Hit = true;
+                            }
+                        }
+                    }
+                }
+
+                skipSpriteZero:
+
+                if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
+                {
+                    foreach (var sprite in _nextScanlineSprites)
+                    {
+                        if (sprite.X == 0xff)
+                        {
+                            continue;
+                        }
+
+                        if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
+                        {
+                            // TODO: Handle the reading of the pattern through the bus.
+                            var tile = GetPatternTile(PatternTableEntry.Left, sprite.TileIndex);
+                            var palette = PaletteRam.GetEntry(4 + sprite.PaletteIndex);
+
+                            spritePriority = sprite.Priority;
+
+                            var xIndex = _cycle - sprite.X;
+                            var yIndex = _scanline - sprite.Y;
+
+                            if (sprite.FlipHorizontal)
+                            {
+                                xIndex = 7 - xIndex;
+                            }
+
+                            if (sprite.FlipVertical)
+                            {
+                                yIndex = 7 - yIndex;
+                            }
+
+                            spriteColorIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+
+                            spriteColor = spriteColorIndex switch
+                            {
+                                PaletteColor.Color0 => palette.Byte1,
+                                PaletteColor.Color1 => palette.Byte2,
+                                PaletteColor.Color2 => palette.Byte3,
+                                PaletteColor.Color3 => palette.Byte4,
+                                _ => throw new ArgumentOutOfRangeException(),
+                            };
+
+                            // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
+                            if (spriteColorIndex != PaletteColor.Transparent)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 var pixelIndex = _scanline * 256 + (_cycle - 1);
 
-                CurrentImageBuffer[pixelIndex] = color;
+                // Simulate the priority muxer.
+                var pixelColor = backgroundColor;
+
+                if (backgroundColorIndex == PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent)
+                {
+                    pixelColor = spriteColor;
+                }
+                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex == PaletteColor.Transparent)
+                {
+                    pixelColor = backgroundColor;
+                }
+                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent && !spritePriority)
+                {
+                    pixelColor = spriteColor;
+                }
+                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent && spritePriority)
+                {
+                    pixelColor = backgroundColor;
+                }
+
+                CurrentImageBuffer[pixelIndex] = pixelColor;
             }
 
             // Increment the scanline and cycle.

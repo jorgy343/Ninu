@@ -32,7 +32,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Ice Climber (USA, Europe).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Super Mario Bros. (Japan, USA).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);

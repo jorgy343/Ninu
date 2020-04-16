@@ -14,5 +14,6 @@
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Roms/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Scanline/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=scanlines/@EntryIndexedValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/UserDictionary/Words/=Unisystem/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/UserDictionary/Words/=Vram/@EntryIndexedValue">True</s:Boolean>
 	</wpf:ResourceDictionary>

@@ -48,14 +48,14 @@ namespace Ninu.Emulator
 
             // Handle flags 6.
             Mirroring = (flags6 & 0b0000_0001) == 0 ? NameTableMirrorMode.Horizontal : NameTableMirrorMode.Vertical;
-            BatteryBackedRam = (flags6 & 0b0000_0010) == 1;
-            FourScreenVramLayout = (flags6 & 0b0000_1000) == 1;
+            BatteryBackedRam = (flags6 & 0b0000_0010) != 0;
+            FourScreenVramLayout = (flags6 & 0b0000_1000) != 0;
 
             MapperType = (flags6 & 0b1111_0000) >> 4; // The low nibble of the mapper type.
 
             // Handle flags 7.
-            VsUnisystem = (flags7 & 0b0000_0001) == 1;
-            PlayChoice10 = (flags7 & 0b0000_0010) == 1;
+            VsUnisystem = (flags7 & 0b0000_0001) != 0;
+            PlayChoice10 = (flags7 & 0b0000_0010) != 0;
 
             MapperType |= flags7 & 0b1111_0000; // The high nibble of the mapper type.
 
@@ -69,7 +69,7 @@ namespace Ninu.Emulator
             reader.ReadBytes(6);
 
             // If a trainer is present, read 512 bytes.
-            if ((flags6 & 0b0000_0100) == 1)
+            if ((flags6 & 0b0000_0100) != 0)
             {
                 Trainer = reader.ReadBytes(512);
             }
