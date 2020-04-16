@@ -91,7 +91,7 @@ namespace Ninu.Emulator
                 }
                 else
                 {
-                    Ppu.Oam.CpuWrite((byte)_dmaCurrentByte, _dmaReadByte);
+                    Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
 
                     _dmaCurrentByte++;
                     _dmaNeedsToRead = true;
@@ -146,7 +146,7 @@ namespace Ninu.Emulator
                     }
                     else
                     {
-                        Ppu.Oam.CpuWrite((byte)_dmaCurrentByte, _dmaReadByte);
+                        Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
 
                         _dmaCurrentByte++;
                         _dmaNeedsToRead = true;

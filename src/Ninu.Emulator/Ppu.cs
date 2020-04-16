@@ -11,19 +11,8 @@ namespace Ninu.Emulator
 
         public PaletteRam PaletteRam { get; } = new PaletteRam();
 
-        public Oam Oam { get; } = new Oam();
-
-        private readonly Sprite8x8[] _nextScanlineSprites = new[]
-        {
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-            new Sprite8x8(0xff, 0xff, 0xff, 0xff),
-        };
+        public Oam Oam { get; } = new Oam(64);
+        public Oam TemporaryOam { get; } = new Oam(8);
 
         private byte _oamAddress;
 
@@ -179,13 +168,7 @@ namespace Ninu.Emulator
                     // next scanline which isn't visible.
 
                     // Initialize the temporary OAM to 0xff.
-                    foreach (var sprite in _nextScanlineSprites)
-                    {
-                        sprite.Y = 0xff;
-                        sprite.TileIndex = 0xff;
-                        sprite.Attributes = 0xff;
-                        sprite.X = 0xff;
-                    }
+                    TemporaryOam.ResetAllData(0xff);
 
                     // Find all sprites that will need to be rendered for the next scanline.
                     var insertIndex = 0;
@@ -205,7 +188,7 @@ namespace Ninu.Emulator
                                 break;
                             }
 
-                            sprite.CopyTo(_nextScanlineSprites[insertIndex]);
+                            sprite.CopyTo(TemporaryOam.Sprites[insertIndex]);
 
                             insertIndex++;
                         }
@@ -313,7 +296,7 @@ namespace Ninu.Emulator
 
                 if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
                 {
-                    foreach (var sprite in _nextScanlineSprites)
+                    foreach (var sprite in TemporaryOam.Sprites)
                     {
                         if (sprite.X == 0xff)
                         {
@@ -466,7 +449,7 @@ namespace Ninu.Emulator
 
                     case 4:
                         // TODO: Implement the weirdness of reading this register.
-                        data = Oam.CpuRead(_oamAddress);
+                        data = Oam.Read(_oamAddress);
                         return true;
 
                     case 7:
@@ -522,7 +505,7 @@ namespace Ninu.Emulator
                         break;
 
                     case 4:
-                        Oam.CpuWrite(_oamAddress++, data); // Writing increments the OAM address, reading does not.
+                        Oam.Write(_oamAddress++, data); // Writing increments the OAM address, reading does not.
                         break;
 
                     case 5:

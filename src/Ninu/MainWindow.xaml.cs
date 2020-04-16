@@ -32,11 +32,20 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Super Mario Bros. (Japan, USA).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Donkey Kong (World) (Rev A).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
             _console.Reset();
+
+            //_console.Cpu.CpuState.PC = 0xc000;
+
+            //for (var i = 0; i < 50_000; i++)
+            //{
+            //    _console.Clock();
+            //}
+
+            //File.WriteAllText(@"C:\Users\Jorgy\Desktop\mylog.txt", _console.Cpu._log.ToString());
 
             const double fps = 1000.0 / 60.0;
 

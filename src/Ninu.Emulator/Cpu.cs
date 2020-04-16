@@ -37,7 +37,7 @@ namespace Ninu.Emulator
                     _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
                 };
 
-                //_log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.Flags:X2} SP:{CpuState.S:X2} CYC:{TotalCycles - 1}");
+                //_log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{TotalCycles - 1}");
                 //_log.AppendLine();
 
                 var cycles = instruction.Execute(_cpuBus, CpuState);

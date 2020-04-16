@@ -1,21 +1,35 @@
-﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
-using System;
+﻿using System;
 
 namespace Ninu.Emulator
 {
     public class Oam
     {
-        public Sprite8x8[] Sprites { get; } = new Sprite8x8[64];
+        public Sprite8x8[] Sprites { get; }
 
-        public Oam()
+        public Oam(int spriteCount)
         {
-            for (var i = 0; i < 64; i++)
+            if (spriteCount < 0) throw new ArgumentOutOfRangeException(nameof(spriteCount));
+
+            Sprites = new Sprite8x8[spriteCount];
+
+            for (var i = 0; i < spriteCount; i++)
             {
                 Sprites[i] = new Sprite8x8(0, 0, 0, 0);
             }
         }
 
-        public byte CpuRead(byte address)
+        public void ResetAllData(byte data)
+        {
+            foreach (var sprite in Sprites)
+            {
+                sprite.Y = data;
+                sprite.TileIndex = data;
+                sprite.Attributes = data;
+                sprite.X = data;
+            }
+        }
+
+        public byte Read(byte address)
         {
             var sprite = Sprites[address / 4];
 
@@ -29,7 +43,7 @@ namespace Ninu.Emulator
             };
         }
 
-        public void CpuWrite(byte address, byte data)
+        public void Write(byte address, byte data)
         {
             var sprite = Sprites[address / 4];
 
