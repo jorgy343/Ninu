@@ -1,8 +1,6 @@
 ﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
 using Ninu.Emulator;
 using Ninu.ViewModels;
-using System;
-using System.IO;
 using System.Timers;
 using System.Windows;
 using System.Windows.Input;
