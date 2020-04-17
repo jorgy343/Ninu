@@ -22,6 +22,7 @@ namespace Ninu.Emulator
 
         private int _cycle;
         private int _scanline;
+        private ushort _readAddress;
 
         private byte _nextNameTableTileId;
         private byte _nextNameTableAttribute;
@@ -48,10 +49,20 @@ namespace Ninu.Emulator
 
         }
 
-        private ushort _readAddress;
+        //private bool _odd;
 
         public PpuClockResult Clock()
         {
+            //if (_scanline == -1 && _cycle == 0)
+            //{
+            //    if (_odd)
+            //    {
+            //        _cycle = 1;
+            //    }
+
+            //    _odd = !_odd;
+            //}
+
             if (_scanline == -1 && _cycle == 1)
             {
                 Registers.SpriteOverflow = false;
@@ -208,8 +219,8 @@ namespace Ninu.Emulator
 
             if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
-                PaletteColor backgroundColorIndex = PaletteColor.Transparent;
-                PaletteColor spriteColorIndex = PaletteColor.Transparent;
+                byte backgroundPaletteEntryIndex = 0;
+                byte spritePaletteEntryIndex = 0;
 
                 byte backgroundColor = 0;
                 byte spriteColor = 0;
@@ -224,22 +235,20 @@ namespace Ninu.Emulator
                     shiftSelect >>= Registers.FineX;
 
                     // Extract the data from the pattern tile shift registers.
-                    var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
-                    var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
+                    var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                    var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
-                    var patternTileByte = (byte)(patternTileLowBit | patternTileHighBit);
-
-                    backgroundColorIndex = (PaletteColor)patternTileByte;
+                    var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
 
                     // Extract the data from the name table attribute shift registers.
-                    var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0x0;
-                    var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0x0;
+                    var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                    var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
-                    var nameTableAttribute = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit);
+                    var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
 
                     // Set the pixel color.
-                    var paletteAddress = (ushort)(0x3F00 + (nameTableAttribute << 2) + patternTileByte);
-                    backgroundColor = (byte)(PpuRead(paletteAddress) & 0x3F);
+                    backgroundPaletteEntryIndex = paletteEntryIndex;
+                    backgroundColor = GetPaletteColor(false, paletteIndex, backgroundPaletteEntryIndex);
                 }
 
                 // Calculate sprite zero hit.
@@ -255,7 +264,7 @@ namespace Ninu.Emulator
                         goto skipSpriteZero;
                     }
 
-                    if (backgroundColorIndex == PaletteColor.Transparent)
+                    if (backgroundPaletteEntryIndex == 0)
                     {
                         goto skipSpriteZero;
                     }
@@ -284,7 +293,7 @@ namespace Ninu.Emulator
 
                             var colorIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
 
-                            if (colorIndex != PaletteColor.Transparent)
+                            if (colorIndex != 0)
                             {
                                 Registers.Sprite0Hit = true;
                             }
@@ -306,8 +315,7 @@ namespace Ninu.Emulator
                         if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
                         {
                             // TODO: Handle the reading of the pattern through the bus.
-                            var tile = GetPatternTile(PatternTableEntry.Left, sprite.TileIndex);
-                            var palette = PaletteRam.GetEntry(4 + sprite.PaletteIndex);
+                            var tile = GetPatternTile(Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left, sprite.TileIndex);
 
                             spritePriority = sprite.Priority;
 
@@ -324,19 +332,12 @@ namespace Ninu.Emulator
                                 yIndex = 7 - yIndex;
                             }
 
-                            spriteColorIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
-
-                            spriteColor = spriteColorIndex switch
-                            {
-                                PaletteColor.Color0 => palette.Byte1,
-                                PaletteColor.Color1 => palette.Byte2,
-                                PaletteColor.Color2 => palette.Byte3,
-                                PaletteColor.Color3 => palette.Byte4,
-                                _ => throw new ArgumentOutOfRangeException(),
-                            };
+                            // Set the pixel color.
+                            spritePaletteEntryIndex = (byte)tile.GetPaletteColorIndex(xIndex, yIndex);
+                            spriteColor = GetPaletteColor(true, sprite.PaletteIndex, spritePaletteEntryIndex);
 
                             // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
-                            if (spriteColorIndex != PaletteColor.Transparent)
+                            if (spritePaletteEntryIndex != 0)
                             {
                                 break;
                             }
@@ -349,19 +350,19 @@ namespace Ninu.Emulator
                 // Simulate the priority muxer.
                 var pixelColor = backgroundColor;
 
-                if (backgroundColorIndex == PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent)
+                if (backgroundPaletteEntryIndex == 0 && spritePaletteEntryIndex != 0)
                 {
                     pixelColor = spriteColor;
                 }
-                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex == PaletteColor.Transparent)
+                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex == 0)
                 {
                     pixelColor = backgroundColor;
                 }
-                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent && !spritePriority)
+                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0 && !spritePriority)
                 {
                     pixelColor = spriteColor;
                 }
-                else if (backgroundColorIndex != PaletteColor.Transparent && spriteColorIndex != PaletteColor.Transparent && spritePriority)
+                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0 && spritePriority)
                 {
                     pixelColor = backgroundColor;
                 }
@@ -416,6 +417,19 @@ namespace Ninu.Emulator
 
             _shiftLowPatternByte <<= 1;
             _shiftHighPatternByte <<= 1;
+        }
+
+        public byte GetPaletteColor(bool isSprite, byte paletteIndex, byte paletteEntryIndex)
+        {
+            var paletteAddress = (ushort)(0x3F00 + (paletteIndex * 4) + paletteEntryIndex);
+
+            if (isSprite)
+            {
+                // The sprite palettes start after the four background palettes which are four bytes each.
+                paletteAddress += 16;
+            }
+
+            return (byte)(PpuRead(paletteAddress) & 0x3F);
         }
 
         public PatternTile GetPatternTile(PatternTableEntry entry, int index)

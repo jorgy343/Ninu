@@ -7,14 +7,14 @@ namespace Ninu.Emulator
 
     public readonly struct PatternTile
     {
-        private readonly PaletteColor[] _paletteEntryIndices;
+        private readonly byte[] _paletteEntryIndices;
 
         public PatternTile(ReadOnlySpan<byte> plane1, ReadOnlySpan<byte> plane2)
         {
             if (plane1.Length != 8) throw new ArgumentException($"The argument for parameter {nameof(plane1)} must be 8 bytes in length.");
             if (plane2.Length != 8) throw new ArgumentException($"The argument for parameter {nameof(plane2)} must be 8 bytes in length.");
 
-            _paletteEntryIndices = new PaletteColor[64];
+            _paletteEntryIndices = new byte[64];
 
             for (var i = 0; i < 8; i++) // Represents the byte we are working with (or the y-coordinate).
             {
@@ -23,12 +23,12 @@ namespace Ninu.Emulator
                     var bitLow = (plane1[i] >> j) & 0x01;
                     var bitHigh = (plane2[i] >> j) & 0x01;
 
-                    _paletteEntryIndices[i * 8 + (7 - j)] = (PaletteColor)(bitLow | (bitHigh << 1));
+                    _paletteEntryIndices[i * 8 + (7 - j)] = (byte)(bitLow | (bitHigh << 1));
                 }
             }
         }
 
-        public PaletteColor GetPaletteColorIndex(int x, int y)
+        public byte GetPaletteColorIndex(int x, int y)
         {
             if (x < 0 || x > 7) throw new ArgumentOutOfRangeException(nameof(x));
             if (y < 0 || y > 7) throw new ArgumentOutOfRangeException(nameof(y));

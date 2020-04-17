@@ -32,7 +32,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Donkey Kong (World) (Rev A).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Super Mario Bros. (Japan, USA).nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
@@ -117,28 +117,7 @@ namespace Ninu
 
         private void UpdatePatternRoms()
         {
-            // Get the palette.
-            var palette = _console.Ppu.PaletteRam.GetEntry(CpuState.SelectedPalette);
-
             // Clear both pattern bitmaps.
-            for (var y = 0; y < 128; y++)
-            {
-                for (var x = 0; x < 128; x++)
-                {
-                    var index = (y * 128 + x) * 4;
-
-                    _patternRom1Pixels[index + 0] = 255;
-                    _patternRom1Pixels[index + 1] = 255;
-                    _patternRom1Pixels[index + 2] = 255;
-                    _patternRom1Pixels[index + 3] = 255;
-
-                    _patternRom2Pixels[index + 0] = 255;
-                    _patternRom2Pixels[index + 1] = 255;
-                    _patternRom2Pixels[index + 2] = 255;
-                    _patternRom2Pixels[index + 3] = 255;
-                }
-            }
-
             for (var tileY = 0; tileY < 16; tileY++)
             {
                 for (var tileX = 0; tileX < 16; tileX++)
@@ -156,18 +135,9 @@ namespace Ninu
                             var index = ((y + yOffset) * 128 + (x + xOffset)) * 4;
 
                             {
-                                var paletteIndex = leftTile.GetPaletteColorIndex(x, y);
+                                var paletteEntryIndex = leftTile.GetPaletteColorIndex(x, y);
 
-                                var colorIndex = paletteIndex switch
-                                {
-                                    PaletteColor.Color0 => palette.Byte1,
-                                    PaletteColor.Color1 => palette.Byte2,
-                                    PaletteColor.Color2 => palette.Byte3,
-                                    PaletteColor.Color3 => palette.Byte4,
-                                    _ => throw new ArgumentOutOfRangeException(),
-                                };
-
-                                var color = SystemPalette.Colors[colorIndex];
+                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor(CpuState.SelectedPalette >= 4, (byte)(CpuState.SelectedPalette % 4), (byte)paletteEntryIndex)];
 
                                 _patternRom1Pixels[index + 0] = color.B;
                                 _patternRom1Pixels[index + 1] = color.G;
@@ -176,18 +146,9 @@ namespace Ninu
                             }
 
                             {
-                                var paletteIndex = rightTile.GetPaletteColorIndex(x, y);
+                                var paletteEntryIndex = rightTile.GetPaletteColorIndex(x, y);
 
-                                var colorIndex = paletteIndex switch
-                                {
-                                    PaletteColor.Color0 => palette.Byte1,
-                                    PaletteColor.Color1 => palette.Byte2,
-                                    PaletteColor.Color2 => palette.Byte3,
-                                    PaletteColor.Color3 => palette.Byte4,
-                                    _ => throw new ArgumentOutOfRangeException(),
-                                };
-
-                                var color = SystemPalette.Colors[colorIndex];
+                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor(CpuState.SelectedPalette >= 4, (byte)(CpuState.SelectedPalette % 4), (byte)paletteEntryIndex)];
 
                                 _patternRom2Pixels[index + 0] = color.B;
                                 _patternRom2Pixels[index + 1] = color.G;

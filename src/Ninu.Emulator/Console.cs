@@ -68,60 +68,10 @@ namespace Ninu.Emulator
         {
             Ppu.Clock();
 
-            // Perform a DMA transfer cycle if we are processing a DMA.
-            if (_dmaProcessing)
-            {
-                if (_dmaDummyCyclesRemaining > 0)
-                {
-                    _dmaDummyCyclesRemaining--;
-                }
-                else if (_dmaNeedsToRead)
-                {
-                    if (_dmaCurrentByte == 256)
-                    {
-                        // DMA is done, disable it. Don't worry about resetting the state, the state
-                        // will be correctly setup the next time DMA occurs.
-                        _dmaProcessing = false;
-                    }
-
-                    var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
-                    _dmaReadByte = Read(address);
-
-                    _dmaNeedsToRead = false;
-                }
-                else
-                {
-                    Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
-
-                    _dmaCurrentByte++;
-                    _dmaNeedsToRead = true;
-                }
-            }
-
             // The CPU gets clocked every third system clock. This means that the CPU will
             // get clocked on the first system clock. Also, the CPU is suspended during a
             // DMA transfer.
-            if (!_dmaProcessing && TotalCycles % 3 == 0)
-            {
-                Cpu.Clock();
-            }
-
-            // TODO: Are we supposed to trigger the nmi after the CPU clocks?
-            if (Ppu.CallNmi)
-            {
-                Cpu.NonMaskableInterrupt();
-
-                Ppu.CallNmi = false;
-            }
-
-            TotalCycles++;
-        }
-
-        public void CompleteFrame()
-        {
-            var ppuClockResult = PpuClockResult.NormalCycle;
-
-            while (ppuClockResult != PpuClockResult.FrameComplete)
+            if (TotalCycles % 3 == 0)
             {
                 // Perform a DMA transfer cycle if we are processing a DMA.
                 if (_dmaProcessing)
@@ -152,14 +102,68 @@ namespace Ninu.Emulator
                         _dmaNeedsToRead = true;
                     }
                 }
+                else
+                {
+                    Cpu.Clock();
+                }
+            }
 
+            // TODO: Are we supposed to trigger the nmi after the CPU clocks?
+            if (Ppu.CallNmi)
+            {
+                Cpu.NonMaskableInterrupt();
+
+                Ppu.CallNmi = false;
+            }
+
+            TotalCycles++;
+        }
+
+        public void CompleteFrame()
+        {
+            var ppuClockResult = PpuClockResult.NormalCycle;
+
+            while (ppuClockResult != PpuClockResult.FrameComplete)
+            {
                 ppuClockResult = Ppu.Clock();
 
                 // The CPU gets clocked every third system clock. This means that the CPU will
                 // get clocked on the first system clock.
-                if (!_dmaProcessing && TotalCycles % 3 == 0)
+                if (TotalCycles % 3 == 0)
                 {
-                    Cpu.Clock();
+                    // Perform a DMA transfer cycle if we are processing a DMA.
+                    if (_dmaProcessing)
+                    {
+                        if (_dmaDummyCyclesRemaining > 0)
+                        {
+                            _dmaDummyCyclesRemaining--;
+                        }
+                        else if (_dmaNeedsToRead)
+                        {
+                            if (_dmaCurrentByte == 256)
+                            {
+                                // DMA is done, disable it. Don't worry about resetting the state, the state
+                                // will be correctly setup the next time DMA occurs.
+                                _dmaProcessing = false;
+                            }
+
+                            var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
+                            _dmaReadByte = Read(address);
+
+                            _dmaNeedsToRead = false;
+                        }
+                        else
+                        {
+                            Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
+
+                            _dmaCurrentByte++;
+                            _dmaNeedsToRead = true;
+                        }
+                    }
+                    else
+                    {
+                        Cpu.Clock();
+                    }
                 }
 
                 // TODO: Are we supposed to trigger the nmi after the CPU clocks?
