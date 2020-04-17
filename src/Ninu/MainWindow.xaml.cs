@@ -32,7 +32,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Super Mario Bros. (Japan, USA).nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\GALAXIAN.nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);
@@ -137,7 +137,7 @@ namespace Ninu
                             {
                                 var paletteEntryIndex = leftTile.GetPaletteColorIndex(x, y);
 
-                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor(CpuState.SelectedPalette >= 4, (byte)(CpuState.SelectedPalette % 4), (byte)paletteEntryIndex)];
+                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor((byte)CpuState.SelectedPalette, paletteEntryIndex)];
 
                                 _patternRom1Pixels[index + 0] = color.B;
                                 _patternRom1Pixels[index + 1] = color.G;
@@ -148,7 +148,7 @@ namespace Ninu
                             {
                                 var paletteEntryIndex = rightTile.GetPaletteColorIndex(x, y);
 
-                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor(CpuState.SelectedPalette >= 4, (byte)(CpuState.SelectedPalette % 4), (byte)paletteEntryIndex)];
+                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor((byte)CpuState.SelectedPalette, paletteEntryIndex)];
 
                                 _patternRom2Pixels[index + 0] = color.B;
                                 _patternRom2Pixels[index + 1] = color.G;

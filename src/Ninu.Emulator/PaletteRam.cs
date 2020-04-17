@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Ninu.Emulator
+﻿namespace Ninu.Emulator
 {
     public class PaletteRam : IPpuBusComponent
     {

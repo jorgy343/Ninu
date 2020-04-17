@@ -13,6 +13,7 @@ namespace Ninu.Emulator
 
         public Oam Oam { get; } = new Oam(64);
         public Oam TemporaryOam { get; } = new Oam(8);
+        private bool _sprite0HitPossible = false;
 
         private byte _oamAddress;
 
@@ -49,19 +50,19 @@ namespace Ninu.Emulator
 
         }
 
-        //private bool _odd;
+        private bool _odd;
 
         public PpuClockResult Clock()
         {
-            //if (_scanline == -1 && _cycle == 0)
-            //{
-            //    if (_odd)
-            //    {
-            //        _cycle = 1;
-            //    }
+            if (_scanline == 0 && _cycle == 0)
+            {
+                if (_odd)
+                {
+                    _cycle = 1;
+                }
 
-            //    _odd = !_odd;
-            //}
+                _odd = !_odd;
+            }
 
             if (_scanline == -1 && _cycle == 1)
             {
@@ -184,9 +185,12 @@ namespace Ninu.Emulator
                     // Find all sprites that will need to be rendered for the next scanline.
                     var insertIndex = 0;
 
-                    foreach (var sprite in Oam.Sprites)
+                    for (var i = 0; i < Oam.Sprites.Length; i++)
                     {
+                        var sprite = Oam.Sprites[i];
                         var nextScanline = _scanline + 1;
+
+
 
                         // TODO: Are we checking the correct Y coordinate? This could be off by one.
                         if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + 7)
@@ -195,8 +199,14 @@ namespace Ninu.Emulator
                             {
                                 // We have overflowed. No need to check any other sprites.
 
-                                // TODO: Set the overflow flag?
+                                // TODO: Set the overflow flag correctly (i.e. the buggy way).
+                                Registers.SpriteOverflow = true;
                                 break;
+                            }
+
+                            if (i == 0)
+                            {
+                                _sprite0HitPossible = true;
                             }
 
                             sprite.CopyTo(TemporaryOam.Sprites[insertIndex]);
@@ -219,13 +229,13 @@ namespace Ninu.Emulator
 
             if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
             {
+                byte backgroundPaletteIndex = 0;
                 byte backgroundPaletteEntryIndex = 0;
+
+                byte spritePaletteIndex = 0;
                 byte spritePaletteEntryIndex = 0;
 
-                byte backgroundColor = 0;
-                byte spriteColor = 0;
-
-                bool spritePriority = true;
+                var spritePriority = true;
 
                 if (Registers.RenderBackground)
                 {
@@ -247,66 +257,18 @@ namespace Ninu.Emulator
                     var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
 
                     // Set the pixel color.
+                    backgroundPaletteIndex = paletteIndex;
                     backgroundPaletteEntryIndex = paletteEntryIndex;
-                    backgroundColor = GetPaletteColor(false, paletteIndex, backgroundPaletteEntryIndex);
                 }
 
-                // Calculate sprite zero hit.
-                if (Registers.RenderingEnabled && !Registers.Sprite0Hit)
-                {
-                    if (_cycle >= 0 && _cycle <= 7 && (!Registers.RenderBackgroundInLeftMost8PixelsOfScreen || !Registers.RenderSpritesInLeftMost8PixelsOfScreen))
-                    {
-                        goto skipSpriteZero;
-                    }
-
-                    if (_cycle == 255)
-                    {
-                        goto skipSpriteZero;
-                    }
-
-                    if (backgroundPaletteEntryIndex == 0)
-                    {
-                        goto skipSpriteZero;
-                    }
-
-                    var sprite0 = Oam.Sprites[0];
-
-                    if (_scanline >= sprite0.Y && _scanline <= sprite0.Y + 7)
-                    {
-                        if (_cycle >= sprite0.X && _cycle <= sprite0.X + 7)
-                        {
-                            // TODO: Handle the reading of the pattern through the bus.
-                            var tile = GetPatternTile(PatternTableEntry.Left, sprite0.TileIndex);
-
-                            var xIndex = _cycle - sprite0.X;
-                            var yIndex = _scanline - sprite0.Y;
-
-                            if (sprite0.FlipHorizontal)
-                            {
-                                xIndex = 7 - xIndex;
-                            }
-
-                            if (sprite0.FlipVertical)
-                            {
-                                yIndex = 7 - yIndex;
-                            }
-
-                            var colorIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
-
-                            if (colorIndex != 0)
-                            {
-                                Registers.Sprite0Hit = true;
-                            }
-                        }
-                    }
-                }
-
-                skipSpriteZero:
+                var spriteZeroRendered = false;
 
                 if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
                 {
-                    foreach (var sprite in TemporaryOam.Sprites)
+                    for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
                     {
+                        var sprite = TemporaryOam.Sprites[i];
+
                         if (sprite.X == 0xff)
                         {
                             continue;
@@ -333,8 +295,13 @@ namespace Ninu.Emulator
                             }
 
                             // Set the pixel color.
-                            spritePaletteEntryIndex = (byte)tile.GetPaletteColorIndex(xIndex, yIndex);
-                            spriteColor = GetPaletteColor(true, sprite.PaletteIndex, spritePaletteEntryIndex);
+                            spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
+                            spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+
+                            if (i == 0 && spritePaletteEntryIndex != 0)
+                            {
+                                spriteZeroRendered = true;
+                            }
 
                             // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
                             if (spritePaletteEntryIndex != 0)
@@ -347,27 +314,56 @@ namespace Ninu.Emulator
 
                 var pixelIndex = _scanline * 256 + (_cycle - 1);
 
-                // Simulate the priority muxer.
-                var pixelColor = backgroundColor;
+                byte pixelPaletteIndex = 0;
+                byte pixelPaletteEntryIndex = 0;
 
-                if (backgroundPaletteEntryIndex == 0 && spritePaletteEntryIndex != 0)
+                if (backgroundPaletteEntryIndex == 0 && spritePaletteEntryIndex != 0) // Transparent background, non transparent sprite.
                 {
-                    pixelColor = spriteColor;
+                    pixelPaletteIndex = spritePaletteIndex;
+                    pixelPaletteEntryIndex = spritePaletteEntryIndex;
                 }
-                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex == 0)
+                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex == 0) // Non transparent background, transparent sprite.
                 {
-                    pixelColor = backgroundColor;
+                    pixelPaletteIndex = backgroundPaletteIndex;
+                    pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
                 }
-                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0 && !spritePriority)
+                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0) // Non transparent background and non transparent sprite.
                 {
-                    pixelColor = spriteColor;
-                }
-                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0 && spritePriority)
-                {
-                    pixelColor = backgroundColor;
+                    if (spritePriority) // Yes, these seems like it should be the opposite, but this is correct.
+                    {
+                        pixelPaletteIndex = backgroundPaletteIndex;
+                        pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
+                    }
+                    else
+                    {
+                        pixelPaletteIndex = spritePaletteIndex;
+                        pixelPaletteEntryIndex = spritePaletteEntryIndex;
+                    }
+
+                    // Now we need to calculate a sprite 0 hit.
+                    if (_sprite0HitPossible && spriteZeroRendered)
+                    {
+                        if (Registers.RenderingEnabled)
+                        {
+                            if (_cycle >= 1 && _cycle <= 254)
+                            {
+                                if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || Registers.RenderSpritesInLeftMost8PixelsOfScreen)
+                                {
+                                    if (_cycle >= 8)
+                                    {
+                                        Registers.Sprite0Hit = true;
+                                    }
+                                }
+                                else
+                                {
+                                    Registers.Sprite0Hit = true;
+                                }
+                            }
+                        }
+                    }
                 }
 
-                CurrentImageBuffer[pixelIndex] = pixelColor;
+                CurrentImageBuffer[pixelIndex] = GetPaletteColor(pixelPaletteIndex, pixelPaletteEntryIndex);
             }
 
             // Increment the scanline and cycle.
@@ -419,23 +415,26 @@ namespace Ninu.Emulator
             _shiftHighPatternByte <<= 1;
         }
 
-        public byte GetPaletteColor(bool isSprite, byte paletteIndex, byte paletteEntryIndex)
+        /// <summary>
+        /// Gets a color from the palette based on the palette index (which palette which are interested in)
+        /// and the palette entry index (which entry within the selected palette we are interested in). The
+        /// first four palettes are for the background and the next four palettes are for the sprites. When
+        /// you have a sprite palette index, you need to add four to the index before passing it into this
+        /// method in order to get the correct sprite palette.
+        /// </summary>
+        /// <param name="paletteIndex">The index (0-7) of the palette to get.</param>
+        /// <param name="paletteEntryIndex">The index (0-3) of the entry within the palette to get.</param>
+        /// <returns>The color which will always be a number 0-63.</returns>
+        public byte GetPaletteColor(byte paletteIndex, byte paletteEntryIndex)
         {
-            var paletteAddress = (ushort)(0x3F00 + (paletteIndex * 4) + paletteEntryIndex);
+            var address = (ushort)(0x3F00 + (paletteIndex * 4) + paletteEntryIndex);
 
-            if (isSprite)
-            {
-                // The sprite palettes start after the four background palettes which are four bytes each.
-                paletteAddress += 16;
-            }
-
-            return (byte)(PpuRead(paletteAddress) & 0x3F);
+            return (byte)(PpuRead(address) & 0x3f); // The & ensures that the number is between 0-63.
         }
 
         public PatternTile GetPatternTile(PatternTableEntry entry, int index)
         {
-            // TODO: What is the upper bound of the index?
-            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            if (index < 0 || index > 255) throw new ArgumentOutOfRangeException(nameof(index));
 
             var entryOffset = entry == PatternTableEntry.Left ? 0x0000 : 0x1000;
 

@@ -16,11 +16,10 @@ namespace Ninu.Emulator
         private bool _dmaProcessing;
 
         /// <summary>
-        /// The number of cycles that need to be wasted before the DMA transfer begins. When DMA
-        /// is initiated, this will be either 1 or 2 depending on if the CPU is on an odd cycle
-        /// or not.
+        /// Determines if the DMA is properly synchronized to the CPU clock. If this is false,
+        /// a dummy cycle will take place.
         /// </summary>
-        private int _dmaDummyCyclesRemaining;
+        private bool _dmaSynchronized;
 
         /// <summary>
         /// The current byte that needs to be read during the DMA process. At the start of a DMA
@@ -39,11 +38,6 @@ namespace Ninu.Emulator
         /// This stores the byte of data that was read during the read cycle of the DMA process.
         /// </summary>
         private byte _dmaReadByte;
-
-        /// <summary>
-        /// True if the DMA's next cycle needs to be a read; otherwise, the next cycle is a write.
-        /// </summary>
-        private bool _dmaNeedsToRead;
 
         public Controllers Controllers { get; } = new Controllers();
 
@@ -76,30 +70,31 @@ namespace Ninu.Emulator
                 // Perform a DMA transfer cycle if we are processing a DMA.
                 if (_dmaProcessing)
                 {
-                    if (_dmaDummyCyclesRemaining > 0)
+                    if (!_dmaSynchronized)
                     {
-                        _dmaDummyCyclesRemaining--;
-                    }
-                    else if (_dmaNeedsToRead)
-                    {
-                        if (_dmaCurrentByte == 256)
+                        if (TotalCycles % 2 == 1)
                         {
-                            // DMA is done, disable it. Don't worry about resetting the state, the state
-                            // will be correctly setup the next time DMA occurs.
-                            _dmaProcessing = false;
+                            _dmaSynchronized = true;
                         }
-
-                        var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
-                        _dmaReadByte = Read(address);
-
-                        _dmaNeedsToRead = false;
                     }
                     else
                     {
-                        Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
+                        if (TotalCycles % 2 == 0) // Read on even cycles.
+                        {
+                            var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
+                            _dmaReadByte = Read(address);
+                        }
+                        else // Write on odd cycles.
+                        {
+                            Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
 
-                        _dmaCurrentByte++;
-                        _dmaNeedsToRead = true;
+                            _dmaCurrentByte++;
+
+                            if (_dmaCurrentByte == 256)
+                            {
+                                _dmaProcessing = false;
+                            }
+                        }
                     }
                 }
                 else
@@ -134,30 +129,31 @@ namespace Ninu.Emulator
                     // Perform a DMA transfer cycle if we are processing a DMA.
                     if (_dmaProcessing)
                     {
-                        if (_dmaDummyCyclesRemaining > 0)
+                        if (!_dmaSynchronized)
                         {
-                            _dmaDummyCyclesRemaining--;
-                        }
-                        else if (_dmaNeedsToRead)
-                        {
-                            if (_dmaCurrentByte == 256)
+                            if (TotalCycles % 2 == 1)
                             {
-                                // DMA is done, disable it. Don't worry about resetting the state, the state
-                                // will be correctly setup the next time DMA occurs.
-                                _dmaProcessing = false;
+                                _dmaSynchronized = true;
                             }
-
-                            var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
-                            _dmaReadByte = Read(address);
-
-                            _dmaNeedsToRead = false;
                         }
                         else
                         {
-                            Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
+                            if (TotalCycles % 2 == 0) // Read on even cycles.
+                            {
+                                var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
+                                _dmaReadByte = Read(address);
+                            }
+                            else // Write on odd cycles.
+                            {
+                                Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
 
-                            _dmaCurrentByte++;
-                            _dmaNeedsToRead = true;
+                                _dmaCurrentByte++;
+
+                                if (_dmaCurrentByte == 256)
+                                {
+                                    _dmaProcessing = false;
+                                }
+                            }
                         }
                     }
                     else
@@ -222,10 +218,9 @@ namespace Ninu.Emulator
             if (address == 0x4014)
             {
                 _dmaProcessing = true;
-                _dmaDummyCyclesRemaining = 1 + (Cpu.TotalCycles % 2 == 0 ? 1 : 0); // TODO: Does this specify the correct odd cycle?
+                _dmaSynchronized = false;
                 _dmaCurrentByte = 0;
                 _dmaCpuHighAddress = data;
-                _dmaNeedsToRead = true;
             }
         }
     }

@@ -50,7 +50,7 @@ namespace Ninu.Emulator
             switch (address % 4)
             {
                 case 0:
-                    sprite.Y = data;
+                    sprite.Y = (byte)(data + 1); // TODO: Adding one here is kind of a hack way of getting everything to work for right now.
                     break;
 
                 case 1:
