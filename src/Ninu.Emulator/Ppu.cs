@@ -13,9 +13,9 @@ namespace Ninu.Emulator
 
         public Oam Oam { get; } = new Oam(64);
         public Oam TemporaryOam { get; } = new Oam(8);
-        private bool _sprite0HitPossible = false;
 
         private byte _oamAddress;
+        private bool _sprite0HitPossible;
 
         public PpuRegisters Registers { get; } = new PpuRegisters();
 
@@ -472,13 +472,13 @@ namespace Ninu.Emulator
                         return true;
 
                     case 7:
-                        // TODO: There is some tricky stuff that needs to be handled here dealing with what
-                        // the PPU is currently doing.
+                        // TODO: There is some tricky stuff that needs to be handled here dealing with what the PPU is
+                        // currently doing.
 
                         if (Registers.VAddress >= 0x3f00 && Registers.VAddress <= 0x3fff)
                         {
-                            // TODO: This is actually wrong. The palette data is returned directly and the
-                            // read buffer is updated with name table data.
+                            // TODO: This is actually wrong. The palette data is returned directly and the read buffer
+                            // is updated with name table data.
 
                             // Palette memory is read immediately.
                             Registers.ReadBuffer = PpuRead(Registers.VAddress);
