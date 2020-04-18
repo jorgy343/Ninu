@@ -48,7 +48,7 @@ namespace Ninu.Emulator
                         data = _tables[1][address & 0x03ff];
                     }
                 }
-                else
+                else if (_mirrorMode == NameTableMirrorMode.Vertical)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.
                     {

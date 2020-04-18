@@ -47,7 +47,7 @@ namespace Ninu.Emulator
             var flags9 = reader.ReadByte();
 
             // Handle flags 6.
-            MirrorMode = (flags6 & 0b0000_0001) == 0 ? NameTableMirrorMode.Horizontal : NameTableMirrorMode.Vertical;
+            MirrorMode = (flags6 & 0b0000_0001) != 0 ? NameTableMirrorMode.Vertical : NameTableMirrorMode.Horizontal;
             BatteryBackedRam = (flags6 & 0b0000_0010) != 0;
             FourScreenVramLayout = (flags6 & 0b0000_1000) != 0;
 

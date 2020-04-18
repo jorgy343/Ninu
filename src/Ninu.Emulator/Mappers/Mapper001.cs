@@ -83,6 +83,24 @@ namespace Ninu.Emulator.Mappers
             PatternRomBankCount = patternRomBankCount;
         }
 
+        public override bool GetMirrorMode(out NameTableMirrorMode mirrorMode)
+        {
+            switch (_controlRegister & 0x3)
+            {
+                case 0b10:
+                    mirrorMode = NameTableMirrorMode.Vertical;
+                    return true;
+
+                case 0b11:
+                    mirrorMode = NameTableMirrorMode.Horizontal;
+                    return true;
+
+                default: // TODO: Handle mirror modes 0b00 and 0b01.
+                    mirrorMode = NameTableMirrorMode.Vertical;
+                    return true;
+            }
+        }
+
         public override bool HandleWrite(ushort address, byte data)
         {
             if (address >= 0x8000 && address <= 0xffff)

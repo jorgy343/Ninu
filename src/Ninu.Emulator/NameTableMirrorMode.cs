@@ -3,6 +3,6 @@
     public enum NameTableMirrorMode
     {
         Horizontal,
-        Vertical
+        Vertical,
     }
 }
