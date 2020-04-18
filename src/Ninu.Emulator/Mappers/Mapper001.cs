@@ -196,7 +196,7 @@ namespace Ninu.Emulator.Mappers
                         }
                         else
                         {
-                            // Second bank is fixed so just translate the address one to one.
+                            // Second bank is fixed so just translate the address one to one to the last bank.
                             translatedAddress = (ushort)((address & 0x3fff) + 16384 * (ProgramRomBankCount - 1));
                         }
                     }

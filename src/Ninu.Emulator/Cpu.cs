@@ -29,13 +29,13 @@ namespace Ninu.Emulator
                 var opCode = _cpuBus.Read(CpuState.PC++);
                 var instruction = Instruction.GetInstruction(opCode);
 
-                var machineCode = instruction.Size switch
-                {
-                    1 => $"{opCode:X2}      ",
-                    2 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2}   ",
-                    3 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2} {_cpuBus.Read((ushort)(CpuState.PC + 1)):X2}",
-                    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
-                };
+                //var machineCode = instruction.Size switch
+                //{
+                //    1 => $"{opCode:X2}      ",
+                //    2 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2}   ",
+                //    3 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2} {_cpuBus.Read((ushort)(CpuState.PC + 1)):X2}",
+                //    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
+                //};
 
                 //_log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{TotalCycles - 1}");
                 //_log.AppendLine();

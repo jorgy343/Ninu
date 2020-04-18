@@ -1,27 +1,16 @@
 ﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
-using System;
-using System.ComponentModel;
 
 namespace Ninu.Emulator
 {
-    public class NameTableRam : IPpuBusComponent
+    public class NameTableRam
     {
-        private readonly NameTableMirrorMode _mirrorMode;
-
         private readonly byte[][] _tables =
         {
             new byte[1024],
             new byte[1024],
         };
 
-        public NameTableRam(NameTableMirrorMode mirrorMode)
-        {
-            if (!Enum.IsDefined(typeof(NameTableMirrorMode), mirrorMode)) throw new InvalidEnumArgumentException(nameof(mirrorMode), (int)mirrorMode, typeof(NameTableMirrorMode));
-
-            _mirrorMode = mirrorMode;
-        }
-
-        public bool PpuRead(ushort address, out byte data)
+        public bool PpuRead(NameTableMirrorMode mirrorMode, ushort address, out byte data)
         {
             if (address >= 0x2000 && address <= 0x3eff)
             {
@@ -29,7 +18,7 @@ namespace Ninu.Emulator
 
                 address -= 0x2000;
 
-                if (_mirrorMode == NameTableMirrorMode.Horizontal)
+                if (mirrorMode == NameTableMirrorMode.Horizontal)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.
                     {
@@ -48,7 +37,7 @@ namespace Ninu.Emulator
                         data = _tables[1][address & 0x03ff];
                     }
                 }
-                else if (_mirrorMode == NameTableMirrorMode.Vertical)
+                else if (mirrorMode == NameTableMirrorMode.Vertical)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.
                     {
@@ -75,13 +64,13 @@ namespace Ninu.Emulator
             return false;
         }
 
-        public bool PpuWrite(ushort address, byte data)
+        public bool PpuWrite(NameTableMirrorMode mirrorMode, ushort address, byte data)
         {
             if (address >= 0x2000 && address <= 0x3eff)
             {
                 address -= 0x2000;
 
-                if (_mirrorMode == NameTableMirrorMode.Horizontal)
+                if (mirrorMode == NameTableMirrorMode.Horizontal)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.
                     {
@@ -100,7 +89,7 @@ namespace Ninu.Emulator
                         _tables[1][address & 0x03ff] = data;
                     }
                 }
-                else
+                else if (mirrorMode == NameTableMirrorMode.Vertical)
                 {
                     if (address >= 0x0000 && address <= 0x03ff) // First 1KiB maps to the first name table.
                     {

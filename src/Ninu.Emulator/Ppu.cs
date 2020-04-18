@@ -7,7 +7,7 @@ namespace Ninu.Emulator
     public class Ppu : ICpuBusComponent
     {
         private readonly Cartridge _cartridge;
-        private readonly NameTableRam _nameTableRam;
+        private readonly NameTableRam _nameTableRam = new NameTableRam();
 
         public PaletteRam PaletteRam { get; } = new PaletteRam();
 
@@ -41,8 +41,6 @@ namespace Ninu.Emulator
         public Ppu(Cartridge cartridge)
         {
             _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
-
-            _nameTableRam = new NameTableRam(cartridge.GetMirrorMode());
         }
 
         public void Reset()
@@ -559,7 +557,7 @@ namespace Ninu.Emulator
                 return data;
             }
 
-            if (_nameTableRam.PpuRead(address, out data))
+            if (_nameTableRam.PpuRead(_cartridge.GetMirrorMode(), address, out data))
             {
                 return data;
             }
@@ -583,7 +581,7 @@ namespace Ninu.Emulator
             address &= 0x3fff; // Ensure we never write outside of the PPU bus's address range.
 
             _cartridge.PpuWrite(address, data);
-            _nameTableRam.PpuWrite(address, data);
+            _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data);
 
             PaletteRam.PpuWrite(address, data);
         }
