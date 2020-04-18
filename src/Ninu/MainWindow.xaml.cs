@@ -30,7 +30,7 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\GALAXIAN.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Dragon_warrior.nes");
             var cartridge = new Cartridge(image);
 
             _console = new Console(cartridge);

@@ -8,6 +8,8 @@ namespace Ninu.Emulator
         public NesImage Image { get; }
         public Mapper Mapper { get; }
 
+        public byte[] Ram { get; } = new byte[8192];
+
         public Cartridge(NesImage image)
         {
             Image = image ?? throw new ArgumentNullException(nameof(image));
@@ -18,6 +20,11 @@ namespace Ninu.Emulator
                 001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount),
                 _ => throw new Exception(), // TODO: Throw a better exception.
             };
+        }
+
+        public NameTableMirrorMode GetMirrorMode()
+        {
+            return Mapper.GetMirrorMode(out var mirrorMode) ? mirrorMode : Image.MirrorMode;
         }
 
         public bool CpuRead(ushort address, out byte data)
@@ -32,15 +39,26 @@ namespace Ninu.Emulator
                 return true;
             }
 
+            if (address >= 0x6000 && address <= 0x7fff)
+            {
+                data = Ram[address - 0x6000];
+                return true;
+            }
+
             data = 0;
             return false;
         }
 
         public bool CpuWrite(ushort address, byte data)
         {
+            if (Mapper.HandleWrite(address, data))
+            {
+                return true;
+            }
+
             if (address >= 0x6000 && address <= 0x7fff)
             {
-                // TODO: Handle RAM and register accesses.
+                Ram[address - 0x6000] = data;
                 return true;
             }
 

@@ -42,7 +42,7 @@ namespace Ninu.Emulator
         {
             _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
 
-            _nameTableRam = new NameTableRam(cartridge.Image.Mirroring);
+            _nameTableRam = new NameTableRam(cartridge.GetMirrorMode());
         }
 
         public void Reset()
