@@ -1,5 +1,5 @@
-﻿using System;
-// ReSharper disable ShiftExpressionRealShiftCountIsZero
+﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
+using System;
 
 namespace Ninu.Emulator
 {

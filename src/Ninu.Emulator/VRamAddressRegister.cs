@@ -1,6 +1,4 @@
-﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
-
-namespace Ninu.Emulator
+﻿namespace Ninu.Emulator
 {
     public struct VRamAddressRegister
     {
@@ -13,38 +11,38 @@ namespace Ninu.Emulator
 
         public byte CourseX
         {
-            get => (byte)Bits.GetBits(Data, 5, 0);
-            set => Data = (ushort)Bits.SetBits(Data, value, 5, 0);
+            get => (byte)Bits.GetBits(Data, 0, 5);
+            set => Data = (ushort)Bits.SetBits(Data, 0, 5, value);
         }
 
         public byte CourseY
         {
             get => (byte)Bits.GetBits(Data, 5, 5);
-            set => Data = (ushort)Bits.SetBits(Data, value, 5, 5);
+            set => Data = (ushort)Bits.SetBits(Data, 5, 5, value);
         }
 
         public byte NameTableSelect
         {
-            get => (byte)Bits.GetBits(Data, 2, 10);
-            set => Data = (ushort)Bits.SetBits(Data, value, 2, 10);
+            get => (byte)Bits.GetBits(Data, 10, 2);
+            set => Data = (ushort)Bits.SetBits(Data, 10, 2, value);
         }
 
         public byte NameTableSelectX
         {
-            get => (byte)Bits.GetBits(Data, 1, 10);
-            set => Data = (ushort)Bits.SetBits(Data, value, 1, 10);
+            get => (byte)Bits.GetBits(Data, 10, 1);
+            set => Data = (ushort)Bits.SetBits(Data, 10, 1, value);
         }
 
         public byte NameTableSelectY
         {
-            get => (byte)Bits.GetBits(Data, 1, 11);
-            set => Data = (ushort)Bits.SetBits(Data, value, 1, 11);
+            get => (byte)Bits.GetBits(Data, 11, 1);
+            set => Data = (ushort)Bits.SetBits(Data, 11, 1, value);
         }
 
         public byte FineY
         {
-            get => (byte)Bits.GetBits(Data, 3, 12);
-            set => Data = (ushort)Bits.SetBits(Data, value, 3, 12);
+            get => (byte)Bits.GetBits(Data, 12, 3);
+            set => Data = (ushort)Bits.SetBits(Data, 12, 3, value);
         }
 
         public static VRamAddressRegister operator ~(VRamAddressRegister value) => new VRamAddressRegister((ushort)~value.Data);

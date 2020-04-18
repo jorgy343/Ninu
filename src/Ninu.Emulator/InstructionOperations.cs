@@ -5,8 +5,9 @@ namespace Ninu.Emulator
     public static class InstructionOperations
     {
         /// <summary>
-        /// Gets a 16-bit address from memory based on the addressing mode. Addressing modes <see cref="AddressingMode.Implied"/>,
-        /// <see cref="AddressingMode.Accumulator"/>, and <see cref="AddressingMode.Immediate"/> are not valid modes for this method.
+        /// Gets a 16-bit address from memory based on the addressing mode. Addressing modes
+        /// <see cref="AddressingMode.Implied"/>, <see cref="AddressingMode.Accumulator"/>, and
+        /// <see cref="AddressingMode.Immediate"/> are not valid modes for this method.
         /// </summary>
         /// <param name="addressingMode">The addressing mode that determines how to access memory.</param>
         /// <param name="bus">The bus used to perform reads. The bus is never written to.</param>
@@ -68,8 +69,8 @@ namespace Ninu.Emulator
                         var address = (ushort)(addressLow | addressHigh);
                         var offsetAddress = (ushort)(address + cpuState.X);
 
-                        // Compare the high byte of the address and offset address. If they are different,
-                        // add an additional cycle as a penalty.
+                        // Compare the high byte of the address and offset address. If they are different, add an
+                        // additional cycle as a penalty.
                         var additionalCycles = IsDifferentPage(address, offsetAddress) ? 1 : 0;
 
                         return (offsetAddress, additionalCycles);
@@ -83,8 +84,8 @@ namespace Ninu.Emulator
                         var address = (ushort)(addressLow | addressHigh);
                         var offsetAddress = (ushort)(address + cpuState.Y);
 
-                        // Compare the high byte of the address and offset address. If they are different,
-                        // add an additional cycle as a penalty.
+                        // Compare the high byte of the address and offset address. If they are different, add an
+                        // additional cycle as a penalty.
                         var additionalCycles = IsDifferentPage(address, offsetAddress) ? 1 : 0;
 
                         return (offsetAddress, additionalCycles);
@@ -237,10 +238,10 @@ namespace Ninu.Emulator
 
         /// <summary>
         /// Performs a jump if <paramref name="condition"/> is true. Conditional branch instructions only use the
-        /// relative addressing mode which gives them a range of -128 bytes to +127 bytes. If a branch is taken,
-        /// an additional cycle is added as a penalty. If a branch is taken and the target address is in a different
-        /// page than page the PC currently resides in, another penalty cycle is added for a maximum of two penalty
-        /// cycles added onto the base cycle cost.
+        /// relative addressing mode which gives them a range of -128 bytes to +127 bytes. If a branch is taken, an
+        /// additional cycle is added as a penalty. If a branch is taken and the target address is in a different page
+        /// than page the PC currently resides in, another penalty cycle is added for a maximum of two penalty cycles
+        /// added onto the base cycle cost.
         /// </summary>
         /// <param name="baseCycles">The number of cycles the instruction would take without penalties.</param>
         /// <param name="bus">The bus used to perform reads and writes.</param>
@@ -298,8 +299,8 @@ namespace Ninu.Emulator
 
         /// <summary>
         /// <para>
-        ///     Performs a bitwise 'and' operation between the accumulator (on the left) and memory (on the right).
-        ///     The result is stored in the accumulator.
+        ///     Performs a bitwise 'and' operation between the accumulator (on the left) and memory (on the right). The
+        ///     result is stored in the accumulator.
         /// </para>
         /// <para>
         ///     Available addressing modes:
@@ -455,7 +456,7 @@ namespace Ninu.Emulator
             var (data, _, _) = FetchData(addressingMode, bus, cpuState);
 
             cpuState.SetZeroFlag((byte)(data & cpuState.A));
-            cpuState.SetFlag(CpuFlags.V, (data & 0x40) != 0); // Set overflow flag to bit 6 of data
+            cpuState.SetFlag(CpuFlags.V, (data & 0x40) != 0); // Set overflow flag to bit 6 of data.
             cpuState.SetNegativeFlag(data);
 
             return baseCycles;
@@ -577,8 +578,8 @@ namespace Ninu.Emulator
 
         public static int Dec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            // No addressing mode of this instruction incurs additional addressing penalties. All cycles are
-            // counted in the base cycles of this instruction.
+            // No addressing mode of this instruction incurs additional addressing penalties. All cycles are counted in
+            // the base cycles of this instruction.
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
             var data = bus.Read(address);
@@ -635,8 +636,8 @@ namespace Ninu.Emulator
 
         public static int Inc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            // No addressing mode of this instruction incurs additional addressing penalties. All cycles are
-            // counted in the base cycles of this instruction.
+            // No addressing mode of this instruction incurs additional addressing penalties. All cycles are counted in
+            // the base cycles of this instruction.
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
             var data = bus.Read(address);

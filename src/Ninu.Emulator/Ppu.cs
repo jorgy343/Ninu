@@ -88,7 +88,7 @@ namespace Ninu.Emulator
                             case 0:
                                 LoadShiftRegisters();
 
-                                _readAddress = 0x2000 | (Registers.CurrentAddress & 0x0fff);
+                                _readAddress = 0x2000 | (Registers.VAddress & 0x0fff);
                                 break;
 
                             case 1:
@@ -96,18 +96,18 @@ namespace Ninu.Emulator
                                 break;
 
                             case 2:
-                                _readAddress = 0x23c0 | (Registers.CurrentAddress & 0x0c00) | ((Registers.CurrentAddress >> 4) & 0x38) | ((Registers.CurrentAddress >> 2) & 0x07);
+                                _readAddress = 0x23c0 | (Registers.VAddress & 0x0c00) | ((Registers.VAddress >> 4) & 0x38) | ((Registers.VAddress >> 2) & 0x07);
                                 break;
 
                             case 3:
                                 var attribute = PpuRead(_readAddress);
 
-                                if ((Registers.CurrentAddress.CourseY & 0x02) != 0)
+                                if ((Registers.VAddress.CourseY & 0x02) != 0)
                                 {
                                     attribute >>= 4;
                                 }
 
-                                if ((Registers.CurrentAddress.CourseX & 0x02) != 0)
+                                if ((Registers.VAddress.CourseX & 0x02) != 0)
                                 {
                                     attribute >>= 2;
                                 }
@@ -116,7 +116,7 @@ namespace Ninu.Emulator
                                 break;
 
                             case 4:
-                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.CurrentAddress.FineY + 0);
+                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.VAddress.FineY + 0);
 
                                 if (Registers.BackgroundPatternTableAddress)
                                 {
@@ -130,7 +130,7 @@ namespace Ninu.Emulator
                                 break;
 
                             case 6:
-                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.CurrentAddress.FineY + 8);
+                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.VAddress.FineY + 8);
 
                                 if (Registers.BackgroundPatternTableAddress)
                                 {
@@ -160,7 +160,7 @@ namespace Ninu.Emulator
                     // These reads do nothing but the real PPU does perform them.
                     if (_cycle == 337 || _cycle == 339)
                     {
-                        _readAddress = _readAddress = 0x2000 | (Registers.CurrentAddress & 0x0fff);
+                        _readAddress = _readAddress = 0x2000 | (Registers.VAddress & 0x0fff);
                     }
 
                     if (_cycle == 338 || _cycle == 340)
@@ -176,8 +176,8 @@ namespace Ninu.Emulator
 
                 if (Registers.RenderSprites && _cycle == 340)
                 {
-                    // TODO: Should this be called on the final visible scanline? It would load sprites for the
-                    // next scanline which isn't visible.
+                    // TODO: Should this be called on the final visible scanline? It would load sprites for the next
+                    // scanline which isn't visible.
 
                     // Initialize the temporary OAM to 0xff.
                     TemporaryOam.ResetAllData(0xff);
@@ -239,74 +239,80 @@ namespace Ninu.Emulator
 
                 if (Registers.RenderBackground)
                 {
-                    var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
+                    if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || _cycle >= 8)
+                    {
+                        var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
 
-                    // The fine X register controls our offset into the shift registers.
-                    shiftSelect >>= Registers.FineX;
+                        // The fine X register controls our offset into the shift registers.
+                        shiftSelect >>= Registers.FineX;
 
-                    // Extract the data from the pattern tile shift registers.
-                    var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                    var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+                        // Extract the data from the pattern tile shift registers.
+                        var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                        var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
-                    var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
+                        var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
 
-                    // Extract the data from the name table attribute shift registers.
-                    var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                    var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+                        // Extract the data from the name table attribute shift registers.
+                        var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                        var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
-                    var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
+                        var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
 
-                    // Set the pixel color.
-                    backgroundPaletteIndex = paletteIndex;
-                    backgroundPaletteEntryIndex = paletteEntryIndex;
+                        // Set the pixel color.
+                        backgroundPaletteIndex = paletteIndex;
+                        backgroundPaletteEntryIndex = paletteEntryIndex;
+                    }
                 }
 
                 var spriteZeroRendered = false;
 
                 if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
                 {
-                    for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
+                    if (Registers.RenderSpritesInLeftMost8PixelsOfScreen || _cycle >= 8) // Clip the left side of the screen if necessary.
                     {
-                        var sprite = TemporaryOam.Sprites[i];
-
-                        if (sprite.X == 0xff)
+                        for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
                         {
-                            continue;
-                        }
+                            var sprite = TemporaryOam.Sprites[i];
 
-                        if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
-                        {
-                            // TODO: Handle the reading of the pattern through the bus.
-                            var tile = GetPatternTile(Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left, sprite.TileIndex);
-
-                            spritePriority = sprite.Priority;
-
-                            var xIndex = _cycle - sprite.X;
-                            var yIndex = _scanline - sprite.Y;
-
-                            if (sprite.FlipHorizontal)
+                            if (sprite.X == 0xff)
                             {
-                                xIndex = 7 - xIndex;
+                                continue;
                             }
 
-                            if (sprite.FlipVertical)
+                            if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
                             {
-                                yIndex = 7 - yIndex;
-                            }
+                                // TODO: Handle the reading of the pattern through the bus.
+                                var tile = GetPatternTile(Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left, sprite.TileIndex);
 
-                            // Set the pixel color.
-                            spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
-                            spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+                                spritePriority = sprite.Priority;
 
-                            if (i == 0 && spritePaletteEntryIndex != 0)
-                            {
-                                spriteZeroRendered = true;
-                            }
+                                var xIndex = _cycle - sprite.X;
+                                var yIndex = _scanline - sprite.Y;
 
-                            // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
-                            if (spritePaletteEntryIndex != 0)
-                            {
-                                break;
+                                if (sprite.FlipHorizontal)
+                                {
+                                    xIndex = 7 - xIndex;
+                                }
+
+                                if (sprite.FlipVertical)
+                                {
+                                    yIndex = 7 - yIndex;
+                                }
+
+                                // Set the pixel color.
+                                spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
+                                spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+
+                                if (i == 0 && spritePaletteEntryIndex != 0)
+                                {
+                                    spriteZeroRendered = true;
+                                }
+
+                                // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
+                                if (spritePaletteEntryIndex != 0)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -416,11 +422,11 @@ namespace Ninu.Emulator
         }
 
         /// <summary>
-        /// Gets a color from the palette based on the palette index (which palette which are interested in)
-        /// and the palette entry index (which entry within the selected palette we are interested in). The
-        /// first four palettes are for the background and the next four palettes are for the sprites. When
-        /// you have a sprite palette index, you need to add four to the index before passing it into this
-        /// method in order to get the correct sprite palette.
+        /// Gets a color from the palette based on the palette index (which palette which are interested in) and the
+        /// palette entry index (which entry within the selected palette we are interested in). The first four palettes
+        /// are for the background and the next four palettes are for the sprites. When you have a sprite palette
+        /// index, you need to add four to the index before passing it into this method in order to get the correct
+        /// sprite palette.
         /// </summary>
         /// <param name="paletteIndex">The index (0-7) of the palette to get.</param>
         /// <param name="paletteEntryIndex">The index (0-3) of the entry within the palette to get.</param>
@@ -469,13 +475,13 @@ namespace Ninu.Emulator
                         // TODO: There is some tricky stuff that needs to be handled here dealing with what
                         // the PPU is currently doing.
 
-                        if (Registers.CurrentAddress >= 0x3f00 && Registers.CurrentAddress <= 0x3fff)
+                        if (Registers.VAddress >= 0x3f00 && Registers.VAddress <= 0x3fff)
                         {
                             // TODO: This is actually wrong. The palette data is returned directly and the
                             // read buffer is updated with name table data.
 
                             // Palette memory is read immediately.
-                            Registers.ReadBuffer = PpuRead(Registers.CurrentAddress);
+                            Registers.ReadBuffer = PpuRead(Registers.VAddress);
 
                             data = Registers.ReadBuffer;
                         }
@@ -485,11 +491,11 @@ namespace Ninu.Emulator
                             data = Registers.ReadBuffer;
 
                             // Update the buffer with new data only after the current buffer is read.
-                            Registers.ReadBuffer = PpuRead(Registers.CurrentAddress);
+                            Registers.ReadBuffer = PpuRead(Registers.VAddress);
                         }
 
                         // Increment the address by either 1 or 32 depending on the VRAM address increment flag.
-                        Registers.CurrentAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
+                        Registers.VAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
 
                         return true;
                 }
@@ -530,10 +536,10 @@ namespace Ninu.Emulator
                         break;
 
                     case 7:
-                        PpuWrite(Registers.CurrentAddress, data);
+                        PpuWrite(Registers.VAddress, data);
 
                         // Increment the address by either 1 or 32 depending on the VRAM address increment flag.
-                        Registers.CurrentAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
+                        Registers.VAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
 
                         break;
                 }

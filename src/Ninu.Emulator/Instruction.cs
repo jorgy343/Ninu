@@ -26,8 +26,8 @@ namespace Ninu.Emulator
         public int Size { get; }
 
         /// <summary>
-        /// Gets the number of cycles required to fully execute the instruction. This does not
-        /// include any potential penalties.
+        /// Gets the number of cycles required to fully execute the instruction. This does not include any potential
+        /// penalties.
         /// </summary>
         public int BaseCycles { get; }
 
@@ -47,10 +47,9 @@ namespace Ninu.Emulator
         private readonly InstructionExecutorEx? _instructionExecutorEx;
 
         /// <summary>
-        /// An array of all 256 possible instructions. The position in the array represents
-        /// the instructions opcode. For example, the opcode 0x00 is the BRK instruction. The
-        /// opcode 0x60 is the BVC instruction. A lot of opcodes are not officially defined,
-        /// but are still accounted for and often implemented.
+        /// An array of all 256 possible instructions. The position in the array represents the instructions opcode.
+        /// For example, the opcode 0x00 is the BRK instruction. The opcode 0x60 is the BVC instruction. A lot of
+        /// opcodes are not officially defined, but are still accounted for and often implemented.
         /// </summary>
         private static readonly Instruction[] Instructions =
         {

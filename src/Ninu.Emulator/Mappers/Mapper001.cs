@@ -18,23 +18,24 @@ namespace Ninu.Emulator.Mappers
     // clear its state and performs an OR operation on the control register (control register |= 0x0c).
     //
     // When this register is written to with R cleared, the value in D is pushed into the shift register. The values
-    // are pushed with LSB first. So if you want the value of 0b11001 in the shift register you would write the following
-    // values into the Load Register in the following order: 0x01, 0x00, 0x00, 0x01, 0x01.
+    // are pushed with LSB first. So if you want the value of 0b11001 in the shift register you would write the
+    // following values into the Load Register in the following order: 0x01, 0x00, 0x00, 0x01, 0x01.
     //
-    // When the fifth bit is written to the Load Register (without clearing in between), the 5 bits in the shift register
-    // are written to one of the other registers. Which register it is written to depends on the address of the write
-    // being performed by the CPU. Note that this is the only instance in which the address actually matters. These are
-    // the address ranges and the register they correlate to.
+    // When the fifth bit is written to the Load Register (without clearing in between), the 5 bits in the shift
+    // register are written to one of the other registers. Which register it is written to depends on the address of
+    // the write being performed by the CPU. Note that this is the only instance in which the address actually matters.
+    // These are the address ranges and the register they correlate to.
     //
     // 0x8000-0x9fff => Control Register
     // 0xa000-0xbfff => Character ROM Index Select 0 Register (CRIS0)
     // 0xc000-0xdfff => Character ROM Index Select 1 Register (CRIS1)
     // 0xe000-0xffff => Program ROM Index Select Register (PRIS)
     //
-    // When determining which register to write the shift register to, you only have to examine bits 13-14 of the address
+    // When determining which register to write the shift register to, you only have to examine bits 13-14 of the
+    // address.
     //
     //
-    // Control Register (8-bit)
+    // Control Register (5-bit)
     // 7       0
     // xxxC PGMM
     //    │ ││││
@@ -43,21 +44,21 @@ namespace Ninu.Emulator.Mappers
     //    │ └─── Program ROM Bank Size - Determines the size of the program ROM banks (16KiB or 32KiB).
     //    └───── Character ROM Bank Size - Determines the size of the character ROM banks (4KiB or 8KiB).
     //
-    // MM - Mirror Mode
+    // MM (Mirror Mode)
     // 0b00 - One screen using name table 0.
     // 0b01 - One screen using name table 1.
     // 0b10 - Vertical mirroring.
     // 0b11 - Horizontal mirroring.
     //
-    // G - Program ROM Swap Bank Select
+    // G (Program ROM Swap Bank Select)
     // 0 - Low bank is fixed; top bank is swappable.
     // 1 - Low bank is swappable; top bank is fixed. This is the default mode during boot.
     //
-    // P - Program ROM Bank Size
+    // P (Program ROM Bank Size)
     // 0 - The banks are 32KiB in size and span the entire program ROM addressable range. When this mode is selected, G (Program ROM Swap Bank Select) is ignored.
     // 1 - The banks are 16KiB in size. This is the default mode during boot.
     //
-    // C - Character ROM Bank Size
+    // C (Character ROM Bank Size)
     // 0 - The banks are 8KiB in size and span the entire name table addressable range. Both banks in memory are selected from a single bank on the cartridge.
     // 1 - The banks are 4KiB in size. Each bank in memory can be individually selected from banks on the cartridge.
     //
@@ -114,9 +115,9 @@ namespace Ninu.Emulator.Mappers
                 }
                 else
                 {
-                    // When shifting a bit into the load register, the LSB is shifted first. We will set
-                    // bit 5 of the load register and then shift the load register to the right once. When
-                    // the fifth bit is written, all of the bits will be shifted into the correct positions.
+                    // When shifting a bit into the load register, the LSB is shifted first. We will set bit 5 of the
+                    // load register and then shift the load register to the right once. When the fifth bit is written,
+                    // all of the bits will be shifted into the correct positions.
                     _loadRegister |= (byte)((data & 0x01) << 5);
                     _loadRegister >>= 1;
 
@@ -163,8 +164,8 @@ namespace Ninu.Emulator.Mappers
             {
                 if (CurrentProgramRomBankSize == ProgramRomBankSize.Swappable32KBanks)
                 {
-                    // The first four bits are used to select the program ROM bank. When in 32K
-                    // bank mode, only bits 1-3 are used. The LSB is ignored.
+                    // The first four bits are used to select the program ROM bank. When in 32K bank mode, only bits
+                    // 1-3 are used. The LSB is ignored.
                     var index = (_programRomBank & 0x0e) >> 1;
 
                     translatedAddress = (ushort)((address & 0x7ffff) + 32768 * index);
@@ -214,8 +215,8 @@ namespace Ninu.Emulator.Mappers
             {
                 if (CurrentPatternRomBankSize == PatternRomBankSize.Single8KBanks)
                 {
-                    // The first five bits are used to select the pattern ROM bank. When in 8K
-                    // bank mode, only bits 1-4 are used. The LSB is ignored.
+                    // The first five bits are used to select the pattern ROM bank. When in 8K bank mode, only bits 1-4
+                    // are used. The LSB is ignored.
                     var index = (_patternRomBank0 & 0x1e) >> 1;
 
                     translatedAddress = (ushort)((address & 0x1fff) + 8192 * index);
@@ -243,9 +244,9 @@ namespace Ninu.Emulator.Mappers
             return false;
         }
 
-        private ProgramRomSwapBank CurrentProgramRomSwapBank => (ProgramRomSwapBank)Bits.GetBits(_controlRegister, 1, 2);
-        private ProgramRomBankSize CurrentProgramRomBankSize => (ProgramRomBankSize)Bits.GetBits(_controlRegister, 1, 3);
-        private PatternRomBankSize CurrentPatternRomBankSize => (PatternRomBankSize)Bits.GetBits(_controlRegister, 1, 4);
+        private ProgramRomSwapBank CurrentProgramRomSwapBank => (ProgramRomSwapBank)Bits.GetBits(_controlRegister, 2, 1);
+        private ProgramRomBankSize CurrentProgramRomBankSize => (ProgramRomBankSize)Bits.GetBits(_controlRegister, 3, 1);
+        private PatternRomBankSize CurrentPatternRomBankSize => (PatternRomBankSize)Bits.GetBits(_controlRegister, 4, 1);
 
         private enum ProgramRomSwapBank
         {

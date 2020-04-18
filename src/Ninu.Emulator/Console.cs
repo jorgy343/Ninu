@@ -16,21 +16,20 @@ namespace Ninu.Emulator
         private bool _dmaProcessing;
 
         /// <summary>
-        /// Determines if the DMA is properly synchronized to the CPU clock. If this is false,
-        /// a dummy cycle will take place.
+        /// Determines if the DMA is properly synchronized to the CPU clock. If this is false, a dummy cycle will take
+        /// place.
         /// </summary>
         private bool _dmaSynchronized;
 
         /// <summary>
-        /// The current byte that needs to be read during the DMA process. At the start of a DMA
-        /// process, this will be zero and it counts up for every byte copied.
+        /// The current byte that needs to be read during the DMA process. At the start of a DMA process, this will be
+        /// zero and it counts up for every byte copied.
         /// </summary>
         private int _dmaCurrentByte;
 
         /// <summary>
-        /// This is the page from which data will be copied from the CPU bus. The page is the high
-        /// byte of the CPU address. Data will then be read from 0xXX00 to 0xXXff during the DMA
-        /// transfer.
+        /// This is the page from which data will be copied from the CPU bus. The page is the high byte of the CPU
+        /// address. Data will then be read from 0xXX00 to 0xXXff during the DMA transfer.
         /// </summary>
         private byte _dmaCpuHighAddress;
 
@@ -62,9 +61,8 @@ namespace Ninu.Emulator
         {
             Ppu.Clock();
 
-            // The CPU gets clocked every third system clock. This means that the CPU will
-            // get clocked on the first system clock. Also, the CPU is suspended during a
-            // DMA transfer.
+            // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
+            // system clock. Also, the CPU is suspended during a DMA transfer.
             if (TotalCycles % 3 == 0)
             {
                 // Perform a DMA transfer cycle if we are processing a DMA.
@@ -122,8 +120,8 @@ namespace Ninu.Emulator
             {
                 ppuClockResult = Ppu.Clock();
 
-                // The CPU gets clocked every third system clock. This means that the CPU will
-                // get clocked on the first system clock.
+                // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
+                // system clock.
                 if (TotalCycles % 3 == 0)
                 {
                     // Perform a DMA transfer cycle if we are processing a DMA.
@@ -175,8 +173,8 @@ namespace Ninu.Emulator
         }
 
         /// <summary>
-        /// Routes the read request to the appropriate device or area of memory. If no device
-        /// or area of memory handles the given address, 0 is returned.
+        /// Routes the read request to the appropriate device or area of memory. If no device or area of memory handles
+        /// the given address, 0 is returned.
         /// </summary>
         /// <param name="address">The address that determines where to get the data from.</param>
         /// <returns>The data that was read or 0 if no data was read.</returns>
