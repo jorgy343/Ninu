@@ -566,6 +566,12 @@ namespace Ninu.Emulator
 
             if (PaletteRam.PpuRead(address, out data))
             {
+                // TODO: Black colors are supposed to be replaced by gray colors.
+                if (Registers.EnableGrayscale)
+                {
+                    data &= 0x30;
+                }
+
                 return data;
             }
 
