@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Ninu
+namespace Ninu.ViewModels
 {
     public class ViewModelBase : INotifyPropertyChanged
     {

@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Windows.Input;
 
-namespace Ninu
+namespace Ninu.ViewModels
 {
     public class RelayCommand : ICommand
     {
