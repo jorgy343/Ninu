@@ -183,15 +183,14 @@ namespace Ninu.Emulator
                     // Find all sprites that will need to be rendered for the next scanline.
                     var insertIndex = 0;
 
+                    var spriteHeight = Registers.SpriteSize ? 16 : 8;
+
                     for (var i = 0; i < Oam.Sprites.Length; i++)
                     {
                         var sprite = Oam.Sprites[i];
                         var nextScanline = _scanline + 1;
 
-
-
-                        // TODO: Are we checking the correct Y coordinate? This could be off by one.
-                        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + 7)
+                        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + spriteHeight - 1)
                         {
                             if (insertIndex == 8)
                             {
@@ -268,6 +267,8 @@ namespace Ninu.Emulator
                 {
                     if (Registers.RenderSpritesInLeftMost8PixelsOfScreen || _cycle >= 8) // Clip the left side of the screen if necessary.
                     {
+                        var spriteHeight = Registers.SpriteSize ? 16 : 8;
+
                         for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
                         {
                             var sprite = TemporaryOam.Sprites[i];
@@ -279,9 +280,6 @@ namespace Ninu.Emulator
 
                             if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
                             {
-                                // TODO: Handle the reading of the pattern through the bus.
-                                var tile = GetPatternTile(Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left, sprite.TileIndex);
-
                                 spritePriority = sprite.Priority;
 
                                 var xIndex = _cycle - sprite.X;
@@ -294,12 +292,35 @@ namespace Ninu.Emulator
 
                                 if (sprite.FlipVertical)
                                 {
-                                    yIndex = 7 - yIndex;
+                                    yIndex = spriteHeight - 1 - yIndex;
+                                }
+
+                                // TODO: Handle the reading of the pattern through the bus.
+                                PatternTableEntry patternTableEntry;
+
+                                if (Registers.SpriteSize)
+                                {
+                                    patternTableEntry = (sprite.TileIndex & 0x01) != 0 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                }
+                                else
+                                {
+                                    patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                }
+
+                                PatternTile tile;
+
+                                if (yIndex <= 7)
+                                {
+                                    tile = GetPatternTile(patternTableEntry, sprite.TileIndex);
+                                }
+                                else
+                                {
+                                    tile = GetPatternTile(patternTableEntry, sprite.TileIndex + 1);
                                 }
 
                                 // Set the pixel color.
                                 spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
-                                spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex);
+                                spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex > 7 ? yIndex - 8 : yIndex);
 
                                 if (i == 0 && spritePaletteEntryIndex != 0)
                                 {
