@@ -4,59 +4,39 @@ using Ninu.ViewModels;
 using System.Timers;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using Microsoft.Extensions.Logging;
-using Console = Ninu.Emulator.Console;
 
 namespace Ninu
 {
     public partial class MainWindow : Window
     {
-        public CpuStateViewModel CpuState { get; } = new CpuStateViewModel();
-
-        public WriteableBitmap PatternTable1Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
-        public WriteableBitmap PatternTable2Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
-
-        public WriteableBitmap GameImageBitmap { get; } = new WriteableBitmap(256, 240, 96, 96, PixelFormats.Bgra32, null);
-
-        private readonly Console _console;
-
         private readonly byte[] _patternRom1Pixels = new byte[128 * 128 * 4];
         private readonly byte[] _patternRom2Pixels = new byte[128 * 128 * 4];
 
-        public MainWindow()
+        public MainWindowViewModel ViewModel { get; }
+
+        public MainWindow(MainWindowViewModel viewModel)
         {
             InitializeComponent();
 
-            DataContext = this;
+            ViewModel = viewModel;
+            DataContext = ViewModel;
+        }
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Dragon_warrior.nes");
-
-            var loggerFactory = LoggerFactory.Create(x =>
-            {
-                x.ClearProviders();
-                x.AddDebug();
-
-                x.SetMinimumLevel(LogLevel.Trace);
-            });
-
-            var cartridge = new Cartridge(image, loggerFactory, loggerFactory.CreateLogger<Cartridge>());
-
-            _console = new Console(cartridge, loggerFactory, loggerFactory.CreateLogger<Console>());
-            _console.Reset();
-
+        public void StartTimer()
+        {
             const double fps = 1000.0 / 60.0;
 
             var timer = new Timer(fps);
             timer.Elapsed += TimerTick;
+
+            timer.AutoReset = false;
 
             timer.Start();
         }
 
         private void TimerTick(object sender, ElapsedEventArgs e)
         {
-            lock (_console)
+            lock (ViewModel.Console)
             {
                 byte controllerData = 0;
 
@@ -73,15 +53,15 @@ namespace Ninu
                     controllerData |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
                 });
 
-                _console.Controllers.SetControllerData(0, controllerData);
+                ViewModel.Console.Controllers.SetControllerData(0, controllerData);
 
-                _console.CompleteFrame();
+                ViewModel.Console.CompleteFrame();
 
                 var pixels = new byte[256 * 240 * 4];
 
                 for (var i = 0; i < 256 * 240; i++)
                 {
-                    var color = SystemPalette.Colors[_console.Ppu.PreviousImageBuffer[i]];
+                    var color = SystemPalette.Colors[ViewModel.Console.Ppu.PreviousImageBuffer[i]];
 
                     var pixelIndex = i * 4;
 
@@ -93,24 +73,26 @@ namespace Ninu
 
                 Dispatcher.Invoke(() =>
                 {
-                    CpuState.Update(_console.Cpu.CpuState);
+                    ViewModel.CpuState.Update(ViewModel.Console.Cpu.CpuState);
 
-                    UpdateInstructions(_console.Cpu);
+                    UpdateInstructions(ViewModel.Console.Cpu);
 
                     UpdatePatternRoms();
 
-                    GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
+                    ViewModel.GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
                 });
             }
+
+            ((Timer)sender).Start();
         }
 
         private void UpdateInstructions(Cpu cpu)
         {
-            CpuState.Instructions.Clear();
+            ViewModel.CpuState.Instructions.Clear();
 
             foreach (var decodedInstruction in cpu.DecodeInstructions(cpu.CpuState.PC, 16))
             {
-                CpuState.Instructions.Add(decodedInstruction);
+                ViewModel.CpuState.Instructions.Add(decodedInstruction);
             }
         }
 
@@ -121,8 +103,8 @@ namespace Ninu
             {
                 for (var tileX = 0; tileX < 16; tileX++)
                 {
-                    var leftTile = _console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
-                    var rightTile = _console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
+                    var leftTile = ViewModel.Console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
+                    var rightTile = ViewModel.Console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
 
                     var xOffset = tileX * 8;
                     var yOffset = tileY * 8;
@@ -136,7 +118,7 @@ namespace Ninu
                             {
                                 var paletteEntryIndex = leftTile.GetPaletteColorIndex(x, y);
 
-                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor((byte)CpuState.SelectedPalette, paletteEntryIndex)];
+                                var color = SystemPalette.Colors[ViewModel.Console.Ppu.GetPaletteColor((byte)ViewModel.SelectedPalette, paletteEntryIndex)];
 
                                 _patternRom1Pixels[index + 0] = color.B;
                                 _patternRom1Pixels[index + 1] = color.G;
@@ -147,7 +129,7 @@ namespace Ninu
                             {
                                 var paletteEntryIndex = rightTile.GetPaletteColorIndex(x, y);
 
-                                var color = SystemPalette.Colors[_console.Ppu.GetPaletteColor((byte)CpuState.SelectedPalette, paletteEntryIndex)];
+                                var color = SystemPalette.Colors[ViewModel.Console.Ppu.GetPaletteColor((byte)ViewModel.SelectedPalette, paletteEntryIndex)];
 
                                 _patternRom2Pixels[index + 0] = color.B;
                                 _patternRom2Pixels[index + 1] = color.G;
@@ -159,8 +141,8 @@ namespace Ninu
                 }
             }
 
-            PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom1Pixels, 128 * 4, 0);
-            PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom2Pixels, 128 * 4, 0);
+            ViewModel.PatternTable1Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom1Pixels, 128 * 4, 0);
+            ViewModel.PatternTable2Bitmap.WritePixels(new Int32Rect(0, 0, 128, 128), _patternRom2Pixels, 128 * 4, 0);
         }
     }
 }

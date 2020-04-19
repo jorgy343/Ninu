@@ -11,4 +11,12 @@
     <ProjectReference Include="..\Ninu.Emulator\Ninu.Emulator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Fody" Version="6.1.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="PropertyChanged.Fody" Version="3.2.8" />
+  </ItemGroup>
+
 </Project>

@@ -60,7 +60,7 @@
                     <ColumnDefinition Width="180" />
                     <ColumnDefinition Width="180" />
                 </Grid.ColumnDefinitions>
-                <ComboBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" SelectedIndex="{Binding Path=CpuState.SelectedPalette, Mode=TwoWay}">
+                <ComboBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" SelectedIndex="{Binding Path=SelectedPalette, Mode=TwoWay}">
                     <ComboBoxItem Content="Background 0" />
                     <ComboBoxItem Content="Background 1" />
                     <ComboBoxItem Content="Background 2" />
