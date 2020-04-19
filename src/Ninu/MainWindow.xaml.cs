@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Extensions.Logging;
 using Console = Ninu.Emulator.Console;
 
 namespace Ninu
@@ -30,20 +31,20 @@ namespace Ninu
 
             DataContext = this;
 
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Super Mario Bros. (Japan, USA).nes");
-            var cartridge = new Cartridge(image);
+            var image = new NesImage(@"C:\Users\Jorgy\Downloads\Dragon_warrior.nes");
 
-            _console = new Console(cartridge);
+            var loggerFactory = LoggerFactory.Create(x =>
+            {
+                x.ClearProviders();
+                x.AddDebug();
+
+                x.SetMinimumLevel(LogLevel.Trace);
+            });
+
+            var cartridge = new Cartridge(image, loggerFactory, loggerFactory.CreateLogger<Cartridge>());
+
+            _console = new Console(cartridge, loggerFactory, loggerFactory.CreateLogger<Console>());
             _console.Reset();
-
-            //_console.Cpu.CpuState.PC = 0xc000;
-
-            //for (var i = 0; i < 50_000; i++)
-            //{
-            //    _console.Clock();
-            //}
-
-            //File.WriteAllText(@"C:\Users\Jorgy\Desktop\mylog.txt", _console.Cpu._log.ToString());
 
             const double fps = 1000.0 / 60.0;
 

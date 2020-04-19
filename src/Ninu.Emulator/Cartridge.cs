@@ -1,23 +1,30 @@
-﻿using Ninu.Emulator.Mappers;
+﻿using Microsoft.Extensions.Logging;
+using Ninu.Emulator.Mappers;
 using System;
 
 namespace Ninu.Emulator
 {
     public class Cartridge : ICpuBusComponent, IPpuBusComponent
     {
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
+
         public NesImage Image { get; }
         public Mapper Mapper { get; }
 
         public byte[] Ram { get; } = new byte[8192];
 
-        public Cartridge(NesImage image)
+        public Cartridge(NesImage image, ILoggerFactory loggerFactory, ILogger logger)
         {
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             Image = image ?? throw new ArgumentNullException(nameof(image));
 
             Mapper = Image.MapperType switch
             {
-                000 => new Mapper000(Image.ProgramRomBankCount, Image.PatternRomBankCount),
-                001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount),
+                000 => new Mapper000(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper000>()),
+                001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper>()),
                 _ => throw new Exception(), // TODO: Throw a better exception.
             };
         }
@@ -30,7 +37,6 @@ namespace Ninu.Emulator
         public bool CpuRead(ushort address, out byte data)
         {
             // The translated address will start at 0 so that we can easily index the ROM.
-
             var translated = Mapper.TranslateProgramRomAddress(address, out var translatedAddress);
 
             if (translated)

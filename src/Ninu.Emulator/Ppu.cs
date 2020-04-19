@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace Ninu.Emulator
 {
-    public delegate void FrameCompleteHandler(object source, EventArgs e);
-
     public class Ppu : ICpuBusComponent
     {
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
+
         private readonly Cartridge _cartridge;
         private readonly NameTableRam _nameTableRam = new NameTableRam();
 
@@ -38,8 +40,11 @@ namespace Ninu.Emulator
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
 
-        public Ppu(Cartridge cartridge)
+        public Ppu(Cartridge cartridge, ILoggerFactory loggerFactory, ILogger logger)
         {
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
         }
 

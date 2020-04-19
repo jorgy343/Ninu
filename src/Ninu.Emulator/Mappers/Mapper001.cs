@@ -1,4 +1,5 @@
 ﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
+using Microsoft.Extensions.Logging;
 
 namespace Ninu.Emulator.Mappers
 {
@@ -67,9 +68,6 @@ namespace Ninu.Emulator.Mappers
 
     public class Mapper001 : Mapper
     {
-        public int ProgramRomBankCount { get; }
-        public int PatternRomBankCount { get; }
-
         private byte _loadRegister;
         private int _loadRegisterCount;
 
@@ -78,10 +76,10 @@ namespace Ninu.Emulator.Mappers
         private byte _patternRomBank1;
         private byte _programRomBank;
 
-        public Mapper001(int programRomBankCount, int patternRomBankCount)
+        public Mapper001(int programRomBankCount, int patternRomBankCount, ILogger logger)
+            : base(programRomBankCount, patternRomBankCount, logger)
         {
-            ProgramRomBankCount = programRomBankCount;
-            PatternRomBankCount = patternRomBankCount;
+
         }
 
         public override bool GetMirrorMode(out NameTableMirrorMode mirrorMode)
@@ -128,6 +126,8 @@ namespace Ninu.Emulator.Mappers
                 if (_loadRegisterCount == 5)
                 {
                     var registerNumber = (address & 0x6000) >> 13; // Grab bits 13-14. This will tell us which register to load.
+
+                    Logger.LogTrace("Load register completed. Loaded {Value} into register {Register}.", _loadRegister, registerNumber);
 
                     switch (registerNumber)
                     {

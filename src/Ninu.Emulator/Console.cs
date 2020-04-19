@@ -1,54 +1,37 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 
 namespace Ninu.Emulator
 {
     public class Console : IBus
     {
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger _logger;
+
         public Cpu Cpu { get; }
         public Ppu Ppu { get; }
 
         private readonly Cartridge _cartridge;
         private readonly CpuRam _internalRam;
 
-        /// <summary>
-        /// Determines if the DMA is processing and the CPU is suspended.
-        /// </summary>
-        private bool _dmaProcessing;
-
-        /// <summary>
-        /// Determines if the DMA is properly synchronized to the CPU clock. If this is false, a dummy cycle will take
-        /// place.
-        /// </summary>
-        private bool _dmaSynchronized;
-
-        /// <summary>
-        /// The current byte that needs to be read during the DMA process. At the start of a DMA process, this will be
-        /// zero and it counts up for every byte copied.
-        /// </summary>
-        private int _dmaCurrentByte;
-
-        /// <summary>
-        /// This is the page from which data will be copied from the CPU bus. The page is the high byte of the CPU
-        /// address. Data will then be read from 0xXX00 to 0xXXff during the DMA transfer.
-        /// </summary>
-        private byte _dmaCpuHighAddress;
-
-        /// <summary>
-        /// This stores the byte of data that was read during the read cycle of the DMA process.
-        /// </summary>
-        private byte _dmaReadByte;
+        private readonly DmaState _dmaState = new DmaState();
 
         public Controllers Controllers { get; } = new Controllers();
 
         public long TotalCycles { get; set; }
 
-        public Console(Cartridge cartridge)
+        public Console(Cartridge cartridge, ILoggerFactory loggerFactory, ILogger logger)
         {
+            if (cartridge == null) throw new ArgumentNullException(nameof(cartridge));
+
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
             Cpu = new Cpu(this);
-            Ppu = new Ppu(cartridge);
+            Ppu = new Ppu(cartridge, loggerFactory, loggerFactory.CreateLogger<Ppu>());
 
             _internalRam = new CpuRam();
-            _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
+            _cartridge = cartridge;
         }
 
         public void Reset()
@@ -57,40 +40,40 @@ namespace Ninu.Emulator
             Cpu.Reset();
         }
 
-        public void Clock()
+        public PpuClockResult Clock()
         {
-            Ppu.Clock();
+            var ppuResult = Ppu.Clock();
 
             // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
             // system clock. Also, the CPU is suspended during a DMA transfer.
             if (TotalCycles % 3 == 0)
             {
                 // Perform a DMA transfer cycle if we are processing a DMA.
-                if (_dmaProcessing)
+                if (_dmaState.Processing)
                 {
-                    if (!_dmaSynchronized)
+                    if (!_dmaState.Synchronized)
                     {
                         if (TotalCycles % 2 == 1)
                         {
-                            _dmaSynchronized = true;
+                            _dmaState.Synchronized = true;
                         }
                     }
                     else
                     {
                         if (TotalCycles % 2 == 0) // Read on even cycles.
                         {
-                            var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
-                            _dmaReadByte = Read(address);
+                            var address = (ushort)((_dmaState.CpuHighAddress << 8) | _dmaState.CurrentByte);
+                            _dmaState.ReadByte = Read(address);
                         }
                         else // Write on odd cycles.
                         {
-                            Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
+                            Ppu.Oam.Write((byte)_dmaState.CurrentByte, _dmaState.ReadByte);
 
-                            _dmaCurrentByte++;
+                            _dmaState.CurrentByte++;
 
-                            if (_dmaCurrentByte == 256)
+                            if (_dmaState.CurrentByte == 256)
                             {
-                                _dmaProcessing = false;
+                                _dmaState.Processing = false;
                             }
                         }
                     }
@@ -110,66 +93,13 @@ namespace Ninu.Emulator
             }
 
             TotalCycles++;
+
+            return ppuResult;
         }
 
         public void CompleteFrame()
         {
-            var ppuClockResult = PpuClockResult.NormalCycle;
-
-            while (ppuClockResult != PpuClockResult.FrameComplete)
-            {
-                ppuClockResult = Ppu.Clock();
-
-                // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
-                // system clock.
-                if (TotalCycles % 3 == 0)
-                {
-                    // Perform a DMA transfer cycle if we are processing a DMA.
-                    if (_dmaProcessing)
-                    {
-                        if (!_dmaSynchronized)
-                        {
-                            if (TotalCycles % 2 == 1)
-                            {
-                                _dmaSynchronized = true;
-                            }
-                        }
-                        else
-                        {
-                            if (TotalCycles % 2 == 0) // Read on even cycles.
-                            {
-                                var address = (ushort)((_dmaCpuHighAddress << 8) | _dmaCurrentByte);
-                                _dmaReadByte = Read(address);
-                            }
-                            else // Write on odd cycles.
-                            {
-                                Ppu.Oam.Write((byte)_dmaCurrentByte, _dmaReadByte);
-
-                                _dmaCurrentByte++;
-
-                                if (_dmaCurrentByte == 256)
-                                {
-                                    _dmaProcessing = false;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Cpu.Clock();
-                    }
-                }
-
-                // TODO: Are we supposed to trigger the nmi after the CPU clocks?
-                if (Ppu.CallNmi)
-                {
-                    Cpu.NonMaskableInterrupt();
-
-                    Ppu.CallNmi = false;
-                }
-
-                TotalCycles++;
-            }
+            while (Clock() != PpuClockResult.FrameComplete) ;
         }
 
         /// <summary>
@@ -215,10 +145,10 @@ namespace Ninu.Emulator
             // Process a DMA request.
             if (address == 0x4014)
             {
-                _dmaProcessing = true;
-                _dmaSynchronized = false;
-                _dmaCurrentByte = 0;
-                _dmaCpuHighAddress = data;
+                _dmaState.Processing = true;
+                _dmaState.Synchronized = false;
+                _dmaState.CurrentByte = 0;
+                _dmaState.CpuHighAddress = data;
             }
         }
     }
