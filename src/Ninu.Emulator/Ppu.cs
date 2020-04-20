@@ -68,15 +68,188 @@ namespace Ninu.Emulator
 
             if (Registers.RenderingEnabled)
             {
+                if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
+                {
+                    byte backgroundPaletteIndex = 0;
+                    byte backgroundPaletteEntryIndex = 0;
+
+                    byte spritePaletteIndex = 0;
+                    byte spritePaletteEntryIndex = 0;
+
+                    var spritePriority = true;
+
+                    if (Registers.RenderBackground)
+                    {
+                        if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || _cycle >= 8)
+                        {
+                            var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
+
+                            // The fine X register controls our offset into the shift registers.
+                            shiftSelect >>= Registers.FineX;
+
+                            // Extract the data from the pattern tile shift registers.
+                            var patternTileLowBit = (_backgroundState.ShiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                            var patternTileHighBit = (_backgroundState.ShiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+
+                            var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
+
+                            // Extract the data from the name table attribute shift registers.
+                            var nameTableAttributeLowBit = (_backgroundState.ShiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                            var nameTableAttributeHighBit = (_backgroundState.ShiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+
+                            var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
+
+                            // Set the pixel color.
+                            backgroundPaletteIndex = paletteIndex;
+                            backgroundPaletteEntryIndex = paletteEntryIndex;
+                        }
+                    }
+
+                    var spriteZeroRendered = false;
+
+                    if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
+                    {
+                        if (Registers.RenderSpritesInLeftMost8PixelsOfScreen || _cycle >= 8) // Clip the left side of the screen if necessary.
+                        {
+                            var spriteHeight = Registers.SpriteSize ? 16 : 8;
+
+                            for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
+                            {
+                                var sprite = TemporaryOam.Sprites[i];
+
+                                if (sprite.X == 0xff)
+                                {
+                                    continue;
+                                }
+
+                                if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
+                                {
+                                    spritePriority = sprite.Priority;
+
+                                    var xIndex = _cycle - sprite.X;
+                                    var yIndex = _scanline - sprite.Y;
+
+                                    if (sprite.FlipHorizontal)
+                                    {
+                                        xIndex = 7 - xIndex;
+                                    }
+
+                                    if (sprite.FlipVertical)
+                                    {
+                                        yIndex = spriteHeight - 1 - yIndex;
+                                    }
+
+                                    // TODO: Handle the reading of the pattern through the bus.
+                                    PatternTableEntry patternTableEntry;
+
+                                    if (Registers.SpriteSize)
+                                    {
+                                        patternTableEntry = (sprite.TileIndex & 0x01) != 0 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                    }
+                                    else
+                                    {
+                                        patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                    }
+
+                                    PatternTile tile;
+
+                                    if (yIndex <= 7)
+                                    {
+                                        tile = GetPatternTile(patternTableEntry, sprite.TileIndex);
+                                    }
+                                    else
+                                    {
+                                        tile = GetPatternTile(patternTableEntry, sprite.TileIndex + 1);
+                                    }
+
+                                    // Set the pixel color.
+                                    spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
+                                    spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex > 7 ? yIndex - 8 : yIndex);
+
+                                    if (i == 0 && spritePaletteEntryIndex != 0)
+                                    {
+                                        spriteZeroRendered = true;
+                                    }
+
+                                    // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
+                                    if (spritePaletteEntryIndex != 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    var pixelIndex = _scanline * 256 + (_cycle - 1);
+
+                    byte pixelPaletteIndex = 0;
+                    byte pixelPaletteEntryIndex = 0;
+
+                    if (backgroundPaletteEntryIndex == 0 && spritePaletteEntryIndex != 0) // Transparent background, non transparent sprite.
+                    {
+                        pixelPaletteIndex = spritePaletteIndex;
+                        pixelPaletteEntryIndex = spritePaletteEntryIndex;
+                    }
+                    else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex == 0) // Non transparent background, transparent sprite.
+                    {
+                        pixelPaletteIndex = backgroundPaletteIndex;
+                        pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
+                    }
+                    else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0) // Non transparent background and non transparent sprite.
+                    {
+                        if (spritePriority) // Yes, these seems like it should be the opposite, but this is correct.
+                        {
+                            pixelPaletteIndex = backgroundPaletteIndex;
+                            pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
+                        }
+                        else
+                        {
+                            pixelPaletteIndex = spritePaletteIndex;
+                            pixelPaletteEntryIndex = spritePaletteEntryIndex;
+                        }
+
+                        // Now we need to calculate a sprite 0 hit.
+                        if (_sprite0HitPossible && spriteZeroRendered)
+                        {
+                            if (Registers.RenderingEnabled)
+                            {
+                                if (_cycle >= 1 && _cycle <= 254)
+                                {
+                                    if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || Registers.RenderSpritesInLeftMost8PixelsOfScreen)
+                                    {
+                                        if (_cycle >= 8)
+                                        {
+                                            Registers.Sprite0Hit = true;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Registers.Sprite0Hit = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    CurrentImageBuffer[pixelIndex] = GetPaletteColor(pixelPaletteIndex, pixelPaletteEntryIndex);
+                }
+
                 if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
+                    if ((_cycle >= 9 && _cycle <= 257) || (_cycle >= 329 && _cycle <= 337))
+                    {
+                        if (_cycle % 8 == 1)
+                        {
+                            LoadShiftRegisters();
+                        }
+                    }
+
                     if ((_cycle >= 1 && _cycle <= 256) || (_cycle >= 321 && _cycle <= 336))
                     {
                         switch ((_cycle - 1) % 8)
                         {
                             case 0:
-                                LoadShiftRegisters();
-
                                 _readAddress = 0x2000 | (Registers.VAddress & 0x0fff);
                                 break;
 
@@ -144,6 +317,7 @@ namespace Ninu.Emulator
 
                     if (_cycle == 256)
                     {
+                        Registers.TransferX();
                         Registers.IncrementY();
                     }
 
@@ -219,173 +393,6 @@ namespace Ninu.Emulator
                 {
                     CallNmi = true;
                 }
-            }
-
-            if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
-            {
-                byte backgroundPaletteIndex = 0;
-                byte backgroundPaletteEntryIndex = 0;
-
-                byte spritePaletteIndex = 0;
-                byte spritePaletteEntryIndex = 0;
-
-                var spritePriority = true;
-
-                if (Registers.RenderBackground)
-                {
-                    if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || _cycle >= 8)
-                    {
-                        var shiftSelect = (ushort)0x8000; // By default we are interested in the most significant bit in the shift registers.
-
-                        // The fine X register controls our offset into the shift registers.
-                        shiftSelect >>= Registers.FineX;
-
-                        // Extract the data from the pattern tile shift registers.
-                        var patternTileLowBit = (_backgroundState.ShiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                        var patternTileHighBit = (_backgroundState.ShiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
-
-                        var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
-
-                        // Extract the data from the name table attribute shift registers.
-                        var nameTableAttributeLowBit = (_backgroundState.ShiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                        var nameTableAttributeHighBit = (_backgroundState.ShiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
-
-                        var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
-
-                        // Set the pixel color.
-                        backgroundPaletteIndex = paletteIndex;
-                        backgroundPaletteEntryIndex = paletteEntryIndex;
-                    }
-                }
-
-                var spriteZeroRendered = false;
-
-                if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
-                {
-                    if (Registers.RenderSpritesInLeftMost8PixelsOfScreen || _cycle >= 8) // Clip the left side of the screen if necessary.
-                    {
-                        var spriteHeight = Registers.SpriteSize ? 16 : 8;
-
-                        for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
-                        {
-                            var sprite = TemporaryOam.Sprites[i];
-
-                            if (sprite.X == 0xff)
-                            {
-                                continue;
-                            }
-
-                            if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
-                            {
-                                spritePriority = sprite.Priority;
-
-                                var xIndex = _cycle - sprite.X;
-                                var yIndex = _scanline - sprite.Y;
-
-                                if (sprite.FlipHorizontal)
-                                {
-                                    xIndex = 7 - xIndex;
-                                }
-
-                                if (sprite.FlipVertical)
-                                {
-                                    yIndex = spriteHeight - 1 - yIndex;
-                                }
-
-                                // TODO: Handle the reading of the pattern through the bus.
-                                PatternTableEntry patternTableEntry;
-
-                                if (Registers.SpriteSize)
-                                {
-                                    patternTableEntry = (sprite.TileIndex & 0x01) != 0 ? PatternTableEntry.Right : PatternTableEntry.Left;
-                                }
-                                else
-                                {
-                                    patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
-                                }
-
-                                PatternTile tile;
-
-                                if (yIndex <= 7)
-                                {
-                                    tile = GetPatternTile(patternTableEntry, sprite.TileIndex);
-                                }
-                                else
-                                {
-                                    tile = GetPatternTile(patternTableEntry, sprite.TileIndex + 1);
-                                }
-
-                                // Set the pixel color.
-                                spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
-                                spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex > 7 ? yIndex - 8 : yIndex);
-
-                                if (i == 0 && spritePaletteEntryIndex != 0)
-                                {
-                                    spriteZeroRendered = true;
-                                }
-
-                                // This simulates priority between the sprites. Sprites first in the list have priority over later sprites.
-                                if (spritePaletteEntryIndex != 0)
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                var pixelIndex = _scanline * 256 + (_cycle - 1);
-
-                byte pixelPaletteIndex = 0;
-                byte pixelPaletteEntryIndex = 0;
-
-                if (backgroundPaletteEntryIndex == 0 && spritePaletteEntryIndex != 0) // Transparent background, non transparent sprite.
-                {
-                    pixelPaletteIndex = spritePaletteIndex;
-                    pixelPaletteEntryIndex = spritePaletteEntryIndex;
-                }
-                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex == 0) // Non transparent background, transparent sprite.
-                {
-                    pixelPaletteIndex = backgroundPaletteIndex;
-                    pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
-                }
-                else if (backgroundPaletteEntryIndex != 0 && spritePaletteEntryIndex != 0) // Non transparent background and non transparent sprite.
-                {
-                    if (spritePriority) // Yes, these seems like it should be the opposite, but this is correct.
-                    {
-                        pixelPaletteIndex = backgroundPaletteIndex;
-                        pixelPaletteEntryIndex = backgroundPaletteEntryIndex;
-                    }
-                    else
-                    {
-                        pixelPaletteIndex = spritePaletteIndex;
-                        pixelPaletteEntryIndex = spritePaletteEntryIndex;
-                    }
-
-                    // Now we need to calculate a sprite 0 hit.
-                    if (_sprite0HitPossible && spriteZeroRendered)
-                    {
-                        if (Registers.RenderingEnabled)
-                        {
-                            if (_cycle >= 1 && _cycle <= 254)
-                            {
-                                if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || Registers.RenderSpritesInLeftMost8PixelsOfScreen)
-                                {
-                                    if (_cycle >= 8)
-                                    {
-                                        Registers.Sprite0Hit = true;
-                                    }
-                                }
-                                else
-                                {
-                                    Registers.Sprite0Hit = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                CurrentImageBuffer[pixelIndex] = GetPaletteColor(pixelPaletteIndex, pixelPaletteEntryIndex);
             }
 
             // Increment the scanline and cycle.

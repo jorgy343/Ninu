@@ -62,7 +62,7 @@ namespace Ninu.Emulator
                     break;
 
                 case 3:
-                    sprite.X = data;
+                    sprite.X = (byte)(data + 1); // TODO: This seems to fix an issue where sprites appear to be shifted one to the left?
                     break;
 
                 default:
