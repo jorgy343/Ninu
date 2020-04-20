@@ -1,8 +1,8 @@
 ﻿namespace Ninu.Emulator
 {
-    public class PaletteRam : IPpuBusComponent
+    public class PaletteRam : IPpuBusComponent, IPersistable
     {
-        private readonly byte[] _palette = new byte[32];
+        private byte[] _palette = new byte[32];
 
         public bool PpuRead(ushort address, out byte data)
         {
@@ -49,6 +49,16 @@
             }
 
             return false;
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("PaletteRam.Palette", _palette);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            _palette = context.GetFromState<byte[]>("PaletteRam.Palette");
         }
     }
 }

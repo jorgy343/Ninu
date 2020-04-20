@@ -1,6 +1,6 @@
 ﻿namespace Ninu.Emulator
 {
-    public class DmaState
+    public class DmaState : IPersistable
     {
         /// <summary>
         /// Determines if the DMA is processing and the CPU is suspended.
@@ -29,5 +29,23 @@
         /// This stores the byte of data that was read during the read cycle of the DMA process.
         /// </summary>
         public byte ReadByte { get; set; }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("DmaState.Processing", Processing);
+            context.AddToState("DmaState.Synchronized", Synchronized);
+            context.AddToState("DmaState.CurrentByte", CurrentByte);
+            context.AddToState("DmaState.CpuHighAddress", CpuHighAddress);
+            context.AddToState("DmaState.ReadByte", ReadByte);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            Processing = context.GetFromState<bool>("DmaState.Processing");
+            Synchronized = context.GetFromState<bool>("DmaState.Synchronized");
+            CurrentByte = context.GetFromState<int>("DmaState.CurrentByte");
+            CpuHighAddress = context.GetFromState<byte>("DmaState.CpuHighAddress");
+            ReadByte = context.GetFromState<byte>("DmaState.ReadByte");
+        }
     }
 }

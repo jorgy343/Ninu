@@ -3,7 +3,7 @@ using System;
 
 namespace Ninu.Emulator
 {
-    public class Ppu : ICpuBusComponent
+    public class Ppu : ICpuBusComponent, IPersistable
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
@@ -13,13 +13,13 @@ namespace Ninu.Emulator
 
         public PaletteRam PaletteRam { get; } = new PaletteRam();
 
+        public PpuRegisters Registers { get; } = new PpuRegisters();
+
         public Oam Oam { get; } = new Oam(64);
         public Oam TemporaryOam { get; } = new Oam(8);
 
         private byte _oamAddress;
         private bool _sprite0HitPossible;
-
-        public PpuRegisters Registers { get; } = new PpuRegisters();
 
         public bool CallNmi { get; set; }
 
@@ -27,15 +27,7 @@ namespace Ninu.Emulator
         private int _scanline;
         private ushort _readAddress;
 
-        private byte _nextNameTableTileId;
-        private byte _nextNameTableAttribute;
-        private byte _nextLowPatternByte;
-        private byte _nextHighPatternByte;
-
-        private ushort _shiftNameTableAttributeLow;
-        private ushort _shiftNameTableAttributeHigh;
-        private ushort _shiftLowPatternByte;
-        private ushort _shiftHighPatternByte;
+        private readonly PpuBackgroundState _backgroundState = new PpuBackgroundState();
 
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
@@ -78,13 +70,7 @@ namespace Ninu.Emulator
             {
                 if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
-                    // Update the shift registers.
-                    if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 322 && _cycle <= 337))
-                    {
-                        UpdateShiftRegisters();
-                    }
-
-                    if ((_cycle >= 2 && _cycle <= 257) || (_cycle >= 321 && _cycle <= 337))
+                    if ((_cycle >= 1 && _cycle <= 256) || (_cycle >= 321 && _cycle <= 336))
                     {
                         switch ((_cycle - 1) % 8)
                         {
@@ -95,7 +81,7 @@ namespace Ninu.Emulator
                                 break;
 
                             case 1:
-                                _nextNameTableTileId = PpuRead(_readAddress);
+                                _backgroundState.NextNameTableTileId = PpuRead(_readAddress);
                                 break;
 
                             case 2:
@@ -115,11 +101,11 @@ namespace Ninu.Emulator
                                     attribute >>= 2;
                                 }
 
-                                _nextNameTableAttribute = (byte)(attribute & 0x03);
+                                _backgroundState.NextNameTableAttribute = (byte)(attribute & 0x03);
                                 break;
 
                             case 4:
-                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.VAddress.FineY + 0);
+                                _readAddress = (ushort)(_backgroundState.NextNameTableTileId * 16 + Registers.VAddress.FineY + 0);
 
                                 if (Registers.BackgroundPatternTableAddress)
                                 {
@@ -129,11 +115,11 @@ namespace Ninu.Emulator
                                 break;
 
                             case 5:
-                                _nextLowPatternByte = PpuRead(_readAddress);
+                                _backgroundState.NextLowPatternByte = PpuRead(_readAddress);
                                 break;
 
                             case 6:
-                                _readAddress = (ushort)((_nextNameTableTileId << 4) + Registers.VAddress.FineY + 8);
+                                _readAddress = (ushort)(_backgroundState.NextNameTableTileId * 16 + Registers.VAddress.FineY + 8);
 
                                 if (Registers.BackgroundPatternTableAddress)
                                 {
@@ -143,11 +129,17 @@ namespace Ninu.Emulator
                                 break;
 
                             case 7:
-                                _nextHighPatternByte = PpuRead(_readAddress);
+                                _backgroundState.NextHighPatternByte = PpuRead(_readAddress);
 
                                 Registers.IncrementX();
                                 break;
                         }
+                    }
+
+                    // Update the shift registers.
+                    if ((_cycle >= 1 && _cycle <= 256) || (_cycle >= 321 && _cycle <= 336))
+                    {
+                        UpdateShiftRegisters();
                     }
 
                     if (_cycle == 256)
@@ -168,7 +160,7 @@ namespace Ninu.Emulator
 
                     if (_cycle == 338 || _cycle == 340)
                     {
-                        _nextNameTableTileId = PpuRead(_readAddress);
+                        _backgroundState.NextNameTableTileId = PpuRead(_readAddress);
                     }
                 }
 
@@ -249,14 +241,14 @@ namespace Ninu.Emulator
                         shiftSelect >>= Registers.FineX;
 
                         // Extract the data from the pattern tile shift registers.
-                        var patternTileLowBit = (_shiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                        var patternTileHighBit = (_shiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+                        var patternTileLowBit = (_backgroundState.ShiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                        var patternTileHighBit = (_backgroundState.ShiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
                         var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
 
                         // Extract the data from the name table attribute shift registers.
-                        var nameTableAttributeLowBit = (_shiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                        var nameTableAttributeHighBit = (_shiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+                        var nameTableAttributeLowBit = (_backgroundState.ShiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
+                        var nameTableAttributeHighBit = (_backgroundState.ShiftNameTableAttributeHigh & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
 
                         var paletteIndex = (byte)(nameTableAttributeLowBit | nameTableAttributeHighBit); // This represents which palette we are using (0-3).
 
@@ -429,20 +421,20 @@ namespace Ninu.Emulator
 
         private void LoadShiftRegisters()
         {
-            _shiftNameTableAttributeLow = (ushort)((_shiftNameTableAttributeLow & 0xff00) | ((_nextNameTableAttribute & 0b01) != 0 ? 0xff : 0x00));
-            _shiftNameTableAttributeHigh = (ushort)((_shiftNameTableAttributeHigh & 0xff00) | ((_nextNameTableAttribute & 0b10) != 0 ? 0xff : 0x00));
+            _backgroundState.ShiftNameTableAttributeLow = (ushort)((_backgroundState.ShiftNameTableAttributeLow & 0xff00) | ((_backgroundState.NextNameTableAttribute & 0b01) != 0 ? 0xff : 0x00));
+            _backgroundState.ShiftNameTableAttributeHigh = (ushort)((_backgroundState.ShiftNameTableAttributeHigh & 0xff00) | ((_backgroundState.NextNameTableAttribute & 0b10) != 0 ? 0xff : 0x00));
 
-            _shiftLowPatternByte = (ushort)((_shiftLowPatternByte & 0xff00) | _nextLowPatternByte);
-            _shiftHighPatternByte = (ushort)((_shiftHighPatternByte & 0xff00) | _nextHighPatternByte);
+            _backgroundState.ShiftLowPatternByte = (ushort)((_backgroundState.ShiftLowPatternByte & 0xff00) | _backgroundState.NextLowPatternByte);
+            _backgroundState.ShiftHighPatternByte = (ushort)((_backgroundState.ShiftHighPatternByte & 0xff00) | _backgroundState.NextHighPatternByte);
         }
 
         private void UpdateShiftRegisters()
         {
-            _shiftNameTableAttributeLow <<= 1;
-            _shiftNameTableAttributeHigh <<= 1;
+            _backgroundState.ShiftNameTableAttributeLow <<= 1;
+            _backgroundState.ShiftNameTableAttributeHigh <<= 1;
 
-            _shiftLowPatternByte <<= 1;
-            _shiftHighPatternByte <<= 1;
+            _backgroundState.ShiftLowPatternByte <<= 1;
+            _backgroundState.ShiftHighPatternByte <<= 1;
         }
 
         /// <summary>
@@ -610,6 +602,52 @@ namespace Ninu.Emulator
             _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data);
 
             PaletteRam.PpuWrite(address, data);
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("Ppu.OamAddress", _oamAddress);
+            context.AddToState("Ppu.Sprite0HitPossible", _sprite0HitPossible);
+
+            context.AddToState("Ppu.CallNmi", CallNmi);
+
+            context.AddToState("Ppu.Cycle", _cycle);
+            context.AddToState("Ppu.Scanline", _scanline);
+            context.AddToState("Ppu.ReadAddress", _readAddress);
+
+            _nameTableRam.SaveState(context);
+
+            Oam.SaveState(context);
+            //TemporaryOam.SaveState(context);
+
+            PaletteRam.SaveState(context);
+
+            Registers.SaveState(context);
+
+            _backgroundState.SaveState(context);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            //_oamAddress = context.GetFromState<byte>("Ppu.OamAddress");
+            //_sprite0HitPossible = context.GetFromState<bool>("Ppu.Sprite0HitPossible");
+            //
+            //CallNmi = context.GetFromState<bool>("Ppu.CallNmi");
+
+            //_cycle = context.GetFromState<int>("Ppu.Cycle");
+            //_scanline = context.GetFromState<int>("Ppu.Scanline");
+            //_readAddress = context.GetFromState<ushort>("Ppu.ReadAddress");
+
+            _nameTableRam.LoadState(context);
+
+            Oam.LoadState(context);
+            //TemporaryOam.LoadState(context);
+
+            PaletteRam.LoadState(context);
+
+            Registers.LoadState(context);
+
+            _backgroundState.LoadState(context);
         }
     }
 }

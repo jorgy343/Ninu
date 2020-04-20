@@ -2,9 +2,9 @@
 
 namespace Ninu.Emulator
 {
-    public class Oam
+    public class Oam : IPersistable
     {
-        public Sprite8x8[] Sprites { get; }
+        public Sprite8x8[] Sprites { get; private set; }
 
         public Oam(int spriteCount)
         {
@@ -68,6 +68,16 @@ namespace Ninu.Emulator
                 default:
                     throw new InvalidOperationException(); // This isn't possible.
             }
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("Oam.Sprites", Sprites);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            Sprites = context.GetFromState<Sprite8x8[]>("Oam.Sprites");
         }
     }
 }

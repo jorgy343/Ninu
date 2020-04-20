@@ -2,9 +2,9 @@
 
 namespace Ninu.Emulator
 {
-    public class NameTableRam
+    public class NameTableRam : IPersistable
     {
-        private readonly byte[][] _tables =
+        private byte[][] _tables =
         {
             new byte[1024],
             new byte[1024],
@@ -113,6 +113,16 @@ namespace Ninu.Emulator
             }
 
             return false;
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("NameTableRam.Tables", _tables);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            _tables = context.GetFromState<byte[][]>("NameTableRam.Tables");
         }
     }
 }

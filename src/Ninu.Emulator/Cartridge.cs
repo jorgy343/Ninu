@@ -4,7 +4,7 @@ using System;
 
 namespace Ninu.Emulator
 {
-    public class Cartridge : ICpuBusComponent, IPpuBusComponent
+    public class Cartridge : ICpuBusComponent, IPpuBusComponent, IPersistable
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
@@ -12,7 +12,7 @@ namespace Ninu.Emulator
         public NesImage Image { get; }
         public Mapper Mapper { get; }
 
-        public byte[] Ram { get; } = new byte[8192];
+        public byte[] Ram { get; private set; } = new byte[8192];
 
         public Cartridge(NesImage image, ILoggerFactory loggerFactory, ILogger logger)
         {
@@ -94,6 +94,20 @@ namespace Ninu.Emulator
         public bool PpuWrite(ushort address, byte data)
         {
             return false;
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("Cartridge.Ram", Ram);
+
+            Mapper.SaveState(context);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            Ram = context.GetFromState<byte[]>("Cartridge.Ram");
+
+            Mapper.LoadState(context);
         }
     }
 }

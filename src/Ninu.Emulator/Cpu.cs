@@ -4,14 +4,14 @@ using System.Text;
 
 namespace Ninu.Emulator
 {
-    public class Cpu
+    public class Cpu : IPersistable
     {
+        public StringBuilder Log { get; } = new StringBuilder();
+
         private readonly IBus _cpuBus;
-        public readonly StringBuilder _log = new StringBuilder();
 
+        private long _totalCycles;
         private int _remainingCycles;
-
-        public long TotalCycles { get; set; }
 
         public CpuState CpuState { get; } = new CpuState();
 
@@ -37,15 +37,15 @@ namespace Ninu.Emulator
                 //    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
                 //};
 
-                //_log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{TotalCycles - 1}");
-                //_log.AppendLine();
+                //Log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{_totalCycles - 1}");
+                //Log.AppendLine();
 
                 var cycles = instruction.Execute(_cpuBus, CpuState);
 
                 _remainingCycles = cycles;
             }
 
-            TotalCycles++;
+            _totalCycles++;
             _remainingCycles--;
         }
 
@@ -144,6 +144,22 @@ namespace Ninu.Emulator
         {
             CpuState.S++;
             return _cpuBus.Read((ushort)(0x0100 + CpuState.S));
+        }
+
+        public void SaveState(SaveStateContext context)
+        {
+            context.AddToState("Cpu.TotalCycles", _totalCycles);
+            context.AddToState("Cpu.RemainingCycles", _remainingCycles);
+
+            CpuState.SaveState(context);
+        }
+
+        public void LoadState(SaveStateContext context)
+        {
+            _totalCycles = context.GetFromState<long>("Cpu.TotalCycles");
+            _remainingCycles = context.GetFromState<int>("Cpu.RemainingCycles");
+
+            CpuState.LoadState(context);
         }
     }
 }

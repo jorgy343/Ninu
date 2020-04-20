@@ -14,15 +14,9 @@
         <!-- Game Image -->
         <Image Grid.Row="0" Grid.Column="0" Width="768" Height="720" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding Path=GameImageBitmap, Mode=OneWay}" />
         <!-- Right Sidebar -->
-        <Grid Grid.Row="0" Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="120" />
-                <RowDefinition Height="400" />
-                <RowDefinition Height="auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical">
             <!-- CPU State -->
-            <Grid Grid.Row="0" Grid.Column="0">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition />
                     <RowDefinition />
@@ -49,9 +43,9 @@
                 <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=CpuState.PC, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
             </Grid>
             <!-- Instructions -->
-            <ListBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
+            <ListBox Height="400" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
             <!-- Palettes -->
-            <Grid Grid.Row="2" Grid.Column="0">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto" />
                     <RowDefinition Height="*" />
@@ -77,6 +71,8 @@
                     <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable2Bitmap, Mode=OneWay}" />
                 </Border>
             </Grid>
-        </Grid>
+            <Button Content="Save State" Command="{Binding Path=SaveState}" />
+            <Button Content="Load State" Command="{Binding Path=LoadState}" />
+        </StackPanel>
     </Grid>
 </Window>
