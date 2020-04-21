@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 namespace Ninu.Emulator.Mappers
 {
     // Mapper 001 contains 6 registers that can be written to. The only register directly accessible by the program is
-    // the load register.
+    // the load register. The default state of the Control Register is 0x1C.
     //
     //
     // Load Register (8-bit)
@@ -64,7 +64,65 @@ namespace Ninu.Emulator.Mappers
     // 1 - The banks are 4KiB in size. Each bank in memory can be individually selected from banks on the cartridge.
     //
     //
-    // To be continued...
+    // Character ROM Index Select 0 Register (CRIS0)
+    // 7       0
+    // xxxC CCCC
+    //    │ ││││
+    //    └─┴┴┴┴ Selects the bank of character ROM to use for PPU address range 0x0000-0x0fff in 4KiB mode or 0x0000-0x1fff in 8KiB mode.
+    //
+    // When the Control Register's C flag is set to 1 (4KiB mode), this register selects the bank of character ROM that
+    // will be mapped to the PPU address range 0x0000-0x0fff. When the Control Register's C flag is set to 0 (8KiB)
+    // mode, this register selects the 8KiB character ROM bank to use for the entire PPU character ROM address space
+    // which is 0x0000-0x1fff.
+    //
+    // In 8KiB mode, the LSB of CRIS0 is unused. To get the actual bank index, shift the value of this register to the
+    // right once.
+    //
+    //
+    // Character ROM Index Select 1 Register (CRIS1)
+    // 7       0
+    // xxxC CCCC
+    //    │ ││││
+    //    └─┴┴┴┴ Selects the bank of character ROM to use for PPU address range 0x1000-0x1fff in 4KiB mode.
+    //
+    // When the Control Register's C flag is set to 1 (4KiB mode), this register selects the bank of character ROM that
+    // will be mapped to the PPU address range 0x1000-0x1fff. When the Control Register's C flag is set to 0 (8KiB)
+    // mode, this register is unused since CRIS0 will map the entire range of 0x0000-0x1fff.
+    //
+    // When in 4KiB mode, the address within the range 0x1000-0x1fff needs to be translated such that it indexes a byte
+    // within the bank. So if CRIS1 is set to 0x2 and the address to translate is 0x1007, you would return the 8th byte
+    // within the 3rd bank of character ROM. Effectively you can just subtract 0x1000 from the address and use that to
+    // read the byte within the selected bank.
+    //
+    //
+    // Program ROM Index Select Register (PRIS)
+    // 7       0
+    // xxxR PPPP
+    //    │ ││││
+    //    │ └┴┴┴ Selects the bank of program ROM to use for all or some of the CPU program ROM address range of 0x8000-0xffff. See below for more details.
+    //    └───── When 1, program RAM chip exists and is enabled; when 0, program RAM chip either doesn't exist or is disabled.
+    //
+    // When the Control Register's P flag is set to 0 (32KiB) mode, this register selects the 32KiB bank of program ROM
+    // that will be mapped to CPU address space 0x8000-0xffff. In this mode, the LSB of PRIS is unused. To get the
+    // actual bank index, shift the value of this register to the right once.
+    //
+    // When in 16KiB mode, this register selects the 8KiB bank of program ROM that will be mapped to either CPU address
+    // space 0x8000-0xbfff or 0xc000-0xffff. Which address space is dynamically mapped depends on the Control
+    // Register's G flag.
+    //
+    // When in 16KiB mode and the G flag is 0, the low address space at 0x8000-0xbfff is fixed meaning that it always
+    // maps to the first 16KiB program ROM bank. The high address space at 0xc000-0xffff is dynamically mapped based on
+    // the value of PRIS. The high address space needs to be translated such that it indexes a byte within the bank. So
+    // if PRIS is set to 0x5 and the address to translate is 0x8008, you would return the 9th byte within the 6th bank
+    // of program ROM. Effectively you can just subtract 0x8000 from the address and use that to read the byte within
+    // the selected bank.
+    //
+    // When in 16KiB mode and the G flag is 1, the low address space at 0x8000-0xbfff is dynamically mapped based on
+    // the value of PRIS while the high address space at 0xc000-0xffff is fixed to the last bank of program ROM.
+    // Everything works as it otherwise does when the G flag is 0 except that the low address space is dynamically
+    // mapped and the high address space is fixed.
+    //
+    // The R flag is currently ignored in this implementation. 8KiB of RAM is assumed to exist at address 0x6000.
 
     public class Mapper001 : Mapper
     {
