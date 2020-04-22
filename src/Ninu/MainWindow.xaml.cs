@@ -24,7 +24,7 @@ namespace Ninu
 
         public void StartTimer()
         {
-            const double fps = 1000.0 / 120.0;
+            const double fps = 1000.0 / 160.0;
 
             var timer = new Timer(fps);
             timer.Elapsed += TimerTick;
@@ -73,11 +73,11 @@ namespace Ninu
 
                 Dispatcher.Invoke(() =>
                 {
-                    ViewModel.CpuState.Update(ViewModel.Console.Cpu.CpuState);
+                    //ViewModel.CpuState.Update(ViewModel.Console.Cpu.CpuState);
 
                     //UpdateInstructions(ViewModel.Console.Cpu);
 
-                    UpdatePatternRoms();
+                    //UpdatePatternRoms();
 
                     ViewModel.GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), pixels, 256 * 4, 0);
                 });

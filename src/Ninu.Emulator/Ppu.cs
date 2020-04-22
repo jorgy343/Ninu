@@ -29,6 +29,8 @@ namespace Ninu.Emulator
 
         private readonly PpuBackgroundState _backgroundState = new PpuBackgroundState();
 
+        private bool _odd;
+
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
 
@@ -44,8 +46,6 @@ namespace Ninu.Emulator
         {
 
         }
-
-        private bool _odd;
 
         public PpuClockResult Clock()
         {
@@ -77,7 +77,9 @@ namespace Ninu.Emulator
                     byte spritePaletteEntryIndex = 0;
 
                     var spritePriority = true;
+                    var spriteZeroRendered = false;
 
+                    // Render the background.
                     if (Registers.RenderBackground)
                     {
                         if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || _cycle >= 8)
@@ -105,8 +107,7 @@ namespace Ninu.Emulator
                         }
                     }
 
-                    var spriteZeroRendered = false;
-
+                    // Render the sprites.
                     if (Registers.RenderSprites && _scanline != 0) // Can't write sprites on the first scanline.
                     {
                         if (Registers.RenderSpritesInLeftMost8PixelsOfScreen || _cycle >= 8) // Clip the left side of the screen if necessary.
@@ -144,10 +145,12 @@ namespace Ninu.Emulator
 
                                     if (Registers.SpriteSize)
                                     {
+                                        // 8x16
                                         patternTableEntry = (sprite.TileIndex & 0x01) != 0 ? PatternTableEntry.Right : PatternTableEntry.Left;
                                     }
                                     else
                                     {
+                                        // 8x8
                                         patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
                                     }
 
@@ -181,6 +184,7 @@ namespace Ninu.Emulator
                         }
                     }
 
+                    // Perform pixel selection and render it to the buffer.
                     var pixelIndex = _scanline * 256 + (_cycle - 1);
 
                     byte pixelPaletteIndex = 0;
@@ -216,9 +220,9 @@ namespace Ninu.Emulator
                             {
                                 if (_cycle >= 1 && _cycle <= 254)
                                 {
-                                    if (Registers.RenderBackgroundInLeftMost8PixelsOfScreen || Registers.RenderSpritesInLeftMost8PixelsOfScreen)
+                                    if (!Registers.RenderBackgroundInLeftMost8PixelsOfScreen || !Registers.RenderSpritesInLeftMost8PixelsOfScreen)
                                     {
-                                        if (_cycle >= 8)
+                                        if (_cycle >= 9)
                                         {
                                             Registers.Sprite0Hit = true;
                                         }
@@ -235,6 +239,7 @@ namespace Ninu.Emulator
                     CurrentImageBuffer[pixelIndex] = GetPaletteColor(pixelPaletteIndex, pixelPaletteEntryIndex);
                 }
 
+                // Perform rendering setup.
                 if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
                     if ((_cycle >= 9 && _cycle <= 257) || (_cycle >= 329 && _cycle <= 337))
@@ -342,6 +347,27 @@ namespace Ninu.Emulator
                 {
                     Registers.TransferY();
                 }
+
+                // Handle the sprites.
+                //if (Registers.RenderSprites)
+                //{
+                //    if (_scanline >= 0 && _scanline <= 239) // All of the visible scanlines.
+                //    {
+                //        // Clear secondary OAM to 0xff.
+                //        if (_cycle >= 1 && _cycle <= 64)
+                //        {
+                //            // The real hardware reads from the OAM memory and writes to the secondary OAM memory ever
+                //            // other cycle. However, the data line during the read is pulled to 0xff so the read itself
+                //            // doesn't do anything. We'll skip emulating the read and only emulate the writes.
+                //            if (_cycle % 2 == 0)
+                //            {
+                //                var secondaryOamByteIndex = (_cycle / 2) - 1;
+
+                //                TemporaryOam.Write((byte)secondaryOamByteIndex, 0xff);
+                //            }
+                //        }
+                //    }
+                //}
 
                 if (Registers.RenderSprites && _cycle == 340)
                 {

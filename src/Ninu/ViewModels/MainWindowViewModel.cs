@@ -27,7 +27,7 @@ namespace Ninu.ViewModels
 
         public MainWindowViewModel()
         {
-            var image = new NesImage(@"C:\Users\Jorgy\Downloads\dragon_warrior.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\Dragon_warrior.nes");
 
             var loggerFactory = LoggerFactory.Create(x =>
             {
