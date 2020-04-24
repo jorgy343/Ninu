@@ -127,6 +127,17 @@ namespace Ninu.ViewModels
 
         private void Render(object? sender, EventArgs e)
         {
+            lock (_pixels)
+            {
+                GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), _pixels, 256 * 4, 0);
+
+                //CpuState.Update(Console.Cpu.CpuState);
+
+                //UpdateInstructions(Console.Cpu);
+
+                //UpdatePatternRoms();
+            }
+
             lock (_controllerDataLock)
             {
                 _controllerData = 0;
@@ -139,17 +150,6 @@ namespace Ninu.ViewModels
                 _controllerData |= Keyboard.IsKeyDown(Key.Down) ? (byte)(1 << 2) : (byte)0x00;
                 _controllerData |= Keyboard.IsKeyDown(Key.Left) ? (byte)(1 << 1) : (byte)0x00;
                 _controllerData |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
-            }
-
-            lock (_pixels)
-            {
-                GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), _pixels, 256 * 4, 0);
-
-                CpuState.Update(Console.Cpu.CpuState);
-
-                UpdateInstructions(Console.Cpu);
-
-                UpdatePatternRoms();
             }
         }
 
