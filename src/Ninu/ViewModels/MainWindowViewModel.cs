@@ -155,7 +155,7 @@ namespace Ninu.ViewModels
 
         private void ProcessFrame()
         {
-            const double targetFrameRateDelta = 1000.0 / 75.0;
+            const double targetFrameRateDelta = 1000.0 / 60.0;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
