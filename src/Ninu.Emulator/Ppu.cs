@@ -154,20 +154,21 @@ namespace Ninu.Emulator
                                         patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
                                     }
 
-                                    PatternTile tile;
-
                                     if (yIndex <= 7)
                                     {
-                                        tile = GetPatternTile(patternTableEntry, sprite.TileIndex);
+                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableEntry, sprite.TileIndex, (byte)xIndex, (byte)yIndex);
                                     }
                                     else
                                     {
-                                        tile = GetPatternTile(patternTableEntry, sprite.TileIndex + 1);
+                                        // It must be an 8x16 sprite and we are indexing into the lower half of the
+                                        // sprite. For 8x16 sprites, the top tile of the sprite is the first tile in
+                                        // memory and the bottom tile of the sprite is the tile directly adjacent on
+                                        // the right of the first tile.
+                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableEntry, (byte)(sprite.TileIndex + 1), (byte)xIndex, (byte)yIndex);
                                     }
 
                                     // Set the pixel color.
                                     spritePaletteIndex = (byte)(sprite.PaletteIndex + 4);
-                                    spritePaletteEntryIndex = tile.GetPaletteColorIndex(xIndex, yIndex > 7 ? yIndex - 8 : yIndex);
 
                                     if (i == 0 && spritePaletteEntryIndex != 0)
                                     {
@@ -468,6 +469,85 @@ namespace Ninu.Emulator
 
             _backgroundState.ShiftLowPatternByte <<= 1;
             _backgroundState.ShiftHighPatternByte <<= 1;
+        }
+
+        public byte GetPaletteColorIndex(PatternTableEntry patternTableEntry, byte tileIndex, byte x, byte y)
+        {
+            if (x > 7) throw new ArgumentOutOfRangeException(nameof(x));
+            if (y > 7) throw new ArgumentOutOfRangeException(nameof(y));
+
+            // Here is a view of half of the tile that represents the low bit in the 2 bit palette color index. This is
+            // 8 bytes total which, with 8 bits in each byte, allows for 64 pixels.
+            //
+            //   7   6   5   4   3   2   1   0     <- Bit index into the byte (represents the X axes).
+            // +---+---+---+---+---+---+---+---+
+            // |   |   |   |   |   |   |   |   | 0  +
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 1  |
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 2  |
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 3  |
+            // +---+---+---+---+---+---+---+---+    | The byte index (represents the Y axes).
+            // |   |   |   |   |   |   |   |   | 4  |
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 5  |
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 6  |
+            // +---+---+---+---+---+---+---+---+    |
+            // |   |   |   |   |   |   |   |   | 7  +
+            // +---+---+---+---+---+---+---+---+
+            //
+            // The byte represents the Y coordinate while the bit represents the X coordinate. It is important to note
+            // that the MSB of the byte represents x = 0. This is because the MSB is physically the left most bit.
+            //
+            //
+            // In memory, one complete tile is laid out in 16 bytes:
+            //
+            // +-------------------------------+-------------------------------+
+            // |                               |                               |
+            // | First 8 bytes are the low bits| Next 8 bytes are the high bits|
+            // |                               |                               |
+            // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+            // | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | A | B | C | D | E | F |  <- Bytes
+            // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+            //           |                               |
+            //           +---------------------+---------+
+            //                                 |
+            //                                 | If the y coordinate is 2, bytes 2 and A would be chosen. Their bits
+            //                                 | shown below represent the palette color index.
+            //                                 |
+            // +-------------------------------+-------------------------------+
+            // |                               |                               |
+            // | First 8 bits are the low bit  | Next 8 bits are the high bits |
+            // | in the palette color index    | in the palette color index    |
+            // +-------------------------------+-------------------------------+
+            // |MSB        byte 2           LSB|MSB         byte A          LSB|
+            // +-------------------------------+-------------------------------+
+            // | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 | F | E | D | C | B | A | 9 | 8 |  <- Bits
+            // +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+            //                           |                               |
+            //                           +-------------------------------+
+            //                                 |
+            //                                 | If the x coordinate is 6, bits 1 and 9 are chosen. Bit 1 would
+            //                                 | represent the low bit in the 2 bit index while bit 9 would represent
+            //                                 | the high bit.
+
+            var patternTableOffset = patternTableEntry == PatternTableEntry.Left ? 0x0000 : 0x1000;
+
+            var lowPlaneByte = PpuRead((ushort)(patternTableOffset + tileIndex * 16 + y));
+            var highPlaneByte = PpuRead((ushort)(patternTableOffset + tileIndex * 16 + y + 8));
+
+            // The MSB represents x = 0 while the LSB represents x = 7. Therefore, shift the byte to the left the
+            // number of x positions we are interested in, mask off the MSB, then logical shift right 7 to get the bit
+            // we are interested into the LSB.
+            var lowPlaneBit = (lowPlaneByte << x & 0x80) >> 7;
+            var highPlaneBit = (highPlaneByte << x & 0x80) >> 7;
+
+            // Combine the low bit and high bit to create the 2 bit palette color index.
+            var colorPaletteIndex = lowPlaneBit | (highPlaneBit << 1);
+
+            return (byte)colorPaletteIndex;
         }
 
         /// <summary>

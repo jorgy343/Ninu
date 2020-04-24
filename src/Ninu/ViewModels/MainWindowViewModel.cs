@@ -9,7 +9,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Console = Ninu.Emulator.Console;
 
 namespace Ninu.ViewModels
@@ -73,7 +72,7 @@ namespace Ninu.ViewModels
                 var context = new SaveStateContext();
                 Console.SaveState(context);
 
-                //File.WriteAllText(@"C:\Users\Jorgy\Desktop\save-state.json", context.ToDataString());
+                File.WriteAllText(@"C:\Users\Jorgy\Desktop\save-state.json", context.ToDataString());
 
                 StartRenderingThread();
             });
@@ -156,7 +155,7 @@ namespace Ninu.ViewModels
 
         private void ProcessFrame()
         {
-            const double targetFrameRateDelta = 1000.0 / 60.0;
+            const double targetFrameRateDelta = 1000.0 / 75.0;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
