@@ -12,9 +12,9 @@ namespace Ninu
             var viewModel = new MainWindowViewModel();
 
             var window = new MainWindow(viewModel);
-
-            window.StartTimer();
             window.Show();
+
+            viewModel.StartRendering();
         }
     }
 }
