@@ -69,10 +69,8 @@ namespace Ninu.ViewModels
             {
                 StopRenderingThread();
 
-                var context = new SaveStateContext();
-                Console.SaveState(context);
-
-                File.WriteAllText(@"C:\Users\Jorgy\Desktop\save-state.json", context.ToDataString());
+                var data = Emulator.SaveState.Save(Console);
+                File.WriteAllBytes(@"C:\Users\Jorgy\Desktop\save-state.json", data);
 
                 StartRenderingThread();
             });
@@ -81,8 +79,8 @@ namespace Ninu.ViewModels
             {
                 StopRenderingThread();
 
-                var context = new SaveStateContext(File.ReadAllBytes(@"C:\Users\Jorgy\Desktop\save-state.json"));
-                Console.LoadState(context);
+                var data = File.ReadAllBytes(@"C:\Users\Jorgy\Desktop\save-state.json");
+                Emulator.SaveState.Load(Console, data);
 
                 StartRenderingThread();
             });

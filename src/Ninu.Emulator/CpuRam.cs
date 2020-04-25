@@ -1,8 +1,9 @@
 ﻿namespace Ninu.Emulator
 {
-    public class CpuRam : ICpuBusComponent, IPersistable
+    public class CpuRam : ICpuBusComponent
     {
         // This RAM is mirror four times (total of 8KiB).
+        [Save("Ram")]
         private byte[] _ram = new byte[2048];
 
         public bool CpuRead(ushort address, out byte data)
@@ -26,16 +27,6 @@
             }
 
             return false;
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("CpuRam.Ram", _ram);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            _ram = context.GetFromState<byte[]>("CpuRam.Ram");
         }
     }
 }

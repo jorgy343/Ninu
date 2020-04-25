@@ -3,32 +3,50 @@ using System;
 
 namespace Ninu.Emulator
 {
-    public class Ppu : ICpuBusComponent, IPersistable
+    public class Ppu : ICpuBusComponent
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
-        private readonly Cartridge _cartridge;
+        private readonly Cartridge _cartridge; // Don't save this as the console handles that.
+
+        [SaveChildren("NameTableRam")]
         private readonly NameTableRam _nameTableRam = new NameTableRam();
 
+        [SaveChildren]
         public PaletteRam PaletteRam { get; } = new PaletteRam();
 
+        [SaveChildren]
         public PpuRegisters Registers { get; } = new PpuRegisters();
 
+        [SaveChildren]
         public Oam Oam { get; } = new Oam(64);
+
+        [SaveChildren]
         public Oam TemporaryOam { get; } = new Oam(8);
 
+        [Save("OamAddress")]
         private byte _oamAddress;
+
+        [Save("Sprite0HitPossible")]
         private bool _sprite0HitPossible;
 
+        [Save]
         public bool CallNmi { get; set; }
 
+        [Save("Cycle")]
         private int _cycle;
+
+        [Save("Scanline")]
         private int _scanline;
+
+        [Save("ReadAddress")]
         private ushort _readAddress;
 
+        [SaveChildren("BackgroundState")]
         private readonly PpuBackgroundState _backgroundState = new PpuBackgroundState();
 
+        [Save("Odd")]
         private bool _odd;
 
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
@@ -479,23 +497,23 @@ namespace Ninu.Emulator
             // Here is a view of half of the tile that represents the low bit in the 2 bit palette color index. This is
             // 8 bytes total which, with 8 bits in each byte, allows for 64 pixels.
             //
-            //   7   6   5   4   3   2   1   0     <- Bit index into the byte (represents the X axes).
+            //   7   6   5   4   3   2   1   0    <- Bit index into the byte (represents the X axes).
             // +---+---+---+---+---+---+---+---+
-            // |   |   |   |   |   |   |   |   | 0  +
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 1  |
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 2  |
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 3  |
-            // +---+---+---+---+---+---+---+---+    | The byte index (represents the Y axes).
-            // |   |   |   |   |   |   |   |   | 4  |
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 5  |
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 6  |
-            // +---+---+---+---+---+---+---+---+    |
-            // |   |   |   |   |   |   |   |   | 7  +
+            // |   |   |   |   |   |   |   |   | 0 --+
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 1   |
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 2   |
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 3   |
+            // +---+---+---+---+---+---+---+---+     | The byte index (represents the Y axes).
+            // |   |   |   |   |   |   |   |   | 4   |
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 5   |
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 6   |
+            // +---+---+---+---+---+---+---+---+     |
+            // |   |   |   |   |   |   |   |   | 7 --+
             // +---+---+---+---+---+---+---+---+
             //
             // The byte represents the Y coordinate while the bit represents the X coordinate. It is important to note
@@ -715,52 +733,6 @@ namespace Ninu.Emulator
             _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data);
 
             PaletteRam.PpuWrite(address, data);
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("Ppu.OamAddress", _oamAddress);
-            context.AddToState("Ppu.Sprite0HitPossible", _sprite0HitPossible);
-
-            context.AddToState("Ppu.CallNmi", CallNmi);
-
-            context.AddToState("Ppu.Cycle", _cycle);
-            context.AddToState("Ppu.Scanline", _scanline);
-            context.AddToState("Ppu.ReadAddress", _readAddress);
-
-            _nameTableRam.SaveState(context);
-
-            Oam.SaveState(context);
-            //TemporaryOam.SaveState(context);
-
-            PaletteRam.SaveState(context);
-
-            Registers.SaveState(context);
-
-            _backgroundState.SaveState(context);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            //_oamAddress = context.GetFromState<byte>("Ppu.OamAddress");
-            //_sprite0HitPossible = context.GetFromState<bool>("Ppu.Sprite0HitPossible");
-            //
-            //CallNmi = context.GetFromState<bool>("Ppu.CallNmi");
-
-            //_cycle = context.GetFromState<int>("Ppu.Cycle");
-            //_scanline = context.GetFromState<int>("Ppu.Scanline");
-            //_readAddress = context.GetFromState<ushort>("Ppu.ReadAddress");
-
-            _nameTableRam.LoadState(context);
-
-            Oam.LoadState(context);
-            //TemporaryOam.LoadState(context);
-
-            PaletteRam.LoadState(context);
-
-            Registers.LoadState(context);
-
-            _backgroundState.LoadState(context);
         }
     }
 }

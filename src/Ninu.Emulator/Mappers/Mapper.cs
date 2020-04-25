@@ -3,7 +3,7 @@ using System;
 
 namespace Ninu.Emulator.Mappers
 {
-    public abstract class Mapper : IPersistable
+    public abstract class Mapper
     {
         protected ILogger Logger { get; }
 
@@ -33,15 +33,5 @@ namespace Ninu.Emulator.Mappers
         public abstract bool TranslateProgramRomAddress(ushort address, out ushort translatedAddress);
 
         public abstract bool TranslatePatternRomAddress(ushort address, out ushort translatedAddress);
-
-        public virtual void SaveState(SaveStateContext context)
-        {
-
-        }
-
-        public virtual void LoadState(SaveStateContext context)
-        {
-
-        }
     }
 }

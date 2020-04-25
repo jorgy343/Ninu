@@ -126,12 +126,22 @@ namespace Ninu.Emulator.Mappers
 
     public class Mapper001 : Mapper
     {
+        [Save("LoadRegister")]
         private byte _loadRegister;
+
+        [Save("LoadRegisterCount")]
         private int _loadRegisterCount;
 
+        [Save("ControlRegister")]
         private byte _controlRegister = 0x1c;
+
+        [Save("PatternRomBank0")]
         private byte _patternRomBank0;
+
+        [Save("PatternRomBank1")]
         private byte _patternRomBank1;
+
+        [Save("ProgramRomBank")]
         private byte _programRomBank;
 
         public Mapper001(int programRomBankCount, int patternRomBankCount, ILogger logger)
@@ -305,28 +315,6 @@ namespace Ninu.Emulator.Mappers
         private ProgramRomSwapBank CurrentProgramRomSwapBank => (ProgramRomSwapBank)Bits.GetBits(_controlRegister, 2, 1);
         private ProgramRomBankSize CurrentProgramRomBankSize => (ProgramRomBankSize)Bits.GetBits(_controlRegister, 3, 1);
         private PatternRomBankSize CurrentPatternRomBankSize => (PatternRomBankSize)Bits.GetBits(_controlRegister, 4, 1);
-
-        public override void SaveState(SaveStateContext context)
-        {
-            context.AddToState("Mapper001.LoadRegister", _loadRegister);
-            context.AddToState("Mapper001.LoadRegisterCount", _loadRegisterCount);
-
-            context.AddToState("Mapper001.ControlRegister", _controlRegister);
-            context.AddToState("Mapper001.PatternRomBank0", _patternRomBank0);
-            context.AddToState("Mapper001.PatternRomBank1", _patternRomBank1);
-            context.AddToState("Mapper001.ProgramRomBank", _programRomBank);
-        }
-
-        public override void LoadState(SaveStateContext context)
-        {
-            _loadRegister = context.GetFromState<byte>("Mapper001.LoadRegister");
-            _loadRegisterCount = context.GetFromState<int>("Mapper001.LoadRegisterCount");
-
-            _controlRegister = context.GetFromState<byte>("Mapper001.ControlRegister");
-            _patternRomBank0 = context.GetFromState<byte>("Mapper001.PatternRomBank0");
-            _patternRomBank1 = context.GetFromState<byte>("Mapper001.PatternRomBank1");
-            _programRomBank = context.GetFromState<byte>("Mapper001.ProgramRomBank");
-        }
 
         private enum ProgramRomSwapBank
         {

@@ -1,8 +1,9 @@
 ﻿namespace Ninu.Emulator
 {
-    public class PaletteRam : IPpuBusComponent, IPersistable
+    public class PaletteRam : IPpuBusComponent
     {
-        private byte[] _palette = new byte[32];
+        [Save("Palette")]
+        private readonly byte[] _palette = new byte[32];
 
         public bool PpuRead(ushort address, out byte data)
         {
@@ -11,14 +12,14 @@
                 var translatedAddress = (ushort)(address & 0x001f);
 
                 // Handle the mirroring.
-                translatedAddress = translatedAddress switch
+                translatedAddress = (ushort)(translatedAddress switch
                 {
                     0x0010 => 0x0000,
                     0x0014 => 0x0004,
                     0x0018 => 0x0008,
                     0x001c => 0x000c,
                     _ => translatedAddress,
-                };
+                });
 
                 data = _palette[translatedAddress];
                 return true;
@@ -35,30 +36,20 @@
                 var translatedAddress = (ushort)(address & 0x001f);
 
                 // Handle the mirroring.
-                translatedAddress = translatedAddress switch
+                translatedAddress = (ushort)(translatedAddress switch
                 {
                     0x0010 => 0x0000,
                     0x0014 => 0x0004,
                     0x0018 => 0x0008,
                     0x001c => 0x000c,
                     _ => translatedAddress,
-                };
+                });
 
                 _palette[translatedAddress] = data;
                 return true;
             }
 
             return false;
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("PaletteRam.Palette", _palette);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            _palette = context.GetFromState<byte[]>("PaletteRam.Palette");
         }
     }
 }

@@ -2,18 +2,30 @@
 
 namespace Ninu.Emulator
 {
-    public class PpuRegisters : IPersistable
+    public class PpuRegisters
     {
+        [Save]
         public byte Control { get; set; }
+
+        [Save]
         public byte Mask { get; set; }
+
+        [Save]
         public byte Status { get; set; }
 
+        [SaveChildren]
         public VRamAddressRegister VAddress;
+
+        [SaveChildren]
         public VRamAddressRegister TAddress;
 
+        [Save]
         public byte FineX { get; set; }
+
+        [Save]
         public bool WriteLatch { get; set; }
 
+        [Save]
         public byte ReadBuffer { get; set; }
 
         public void WriteControlRegister(byte data)
@@ -263,37 +275,6 @@ namespace Ninu.Emulator
         {
             get => Bits.GetBit(Status, 7);
             set => Status = (byte)Bits.SetBit(Status, 7, value);
-        }
-
-        // Save state stuff.
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("PpuRegisters.Control", Control);
-            context.AddToState("PpuRegisters.Mask", Mask);
-            context.AddToState("PpuRegisters.Status", Status);
-
-            context.AddToState("PpuRegisters.VAddress", (ushort)VAddress);
-            context.AddToState("PpuRegisters.TAddress", (ushort)TAddress);
-
-            context.AddToState("PpuRegisters.FineX", FineX);
-            context.AddToState("PpuRegisters.WriteLatch", WriteLatch);
-
-            context.AddToState("PpuRegisters.ReadBuffer", ReadBuffer);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            Control = context.GetFromState<byte>("PpuRegisters.Control");
-            Mask = context.GetFromState<byte>("PpuRegisters.Mask");
-            Status = context.GetFromState<byte>("PpuRegisters.Status");
-
-            VAddress = context.GetFromState<ushort>("PpuRegisters.VAddress");
-            TAddress = context.GetFromState<ushort>("PpuRegisters.TAddress");
-
-            FineX = context.GetFromState<byte>("PpuRegisters.FineX");
-            WriteLatch = context.GetFromState<bool>("PpuRegisters.WriteLatch");
-
-            ReadBuffer = context.GetFromState<byte>("PpuRegisters.ReadBuffer");
         }
     }
 }

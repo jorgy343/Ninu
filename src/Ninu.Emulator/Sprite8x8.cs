@@ -5,6 +5,36 @@
     /// </summary>
     public class Sprite8x8
     {
+        /// <summary>
+        /// Gets or sets the sprite's Y coordinate. When rendered, sprites are behind by one scanline and so sprites
+        /// can never appear on the first scanline nor can they be partially off the screen at the top of the screen.
+        /// Because of this, the actual Y value must have 1 subtracted from it when stored in this object and in
+        /// memory.
+        /// </summary>
+        [Save]
+        public byte Y { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index of the tile in pattern memory. For 8x8 sprites, the name table that is selected is
+        /// controlled by bit 3 in PPUCTRL.
+        /// </summary>
+        [Save]
+        public byte TileIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the attribute bits of the sprites. See the specific attribute bit methods on this object
+        /// further details.
+        /// </summary>
+        [Save]
+        public byte Attributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the sprite's X coordinate. This references the sprites left edge. This means that it is not
+        /// possible to have a sprite partially off the left edge of the screen.
+        /// </summary>
+        [Save]
+        public byte X { get; set; }
+
         public Sprite8x8(byte byte0, byte byte1, byte byte2, byte byte3)
         {
             Y = byte0;
@@ -12,32 +42,6 @@
             Attributes = byte2;
             X = byte3;
         }
-
-        /// <summary>
-        /// Gets or sets the sprite's Y coordinate. When rendered, sprites are behind by one scanline and so sprites
-        /// can never appear on the first scanline nor can they be partially off the screen at the top of the screen.
-        /// Because of this, the actual Y value must have 1 subtracted from it when stored in this object and in
-        /// memory.
-        /// </summary>
-        public byte Y { get; set; }
-
-        /// <summary>
-        /// Gets or sets the index of the tile in pattern memory. For 8x8 sprites, the name table that is selected is
-        /// controlled by bit 3 in PPUCTRL.
-        /// </summary>
-        public byte TileIndex { get; set; }
-
-        /// <summary>
-        /// Gets or sets the attribute bits of the sprites. See the specific attribute bit methods on this object
-        /// further details.
-        /// </summary>
-        public byte Attributes { get; set; }
-
-        /// <summary>
-        /// Gets or sets the sprite's X coordinate. This references the sprites left edge. This means that it is not
-        /// possible to have a sprite partially off the left edge of the screen.
-        /// </summary>
-        public byte X { get; set; }
 
         public byte PaletteIndex
         {

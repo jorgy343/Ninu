@@ -4,15 +4,19 @@ using System.Text;
 
 namespace Ninu.Emulator
 {
-    public class Cpu : IPersistable
+    public class Cpu
     {
         public StringBuilder Log { get; } = new StringBuilder();
 
         private readonly IBus _cpuBus;
 
+        [Save("TotalCycles")]
         private long _totalCycles;
+
+        [Save("RemainingCycles")]
         private int _remainingCycles;
 
+        [SaveChildren]
         public CpuState CpuState { get; } = new CpuState();
 
         public Cpu(IBus cpuBus)
@@ -144,22 +148,6 @@ namespace Ninu.Emulator
         {
             CpuState.S++;
             return _cpuBus.Read((ushort)(0x0100 + CpuState.S));
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("Cpu.TotalCycles", _totalCycles);
-            context.AddToState("Cpu.RemainingCycles", _remainingCycles);
-
-            CpuState.SaveState(context);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            _totalCycles = context.GetFromState<long>("Cpu.TotalCycles");
-            _remainingCycles = context.GetFromState<int>("Cpu.RemainingCycles");
-
-            CpuState.LoadState(context);
         }
     }
 }

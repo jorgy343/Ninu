@@ -3,21 +3,30 @@ using System;
 
 namespace Ninu.Emulator
 {
-    public class Console : IBus, IPersistable
+    public class Console : IBus
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
+        [SaveChildren]
         public Cpu Cpu { get; }
+
+        [SaveChildren]
         public Ppu Ppu { get; }
 
+        [SaveChildren("Cartridge")]
         private readonly Cartridge _cartridge;
+
+        [SaveChildren("InternalRam")]
         private readonly CpuRam _internalRam;
 
+        [SaveChildren("DmaState")]
         private readonly DmaState _dmaState = new DmaState();
 
+        [SaveChildren]
         public Controllers Controllers { get; } = new Controllers();
 
+        [Save]
         public long TotalCycles { get; set; }
 
         public Console(Cartridge cartridge, ILoggerFactory loggerFactory, ILogger logger)
@@ -150,34 +159,6 @@ namespace Ninu.Emulator
                 _dmaState.CurrentByte = 0;
                 _dmaState.CpuHighAddress = data;
             }
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("Console.TotalCycles", TotalCycles);
-
-            Cpu.SaveState(context);
-            Ppu.SaveState(context);
-
-            _cartridge.SaveState(context);
-            _internalRam.SaveState(context);
-
-            _dmaState.SaveState(context);
-            Controllers.SaveState(context);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            TotalCycles = context.GetFromState<long>("Console.TotalCycles");
-
-            Cpu.LoadState(context);
-            Ppu.LoadState(context);
-
-            _cartridge.LoadState(context);
-            _internalRam.LoadState(context);
-
-            _dmaState.LoadState(context);
-            Controllers.LoadState(context);
         }
     }
 }

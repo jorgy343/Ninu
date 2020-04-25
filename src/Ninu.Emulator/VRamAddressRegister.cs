@@ -2,6 +2,7 @@
 {
     public struct VRamAddressRegister
     {
+        [Save]
         public ushort Data;
 
         public VRamAddressRegister(ushort data)

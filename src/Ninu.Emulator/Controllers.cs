@@ -2,10 +2,13 @@
 
 namespace Ninu.Emulator
 {
-    public class Controllers : ICpuBusComponent, IPersistable
+    public class Controllers : ICpuBusComponent
     {
-        private byte[] _data = new byte[2];
-        private byte[] _dataSnapshot = new byte[2];
+        [Save("Data")]
+        private readonly byte[] _data = new byte[2];
+
+        [Save("DataSnapshot")]
+        private readonly byte[] _dataSnapshot = new byte[2];
 
         public void SetControllerData(int controller, byte data)
         {
@@ -45,18 +48,6 @@ namespace Ninu.Emulator
             }
 
             return false;
-        }
-
-        public void SaveState(SaveStateContext context)
-        {
-            context.AddToState("Controllers.Data", _data);
-            context.AddToState("Controllers.DataSnapshot", _dataSnapshot);
-        }
-
-        public void LoadState(SaveStateContext context)
-        {
-            _data = context.GetFromState<byte[]>("Controllers.Data");
-            _dataSnapshot = context.GetFromState<byte[]>("Controllers.DataSnapshot");
         }
     }
 }
