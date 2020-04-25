@@ -37,32 +37,6 @@ namespace Ninu.Emulator
             return _values[key];
         }
 
-        public T GetFromState<T>(string key)
-        {
-            if (typeof(T) == typeof(byte))
-            {
-                var a = (long)_values[key]!;
-                return (T)(object)(byte)a;
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                var a = (long)_values[key]!;
-                return (T)(object)(ushort)a;
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                var a = (long)_values[key]!;
-                return (T)(object)(int)a;
-            }
-            else if (typeof(T) == typeof(CpuFlags))
-            {
-                var a = (long)_values[key]!;
-                return (T)(object)(CpuFlags)a;
-            }
-
-            return (T)_values[key];
-        }
-
         public SaveStateContext()
         {
 
@@ -70,10 +44,12 @@ namespace Ninu.Emulator
 
         public SaveStateContext(byte[] data)
         {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+
             _values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(Encoding.UTF8.GetString(data), new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.All,
-            });
+            })!;
         }
 
         public string ToDataString()
