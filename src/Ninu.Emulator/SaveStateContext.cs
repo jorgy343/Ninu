@@ -11,30 +11,40 @@ namespace Ninu.Emulator
 
         public void AddToState(string key, object? value) => _values[key] = value;
 
-        public object? GetFromState(string key, Type type)
+        public bool TryGetFromState(string key, Type type, out object? value)
         {
+            if (!_values.ContainsKey(key))
+            {
+                value = null;
+                return false;
+            }
+
             if (type == typeof(byte))
             {
                 var a = (long)_values[key]!;
-                return (byte)a;
+                value = (byte)a;
             }
             else if (type == typeof(ushort))
             {
                 var a = (long)_values[key]!;
-                return (ushort)a;
+                value = (ushort)a;
             }
             else if (type == typeof(int))
             {
                 var a = (long)_values[key]!;
-                return (int)a;
+                value = (int)a;
             }
             else if (type == typeof(CpuFlags))
             {
                 var a = (long)_values[key]!;
-                return (CpuFlags)a;
+                value = (CpuFlags)a;
+            }
+            else
+            {
+                value = _values[key];
             }
 
-            return _values[key];
+            return true;
         }
 
         public SaveStateContext()

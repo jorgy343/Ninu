@@ -43,7 +43,7 @@ namespace Ninu.ViewModels
 
         public MainWindowViewModel()
         {
-            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\Dragon_warrior.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\final_fantasy.nes");
 
             var loggerFactory = LoggerFactory.Create(x =>
             {
@@ -130,8 +130,8 @@ namespace Ninu.ViewModels
             {
                 GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), _pixels, 256 * 4, 0);
 
-                //CpuState.Update(Console.Cpu.CpuState);
-                //UpdateInstructions(Console.Cpu);
+                CpuState.Update(Console.Cpu.CpuState);
+                UpdateInstructions(Console.Cpu);
 
                 UpdatePaletteColors();
                 UpdatePatternRoms();
@@ -154,7 +154,7 @@ namespace Ninu.ViewModels
 
         private void ProcessFrame()
         {
-            const double targetFrameRateDelta = 1000.0 / 60.0;
+            const double targetFrameRateDelta = 1000.0 / 1.0;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();

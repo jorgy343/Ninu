@@ -90,7 +90,6 @@ namespace Ninu.Emulator
                 var saveChildrenAttribute = field.GetCustomAttribute<SaveChildrenAttribute>();
                 var saveAttribute = field.GetCustomAttribute<SaveAttribute>();
 
-                // If both the SaveChildrenAttribute and SaveAttribute exist on a field, ignore the SaveAttribute.
                 if (saveChildrenAttribute != null)
                 {
                     var value = field.GetValue(obj);
@@ -105,11 +104,11 @@ namespace Ninu.Emulator
                 else if (saveAttribute != null)
                 {
                     var name = saveAttribute.Name ?? field.Name;
-                    var value = context.GetFromState($"{keyPath}.{name}", field.FieldType);
 
-                    field.SetValue(obj, value);
-
-                    context.AddToState($"{keyPath}.{name}", field.GetValue(obj));
+                    if (context.TryGetFromState($"{keyPath}.{name}", field.FieldType, out var value))
+                    {
+                        field.SetValue(obj, value);
+                    }
                 }
             }
 
@@ -118,7 +117,6 @@ namespace Ninu.Emulator
                 var saveChildrenAttribute = property.GetCustomAttribute<SaveChildrenAttribute>();
                 var saveAttribute = property.GetCustomAttribute<SaveAttribute>();
 
-                // If both the SaveChildrenAttribute and SaveAttribute exist on a property, ignore the SaveAttribute.
                 if (saveChildrenAttribute != null)
                 {
                     var value = property.GetValue(obj);
@@ -133,11 +131,11 @@ namespace Ninu.Emulator
                 else if (saveAttribute != null)
                 {
                     var name = saveAttribute.Name ?? property.Name;
-                    var value = context.GetFromState($"{keyPath}.{name}", property.PropertyType);
 
-                    property.SetValue(obj, value);
-
-                    context.AddToState($"{keyPath}.{name}", property.GetValue(obj));
+                    if (context.TryGetFromState($"{keyPath}.{name}", property.PropertyType, out var value))
+                    {
+                        property.SetValue(obj, value);
+                    }
                 }
             }
         }

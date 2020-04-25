@@ -28,7 +28,7 @@ namespace Ninu.Emulator
         {
             if (_remainingCycles == 0) // Read the next instruction when the previous is done executing.
             {
-                var originalPc = CpuState.PC;
+                //var originalPc = CpuState.PC;
 
                 var opCode = _cpuBus.Read(CpuState.PC++);
                 var instruction = Instruction.GetInstruction(opCode);
