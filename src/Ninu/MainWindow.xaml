@@ -6,73 +6,293 @@
         xmlns:local="clr-namespace:Ninu"
         mc:Ignorable="d"
         Title="Ninu" Width="1300" Height="900" SnapsToDevicePixels="True" UseLayoutRounding="True">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="360" />
-        </Grid.ColumnDefinitions>
-        <!-- Game Image -->
-        <Image Grid.Row="0" Grid.Column="0" Width="768" Height="720" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding Path=GameImageBitmap, Mode=OneWay}" />
-        <!-- Right Sidebar -->
-        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical">
-            <!-- CPU State -->
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                    <RowDefinition />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="auto" />
-                    <ColumnDefinition />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Margin="0 0 12 0">A:</TextBlock>
-                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Path=CpuState.A, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-                <TextBlock Grid.Row="1" Grid.Column="0">X:</TextBlock>
-                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Path=CpuState.X, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-                <TextBlock Grid.Row="2" Grid.Column="0">Y:</TextBlock>
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Path=CpuState.Y, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-                <TextBlock Grid.Row="3" Grid.Column="0">S:</TextBlock>
-                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Path=CpuState.S, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-                <TextBlock Grid.Row="4" Grid.Column="0">P:</TextBlock>
-                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Path=CpuState.P, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-                <TextBlock Grid.Row="5" Grid.Column="0">PC:</TextBlock>
-                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=CpuState.PC, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
-            </Grid>
-            <!-- Instructions -->
-            <ListBox Height="400" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
-            <!-- Palettes -->
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="180" />
-                    <ColumnDefinition Width="180" />
-                </Grid.ColumnDefinitions>
-                <ComboBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" SelectedIndex="{Binding Path=SelectedPalette, Mode=TwoWay}">
-                    <ComboBoxItem Content="Background 0" />
-                    <ComboBoxItem Content="Background 1" />
-                    <ComboBoxItem Content="Background 2" />
-                    <ComboBoxItem Content="Background 3" />
-                    <ComboBoxItem Content="Sprite 0" />
-                    <ComboBoxItem Content="Sprite 1" />
-                    <ComboBoxItem Content="Sprite 2" />
-                    <ComboBoxItem Content="Sprite 3" />
-                </ComboBox>
-                <Border Grid.Row="1" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
-                    <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneWay}" />
-                </Border>
-                <Border Grid.Row="1" Grid.Column="1" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
-                    <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable2Bitmap, Mode=OneWay}" />
-                </Border>
-            </Grid>
-            <Button Content="Save State" Command="{Binding Path=SaveState}" />
-            <Button Content="Load State" Command="{Binding Path=LoadState}" />
-        </StackPanel>
-    </Grid>
+    <Window.Resources>
+        <ResourceDictionary>
+            <Style x:Key="PaletteListBoxStyle" TargetType="{x:Type ListBox}">
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="KeyboardNavigation.DirectionalNavigation" Value="Cycle" />
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <Style TargetType="{x:Type ListBoxItem}" >
+                            <Setter Property="Margin" Value="2, 2, 2, 0" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate>
+                                        <Border Background="Transparent">
+                                            <RadioButton
+                                                Content="{TemplateBinding ContentPresenter.Content}"
+                                                VerticalAlignment="Center"
+                                                IsChecked="{Binding Path=IsSelected, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </Window.Resources>
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Load Rom" />
+            </MenuItem>
+            <MenuItem Header="_Save State">
+                <MenuItem Header="S_ave" Command="{Binding Path=SaveState}" />
+                <MenuItem Header="L_oad" Command="{Binding Path=LoadState}" />
+            </MenuItem>
+        </Menu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="360" />
+            </Grid.ColumnDefinitions>
+            <!-- Game Image -->
+            <Image Grid.Row="0" Grid.Column="0" Width="768" Height="720" RenderOptions.BitmapScalingMode="NearestNeighbor" Source="{Binding Path=GameImageBitmap, Mode=OneWay}" />
+            <!-- Right Sidebar -->
+            <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical">
+                <!-- CPU State -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Margin="0 0 12 0">A:</TextBlock>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Path=CpuState.A, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                    <TextBlock Grid.Row="1" Grid.Column="0">X:</TextBlock>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Path=CpuState.X, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                    <TextBlock Grid.Row="2" Grid.Column="0">Y:</TextBlock>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Path=CpuState.Y, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                    <TextBlock Grid.Row="3" Grid.Column="0">S:</TextBlock>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Path=CpuState.S, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                    <TextBlock Grid.Row="4" Grid.Column="0">P:</TextBlock>
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Path=CpuState.P, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                    <TextBlock Grid.Row="5" Grid.Column="0">PC:</TextBlock>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Path=CpuState.PC, Mode=OneWay, StringFormat={}{0:X2} ({0})}" />
+                </Grid>
+                <!-- Instructions -->
+                <ListBox Height="400" ItemsSource="{Binding Path=CpuState.Instructions, Mode=OneWay}" SelectedValue="{Binding Path=CpuState.SelectedInstruction, Mode=OneWay}" />
+                <!-- Palettes -->
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="180" />
+                    </Grid.ColumnDefinitions>
+                    <ListBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" SelectedIndex="{Binding Path=SelectedPalette, Mode=TwoWay}">
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette0Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette0Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette0Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette0Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette1Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette1Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette1Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette1Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette2Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette2Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette2Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette2Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette3Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette3Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette3Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette3Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette4Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette4Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette4Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette4Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette5Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette5Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette5Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette5Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette6Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette6Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette6Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette6Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                        <ListBoxItem BorderThickness="0" Background="Transparent">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette7Color0, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette7Color1, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette7Color2, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                                <Border Width="10" Height="15" BorderThickness="0">
+                                    <Border.Background>
+                                        <SolidColorBrush Color="{Binding Path=PaletteColors.Palette7Color3, Mode=OneWay}" />
+                                    </Border.Background>
+                                </Border>
+                            </StackPanel>
+                        </ListBoxItem>
+                    </ListBox>
+                    <Border Grid.Row="1" Grid.Column="0" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
+                        <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable1Bitmap, Mode=OneWay}" />
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1" Width="130" Height="130" BorderThickness="1" BorderBrush="Black">
+                        <Image Width="128" Height="128" Stretch="None" Source="{Binding Path=PatternTable2Bitmap, Mode=OneWay}" />
+                    </Border>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
 </Window>

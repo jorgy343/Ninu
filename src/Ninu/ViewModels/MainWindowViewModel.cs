@@ -29,6 +29,7 @@ namespace Ninu.ViewModels
         public Console Console { get; }
 
         public CpuStateModel CpuState { get; } = new CpuStateModel();
+        public PaletteColors PaletteColors { get; } = new PaletteColors();
 
         public int SelectedPalette { get; set; }
 
@@ -130,10 +131,10 @@ namespace Ninu.ViewModels
                 GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), _pixels, 256 * 4, 0);
 
                 //CpuState.Update(Console.Cpu.CpuState);
-
                 //UpdateInstructions(Console.Cpu);
 
-                //UpdatePatternRoms();
+                UpdatePaletteColors();
+                UpdatePatternRoms();
             }
 
             lock (_controllerDataLock)
@@ -198,6 +199,49 @@ namespace Ninu.ViewModels
             {
                 CpuState.Instructions.Add(decodedInstruction);
             }
+        }
+
+        private void UpdatePaletteColors()
+        {
+            PaletteColors.Palette0Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(0, 0)].ToMediaColor();
+            PaletteColors.Palette0Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(0, 1)].ToMediaColor();
+            PaletteColors.Palette0Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(0, 2)].ToMediaColor();
+            PaletteColors.Palette0Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(0, 3)].ToMediaColor();
+
+            PaletteColors.Palette1Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(1, 0)].ToMediaColor();
+            PaletteColors.Palette1Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(1, 1)].ToMediaColor();
+            PaletteColors.Palette1Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(1, 2)].ToMediaColor();
+            PaletteColors.Palette1Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(1, 3)].ToMediaColor();
+
+            PaletteColors.Palette2Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(2, 0)].ToMediaColor();
+            PaletteColors.Palette2Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(2, 1)].ToMediaColor();
+            PaletteColors.Palette2Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(2, 2)].ToMediaColor();
+            PaletteColors.Palette2Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(2, 3)].ToMediaColor();
+
+            PaletteColors.Palette3Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(3, 0)].ToMediaColor();
+            PaletteColors.Palette3Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(3, 1)].ToMediaColor();
+            PaletteColors.Palette3Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(3, 2)].ToMediaColor();
+            PaletteColors.Palette3Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(3, 3)].ToMediaColor();
+
+            PaletteColors.Palette4Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(4, 0)].ToMediaColor();
+            PaletteColors.Palette4Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(4, 1)].ToMediaColor();
+            PaletteColors.Palette4Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(4, 2)].ToMediaColor();
+            PaletteColors.Palette4Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(4, 3)].ToMediaColor();
+
+            PaletteColors.Palette5Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(5, 0)].ToMediaColor();
+            PaletteColors.Palette5Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(5, 1)].ToMediaColor();
+            PaletteColors.Palette5Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(5, 2)].ToMediaColor();
+            PaletteColors.Palette5Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(5, 3)].ToMediaColor();
+
+            PaletteColors.Palette6Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(6, 0)].ToMediaColor();
+            PaletteColors.Palette6Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(6, 1)].ToMediaColor();
+            PaletteColors.Palette6Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(6, 2)].ToMediaColor();
+            PaletteColors.Palette6Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(6, 3)].ToMediaColor();
+
+            PaletteColors.Palette7Color0 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(7, 0)].ToMediaColor();
+            PaletteColors.Palette7Color1 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(7, 1)].ToMediaColor();
+            PaletteColors.Palette7Color2 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(7, 2)].ToMediaColor();
+            PaletteColors.Palette7Color3 = SystemPalette.Colors[Console.Ppu.GetPaletteColor(7, 3)].ToMediaColor();
         }
 
         private void UpdatePatternRoms()
