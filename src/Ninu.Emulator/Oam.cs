@@ -5,7 +5,7 @@ namespace Ninu.Emulator
     public class Oam
     {
         [SaveChildren]
-        public Sprite8x8[] Sprites { get; private set; }
+        public Sprite8x8[] Sprites { get; }
 
         public Oam(int spriteCount)
         {
