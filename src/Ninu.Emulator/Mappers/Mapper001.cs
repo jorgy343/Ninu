@@ -52,8 +52,8 @@ namespace Ninu.Emulator.Mappers
     // 0b11 - Horizontal mirroring.
     //
     // G (Program ROM Swap Bank Select)
-    // 0 - Low bank is fixed; top bank is swappable.
-    // 1 - Low bank is swappable; top bank is fixed. This is the default mode during boot.
+    // 0 - Low bank is fixed; high bank is swappable.
+    // 1 - Low bank is swappable; high bank is fixed. This is the default mode during boot.
     //
     // P (Program ROM Bank Size)
     // 0 - The banks are 32KiB in size and span the entire program ROM addressable range. When this mode is selected, G (Program ROM Swap Bank Select) is ignored.
