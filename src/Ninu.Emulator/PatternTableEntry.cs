@@ -1,8 +1,8 @@
 ﻿namespace Ninu.Emulator
 {
-    public enum PatternTableEntry
+    public enum PatternTableOffset : ushort
     {
-        Left,
-        Right
+        Left = 0x0000,
+        Right = 0x1000,
     }
 }

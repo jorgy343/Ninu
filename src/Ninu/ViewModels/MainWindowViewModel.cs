@@ -207,8 +207,8 @@ namespace Ninu.ViewModels
             {
                 for (var tileX = 0; tileX < 16; tileX++)
                 {
-                    var leftTile = Console.Ppu.GetPatternTile(PatternTableEntry.Left, tileY * 16 + tileX);
-                    var rightTile = Console.Ppu.GetPatternTile(PatternTableEntry.Right, tileY * 16 + tileX);
+                    var leftTile = Console.Ppu.GetPatternTile(PatternTableOffset.Left, tileY * 16 + tileX);
+                    var rightTile = Console.Ppu.GetPatternTile(PatternTableOffset.Right, tileY * 16 + tileX);
 
                     var xOffset = tileX * 8;
                     var yOffset = tileY * 8;

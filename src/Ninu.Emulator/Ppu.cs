@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
+using System.ComponentModel;
 
 namespace Ninu.Emulator
 {
@@ -89,10 +90,10 @@ namespace Ninu.Emulator
                 if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
                 {
                     byte backgroundPaletteIndex = 0;
-                    byte backgroundPaletteEntryIndex = 0;
+                    var backgroundPaletteEntryIndex = new PaletteEntryIndex(0);
 
                     byte spritePaletteIndex = 0;
-                    byte spritePaletteEntryIndex = 0;
+                    var spritePaletteEntryIndex = new PaletteEntryIndex(0);
 
                     var spritePriority = true;
                     var spriteZeroRendered = false;
@@ -108,10 +109,10 @@ namespace Ninu.Emulator
                             shiftSelect >>= Registers.FineX;
 
                             // Extract the data from the pattern tile shift registers.
-                            var patternTileLowBit = (_backgroundState.ShiftLowPatternByte & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
-                            var patternTileHighBit = (_backgroundState.ShiftHighPatternByte & shiftSelect) != 0 ? (byte)0b10 : (byte)0b00;
+                            var patternTileLowBit = (_backgroundState.ShiftLowPatternByte & shiftSelect) != 0 ? (byte)0x1 : (byte)0x0;
+                            var patternTileHighBit = (_backgroundState.ShiftHighPatternByte & shiftSelect) != 0 ? (byte)0x1 : (byte)0x0;
 
-                            var paletteEntryIndex = (byte)(patternTileLowBit | patternTileHighBit); // This represents the index into palette (0-3).
+                            var paletteEntryIndex = new PaletteEntryIndex(patternTileLowBit, patternTileHighBit); // This represents the index into the palette (0-3).
 
                             // Extract the data from the name table attribute shift registers.
                             var nameTableAttributeLowBit = (_backgroundState.ShiftNameTableAttributeLow & shiftSelect) != 0 ? (byte)0b01 : (byte)0b00;
@@ -158,23 +159,22 @@ namespace Ninu.Emulator
                                         yIndex = spriteHeight - 1 - yIndex;
                                     }
 
-                                    // TODO: Handle the reading of the pattern through the bus.
-                                    PatternTableEntry patternTableEntry;
+                                    PatternTableOffset patternTableOffset;
 
                                     if (Registers.SpriteSize)
                                     {
                                         // 8x16
-                                        patternTableEntry = (sprite.TileIndex & 0x01) != 0 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                        patternTableOffset = (sprite.TileIndex & 0x01) != 0 ? PatternTableOffset.Right : PatternTableOffset.Left;
                                     }
                                     else
                                     {
                                         // 8x8
-                                        patternTableEntry = Registers.SpritePatternTableAddressFor8X8 ? PatternTableEntry.Right : PatternTableEntry.Left;
+                                        patternTableOffset = Registers.SpritePatternTableAddressFor8X8 ? PatternTableOffset.Right : PatternTableOffset.Left;
                                     }
 
                                     if (yIndex <= 7)
                                     {
-                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableEntry, sprite.TileIndex, (byte)xIndex, (byte)yIndex);
+                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableOffset, sprite.TileIndex, (byte)xIndex, (byte)yIndex);
                                     }
                                     else
                                     {
@@ -182,7 +182,7 @@ namespace Ninu.Emulator
                                         // sprite. For 8x16 sprites, the top tile of the sprite is the first tile in
                                         // memory and the bottom tile of the sprite is the tile directly adjacent on
                                         // the right of the first tile.
-                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableEntry, (byte)(sprite.TileIndex + 1), (byte)xIndex, (byte)yIndex);
+                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableOffset, (byte)(sprite.TileIndex + 1), (byte)xIndex, (byte)yIndex);
                                     }
 
                                     // Set the pixel color.
@@ -489,10 +489,11 @@ namespace Ninu.Emulator
             _backgroundState.ShiftHighPatternByte <<= 1;
         }
 
-        public byte GetPaletteColorIndex(PatternTableEntry patternTableEntry, byte tileIndex, byte x, byte y)
+        public PaletteEntryIndex GetPaletteColorIndex(PatternTableOffset patternTableOffset, byte tileIndex, byte x, byte y)
         {
             if (x > 7) throw new ArgumentOutOfRangeException(nameof(x));
             if (y > 7) throw new ArgumentOutOfRangeException(nameof(y));
+            if (!Enum.IsDefined(typeof(PatternTableOffset), patternTableOffset)) throw new InvalidEnumArgumentException(nameof(patternTableOffset), (int)patternTableOffset, typeof(PatternTableOffset));
 
             // Here is a view of half of the tile that represents the low bit in the 2 bit palette color index. This is
             // 8 bytes total which, with 8 bits in each byte, allows for 64 pixels.
@@ -551,10 +552,8 @@ namespace Ninu.Emulator
             //                                 | represent the low bit in the 2 bit index while bit 9 would represent
             //                                 | the high bit.
 
-            var patternTableOffset = patternTableEntry == PatternTableEntry.Left ? 0x0000 : 0x1000;
-
-            var lowPlaneByte = PpuRead((ushort)(patternTableOffset + tileIndex * 16 + y));
-            var highPlaneByte = PpuRead((ushort)(patternTableOffset + tileIndex * 16 + y + 8));
+            var lowPlaneByte = PpuRead((ushort)((ushort)patternTableOffset + tileIndex * 16 + y));
+            var highPlaneByte = PpuRead((ushort)((ushort)patternTableOffset + tileIndex * 16 + y + 8));
 
             // The MSB represents x = 0 while the LSB represents x = 7. Therefore, shift the byte to the left the
             // number of x positions we are interested in, mask off the MSB, then logical shift right 7 to get the bit
@@ -563,9 +562,7 @@ namespace Ninu.Emulator
             var highPlaneBit = (highPlaneByte << x & 0x80) >> 7;
 
             // Combine the low bit and high bit to create the 2 bit palette color index.
-            var colorPaletteIndex = lowPlaneBit | (highPlaneBit << 1);
-
-            return (byte)colorPaletteIndex;
+            return new PaletteEntryIndex(lowPlaneBit, highPlaneBit);
         }
 
         /// <summary>
@@ -585,19 +582,18 @@ namespace Ninu.Emulator
             return (byte)(PpuRead(address) & 0x3f); // The & ensures that the number is between 0-63.
         }
 
-        public PatternTile GetPatternTile(PatternTableEntry entry, int index)
+        public PatternTile GetPatternTile(PatternTableOffset patternTableOffset, int index)
         {
             if (index < 0 || index > 255) throw new ArgumentOutOfRangeException(nameof(index));
-
-            var entryOffset = entry == PatternTableEntry.Left ? 0x0000 : 0x1000;
+            if (!Enum.IsDefined(typeof(PatternTableOffset), patternTableOffset)) throw new InvalidEnumArgumentException(nameof(patternTableOffset), (int)patternTableOffset, typeof(PatternTableOffset));
 
             Span<byte> plane1 = stackalloc byte[8];
             Span<byte> plane2 = stackalloc byte[8];
 
             for (var i = 0; i < 8; i++)
             {
-                plane1[i] = PpuRead((ushort)(entryOffset + index * 16 + i));
-                plane2[i] = PpuRead((ushort)(entryOffset + index * 16 + 8 + i)); // Add 8 bytes to skip the first plane.
+                plane1[i] = PpuRead((ushort)((ushort)patternTableOffset + index * 16 + i));
+                plane2[i] = PpuRead((ushort)((ushort)patternTableOffset + index * 16 + 8 + i)); // Add 8 bytes to skip the first plane.
             }
 
             return new PatternTile(plane1, plane2);
