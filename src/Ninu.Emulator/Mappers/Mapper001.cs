@@ -226,7 +226,7 @@ namespace Ninu.Emulator.Mappers
             return false;
         }
 
-        public override bool TranslateProgramRomAddress(ushort address, out ushort translatedAddress)
+        public override bool TranslateProgramRomAddress(ushort address, out int translatedAddress)
         {
             if (address >= 0x8000 && address <= 0xffff)
             {
@@ -236,7 +236,7 @@ namespace Ninu.Emulator.Mappers
                     // 1-3 are used. The LSB is ignored.
                     var index = (_programRomBank & 0x0e) >> 1;
 
-                    translatedAddress = (ushort)((address & 0x7ffff) + 32768 * index);
+                    translatedAddress = (address & 0x7ffff) + 32768 * index;
                 }
                 else // 16K swappable banks.
                 {
@@ -245,13 +245,13 @@ namespace Ninu.Emulator.Mappers
                         if (address >= 0x8000 && address <= 0xbfff)
                         {
                             // First bank is fixed so just translate the address one to one.
-                            translatedAddress = (ushort)(address & 0x3fff);
+                            translatedAddress = address & 0x3fff;
                         }
                         else
                         {
                             var index = _programRomBank & 0x0f;
 
-                            translatedAddress = (ushort)((address & 0x3fff) + 16384 * index);
+                            translatedAddress = (address & 0x3fff) + 16384 * index;
                         }
                     }
                     else
@@ -260,12 +260,12 @@ namespace Ninu.Emulator.Mappers
                         {
                             var index = _programRomBank & 0x0f;
 
-                            translatedAddress = (ushort)((address & 0x3fff) + 16384 * index);
+                            translatedAddress = (address & 0x3fff) + 16384 * index;
                         }
                         else
                         {
                             // Second bank is fixed so just translate the address one to one to the last bank.
-                            translatedAddress = (ushort)((address & 0x3fff) + 16384 * (ProgramRomBankCount - 1));
+                            translatedAddress = (address & 0x3fff) + 16384 * (ProgramRomBankCount - 1);
                         }
                     }
                 }
@@ -277,7 +277,7 @@ namespace Ninu.Emulator.Mappers
             return false;
         }
 
-        public override bool TranslatePatternRomAddress(ushort address, out ushort translatedAddress)
+        public override bool TranslatePatternRomAddress(ushort address, out int translatedAddress)
         {
             if (address >= 0x0000 && address <= 0x1fff)
             {
@@ -287,7 +287,7 @@ namespace Ninu.Emulator.Mappers
                     // are used. The LSB is ignored.
                     var index = (_patternRomBank0 & 0x1e) >> 1;
 
-                    translatedAddress = (ushort)((address & 0x1fff) + 8192 * index);
+                    translatedAddress = (address & 0x1fff) + 8192 * index;
                 }
                 else // 4K swappable banks.
                 {
@@ -295,13 +295,13 @@ namespace Ninu.Emulator.Mappers
                     {
                         var index = _patternRomBank0 & 0x1f;
 
-                        translatedAddress = (ushort)((address & 0x0fff) + 4096 * index);
+                        translatedAddress = (address & 0x0fff) + 4096 * index;
                     }
                     else
                     {
                         var index = _patternRomBank1 & 0x1f;
 
-                        translatedAddress = (ushort)((address & 0x0fff) + 4096 * index);
+                        translatedAddress = (address & 0x0fff) + 4096 * index;
                     }
                 }
 

@@ -58,14 +58,27 @@ namespace Ninu.ViewModels
             Console = new Console(cartridge, loggerFactory, loggerFactory.CreateLogger<Console>());
             Console.Reset();
 
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
+            Console.CompleteFrame();
 
-            //File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
-
+            File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
+            return;
             SaveState = new RelayCommand(x =>
             {
                 StopRenderingThread();
@@ -154,7 +167,7 @@ namespace Ninu.ViewModels
 
         private void ProcessFrame()
         {
-            const double targetFrameRateDelta = 1000.0 / 1.0;
+            const double targetFrameRateDelta = 1000.0 / 60.0;
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();

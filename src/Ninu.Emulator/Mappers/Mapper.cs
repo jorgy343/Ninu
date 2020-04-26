@@ -30,8 +30,8 @@ namespace Ninu.Emulator.Mappers
 
         public abstract bool HandleWrite(ushort address, byte data);
 
-        public abstract bool TranslateProgramRomAddress(ushort address, out ushort translatedAddress);
+        public abstract bool TranslateProgramRomAddress(ushort address, out int translatedAddress);
 
-        public abstract bool TranslatePatternRomAddress(ushort address, out ushort translatedAddress);
+        public abstract bool TranslatePatternRomAddress(ushort address, out int translatedAddress);
     }
 }
