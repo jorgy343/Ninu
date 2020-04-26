@@ -28,21 +28,21 @@ namespace Ninu.Emulator
         {
             if (_remainingCycles == 0) // Read the next instruction when the previous is done executing.
             {
-                var originalPc = CpuState.PC;
+                //var originalPc = CpuState.PC;
 
                 var opCode = _cpuBus.Read(CpuState.PC++);
                 var instruction = Instruction.GetInstruction(opCode);
 
-                var machineCode = instruction.Size switch
-                {
-                    1 => $"{opCode:X2}      ",
-                    2 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2}   ",
-                    3 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2} {_cpuBus.Read((ushort)(CpuState.PC + 1)):X2}",
-                    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
-                };
+                //var machineCode = instruction.Size switch
+                //{
+                //    1 => $"{opCode:X2}      ",
+                //    2 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2}   ",
+                //    3 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2} {_cpuBus.Read((ushort)(CpuState.PC + 1)):X2}",
+                //    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
+                //};
 
-                Log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{_totalCycles - 1}");
-                Log.AppendLine();
+                //Log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{_totalCycles - 1}");
+                //Log.AppendLine();
 
                 var cycles = instruction.Execute(_cpuBus, CpuState);
 
@@ -135,7 +135,7 @@ namespace Ninu.Emulator
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-            Log.AppendLine($"nmi PC={CpuState.PC}");
+            //Log.AppendLine($"nmi PC={CpuState.PC}");
 
             _remainingCycles = 8;
         }

@@ -182,7 +182,7 @@ namespace Ninu.Emulator
                                         // sprite. For 8x16 sprites, the top tile of the sprite is the first tile in
                                         // memory and the bottom tile of the sprite is the tile directly adjacent on
                                         // the right of the first tile.
-                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableOffset, (byte)(sprite.TileIndex + 1), (byte)xIndex, (byte)yIndex);
+                                        spritePaletteEntryIndex = GetPaletteColorIndex(patternTableOffset, (byte)(sprite.TileIndex + 1), (byte)xIndex, (byte)(yIndex - 8));
                                     }
 
                                     // Set the pixel color.
@@ -725,10 +725,18 @@ namespace Ninu.Emulator
         {
             address &= 0x3fff; // Ensure we never write outside of the PPU bus's address range.
 
-            _cartridge.PpuWrite(address, data);
-            _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data);
+            if (_cartridge.PpuWrite(address, data))
+            {
 
-            PaletteRam.PpuWrite(address, data);
+            }
+            else if (_nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data))
+            {
+
+            }
+            else if (PaletteRam.PpuWrite(address, data))
+            {
+
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
+
+using Microsoft.Extensions.Logging;
 using Ninu.Emulator.Mappers;
 using System;
 
@@ -15,7 +17,10 @@ namespace Ninu.Emulator
         public Mapper Mapper { get; }
 
         [Save]
-        public byte[] Ram { get; private set; } = new byte[8192];
+        public byte[] Ram { get; } = new byte[8192];
+
+        [Save]
+        public byte[]? CharacterRam { get; }
 
         public Cartridge(NesImage image, ILoggerFactory loggerFactory, ILogger logger)
         {
@@ -23,6 +28,11 @@ namespace Ninu.Emulator
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             Image = image ?? throw new ArgumentNullException(nameof(image));
+
+            if (Image.PatternRamInsteadOfRom)
+            {
+                CharacterRam = new byte[8192];
+            }
 
             Mapper = Image.MapperType switch
             {
@@ -76,6 +86,15 @@ namespace Ninu.Emulator
 
         public bool PpuRead(ushort address, out byte data)
         {
+            if (address >= 0x0000 && address <= 0x1fff)
+            {
+                if (CharacterRam != null)
+                {
+                    data = CharacterRam[address];
+                    return true;
+                }
+            }
+
             var translated = Mapper.TranslatePatternRomAddress(address, out var translatedAddress);
 
             if (translated)
@@ -96,6 +115,15 @@ namespace Ninu.Emulator
 
         public bool PpuWrite(ushort address, byte data)
         {
+            if (address >= 0x0000 && address <= 0x1fff)
+            {
+                if (CharacterRam != null)
+                {
+                    CharacterRam[address] = data;
+                    return true;
+                }
+            }
+
             return false;
         }
     }

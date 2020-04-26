@@ -9,6 +9,8 @@ namespace Ninu.Emulator
         public int PatternRomBankCount { get; }
         public int ProgramRamBankCount { get; }
 
+        public bool PatternRamInsteadOfRom { get; }
+
         public int MapperType { get; }
         public TvSystem CartridgeType { get; }
 
@@ -76,6 +78,8 @@ namespace Ninu.Emulator
 
             ProgramRom = reader.ReadBytes(16384 * ProgramRomBankCount);
             PatternRom = reader.ReadBytes(8192 * PatternRomBankCount);
+
+            PatternRamInsteadOfRom = PatternRomBankCount == 0;
 
             // TODO: Handle PlayChoice INST-ROM and PlayChoice PROM.
         }

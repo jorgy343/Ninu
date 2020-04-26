@@ -43,7 +43,7 @@ namespace Ninu.ViewModels
 
         public MainWindowViewModel()
         {
-            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\final_fantasy.nes");
+            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\zelda.nes");
 
             var loggerFactory = LoggerFactory.Create(x =>
             {
@@ -58,27 +58,16 @@ namespace Ninu.ViewModels
             Console = new Console(cartridge, loggerFactory, loggerFactory.CreateLogger<Console>());
             Console.Reset();
 
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
-            Console.CompleteFrame();
+            //Console.CompleteFrame();
+            //Console.CompleteFrame();
+            //Console.CompleteFrame();
+            //Console.CompleteFrame();
+            //Console.CompleteFrame();
+            //Console.CompleteFrame();
 
-            File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
-            return;
+            //File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
+            //return;
+
             SaveState = new RelayCommand(x =>
             {
                 StopRenderingThread();
