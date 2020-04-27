@@ -489,14 +489,26 @@ namespace Ninu.Emulator
             _backgroundState.ShiftHighPatternByte <<= 1;
         }
 
+        /// <summary>
+        /// Gets a palette entry index from the pattern table offset, tile index, an X coordinate within the tile, and
+        /// a Y coordinate within the tile. The origin for the X and Y coordinates are the top left of the tile. Each
+        /// tile is 8 pixels by 8 pixels so both the X and Y coordinates must be an integer between 0 and 7 inclusive.
+        /// Each pattern table consists of 256 tiles so the <paramref name="tileIndex"/> must be an integer between 0
+        /// and 255 inclusive.
+        /// </summary>
+        /// <param name="patternTableOffset">Chooses either the left pattern table or right pattern table.</param>
+        /// <param name="tileIndex">The tile to pull the palette entry index from.</param>
+        /// <param name="x">The X coordinate within the tile.</param>
+        /// <param name="y">The Y coordinate within the tile.</param>
+        /// <returns>The palette entry index.</returns>
         public PaletteEntryIndex GetPaletteColorIndex(PatternTableOffset patternTableOffset, byte tileIndex, byte x, byte y)
         {
             if (x > 7) throw new ArgumentOutOfRangeException(nameof(x));
             if (y > 7) throw new ArgumentOutOfRangeException(nameof(y));
             if (!Enum.IsDefined(typeof(PatternTableOffset), patternTableOffset)) throw new InvalidEnumArgumentException(nameof(patternTableOffset), (int)patternTableOffset, typeof(PatternTableOffset));
 
-            // Here is a view of half of the tile that represents the low bit in the 2 bit palette color index. This is
-            // 8 bytes total which, with 8 bits in each byte, allows for 64 pixels.
+            // Here is a view of half of the tile. This represents the low bit in the 2 bit palette entry index. This
+            // is 8 bytes total which, with 8 bits in each byte, allows for 64 pixels.
             //
             //   7   6   5   4   3   2   1   0    <- Bit index into the byte (represents the X axes).
             // +---+---+---+---+---+---+---+---+
@@ -534,12 +546,12 @@ namespace Ninu.Emulator
             //           +---------------------+---------+
             //                                 |
             //                                 | If the y coordinate is 2, bytes 2 and A would be chosen. Their bits
-            //                                 | shown below represent the palette color index.
+            //                                 | shown below represent the palette entry index.
             //                                 |
             // +-------------------------------+-------------------------------+
             // |                               |                               |
             // | First 8 bits are the low bit  | Next 8 bits are the high bits |
-            // | in the palette color index    | in the palette color index    |
+            // | in the palette entry index    | in the palette entry index    |
             // +-------------------------------+-------------------------------+
             // |MSB        byte 2           LSB|MSB         byte A          LSB|
             // +-------------------------------+-------------------------------+
@@ -561,7 +573,7 @@ namespace Ninu.Emulator
             var lowPlaneBit = (lowPlaneByte << x & 0x80) >> 7;
             var highPlaneBit = (highPlaneByte << x & 0x80) >> 7;
 
-            // Combine the low bit and high bit to create the 2 bit palette color index.
+            // Combine the low bit and high bit to create the 2 bit palette entry index.
             return new PaletteEntryIndex(lowPlaneBit, highPlaneBit);
         }
 

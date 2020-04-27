@@ -10,7 +10,6 @@
         /// The underlying data which represents the index into the palette. This is guaranteed to be a number between
         /// 0 and 3 inclusive.
         /// </summary>
-        [Save]
         public byte Data { get; }
 
         /// <summary>

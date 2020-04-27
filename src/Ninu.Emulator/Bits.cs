@@ -41,5 +41,16 @@ namespace Ninu.Emulator
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static int SetBit(ushort data, int position, bool value) => value ? data | (1 << position) : data & ~(1 << position);
+
+        // Other bit stuff.
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public static byte Reverse(byte data)
+        {
+            data = (byte)(((data & 0xf0) >> 4) | ((data & 0x0f) << 4));
+            data = (byte)(((data & 0xcc) >> 2) | ((data & 0x33) << 2));
+            data = (byte)(((data & 0xaa) >> 1) | ((data & 0x55) << 1));
+
+            return data;
+        }
     }
 }
