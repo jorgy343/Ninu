@@ -17,10 +17,10 @@ namespace Ninu.Emulator
         public Mapper Mapper { get; }
 
         [Save]
-        public byte[] Ram { get; } = new byte[8192];
+        public byte[] Ram { get; private set; } = new byte[8192];
 
         [Save]
-        public byte[]? CharacterRam { get; }
+        public byte[]? CharacterRam { get; private set; }
 
         public Cartridge(NesImage image, ILoggerFactory loggerFactory, ILogger logger)
         {
