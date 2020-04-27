@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using Console = Ninu.Emulator.Console;
 
 namespace Ninu.ViewModels
@@ -38,13 +39,12 @@ namespace Ninu.ViewModels
 
         public WriteableBitmap GameImageBitmap { get; } = new WriteableBitmap(256, 240, 96, 96, PixelFormats.Bgra32, null);
 
+        public ICommand LoadRom{ get; }
         public ICommand SaveState { get; }
         public ICommand LoadState { get; }
 
         public MainWindowViewModel()
         {
-            var image = new NesImage(@"C:\Users\Jorgy\Desktop\roms\games\zelda.nes");
-
             var loggerFactory = LoggerFactory.Create(x =>
             {
                 x.ClearProviders();
@@ -53,10 +53,7 @@ namespace Ninu.ViewModels
                 x.SetMinimumLevel(LogLevel.Trace);
             });
 
-            var cartridge = new Cartridge(image, loggerFactory, loggerFactory.CreateLogger<Cartridge>());
-
-            Console = new Console(cartridge, loggerFactory, loggerFactory.CreateLogger<Console>());
-            Console.Reset();
+            Console = new Console(loggerFactory, loggerFactory.CreateLogger<Console>());
 
             //Console.CompleteFrame();
             //Console.CompleteFrame();
@@ -67,6 +64,33 @@ namespace Ninu.ViewModels
 
             //File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
             //return;
+
+            LoadRom = new RelayCommand(x =>
+            {
+                StopRendering();
+                StopRenderingThread();
+
+                var openFileDialog = new OpenFileDialog
+                {
+                    Title = "Load ROM File",
+                    Filter = "NES ROMS (*.nes)|*.nes|All Files (*.*)|*.*",
+                    CheckFileExists = true,
+                    Multiselect = false,
+                };
+
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    var image = new NesImage(openFileDialog.FileName);
+                    var cartridge = new Cartridge(image, loggerFactory, loggerFactory.CreateLogger<Cartridge>());
+
+                    Console.LoadCartridge(cartridge);
+                    Console.PowerOn();
+
+                    // TODO: If a ROM is already loaded and the user cancels the dialog, the current ROM will stop.
+                    StartRenderingThread();
+                    StartRendering();
+                }
+            });
 
             SaveState = new RelayCommand(x =>
             {
@@ -94,8 +118,6 @@ namespace Ninu.ViewModels
             {
                 Name = "Rendering Thread",
             };
-
-            _renderingThread.Start();
         }
 
         public void StartRendering()
@@ -132,8 +154,8 @@ namespace Ninu.ViewModels
             {
                 GameImageBitmap.WritePixels(new Int32Rect(0, 0, 256, 240), _pixels, 256 * 4, 0);
 
-                CpuState.Update(Console.Cpu.CpuState);
-                UpdateInstructions(Console.Cpu);
+                //CpuState.Update(Console.Cpu.CpuState);
+                //UpdateInstructions(Console.Cpu);
 
                 UpdatePaletteColors();
                 UpdatePatternRoms();

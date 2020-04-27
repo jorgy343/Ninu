@@ -9,7 +9,7 @@ namespace Ninu.Emulator
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
 
-        private readonly Cartridge _cartridge; // Don't save this as the console handles that.
+        private Cartridge? _cartridge; // Don't save this as the console handles that.
 
         [SaveChildren("NameTableRam")]
         private readonly NameTableRam _nameTableRam = new NameTableRam();
@@ -53,21 +53,51 @@ namespace Ninu.Emulator
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
 
-        public Ppu(Cartridge cartridge, ILoggerFactory loggerFactory, ILogger logger)
+        public Ppu(ILoggerFactory loggerFactory, ILogger logger)
         {
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
-            _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
+        public void PowerOn()
+        {
+            Registers.Control = 0x00;
+            Registers.Mask = 0x00;
+            Registers.Status = 0x00;
+            Registers.VAddress = 0x0000;
+            Registers.TAddress = 0x0000;
+
+            Registers.WriteLatch = false;
+            _oamAddress = 0x00;
+
+            _odd = false;
         }
 
         public void Reset()
         {
+            Registers.Control = 0x00;
+            Registers.Mask = 0x00;
+            Registers.Status = 0x00;
+            Registers.VAddress = 0x0000; // TODO: I think part of this is unchanged.
+            Registers.TAddress = 0x0000; // TODO: I think part of this is unchanged.
 
+            Registers.WriteLatch = false;
+
+            _odd = false;
+        }
+
+        public void LoadCartridge(Cartridge cartridge)
+        {
+            _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
         }
 
         public PpuClockResult Clock()
         {
+            if (_cartridge == null)
+            {
+                return PpuClockResult.Nothing;
+            }
+
             if (_scanline == 0 && _cycle == 0)
             {
                 if (_odd)

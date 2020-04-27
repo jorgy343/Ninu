@@ -2,6 +2,7 @@
 {
     public enum PpuClockResult
     {
+        Nothing,
         NormalCycle,
         VBlankStart,
         FrameComplete,

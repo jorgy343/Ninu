@@ -15,7 +15,7 @@ namespace Ninu.Emulator
         public Ppu Ppu { get; }
 
         [SaveChildren("Cartridge")]
-        private readonly Cartridge _cartridge;
+        private Cartridge? _cartridge;
 
         [SaveChildren("InternalRam")]
         private readonly CpuRam _internalRam;
@@ -29,18 +29,21 @@ namespace Ninu.Emulator
         [Save]
         public long TotalCycles { get; set; }
 
-        public Console(Cartridge cartridge, ILoggerFactory loggerFactory, ILogger logger)
+        public Console(ILoggerFactory loggerFactory, ILogger logger)
         {
-            if (cartridge == null) throw new ArgumentNullException(nameof(cartridge));
-
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             Cpu = new Cpu(this);
-            Ppu = new Ppu(cartridge, loggerFactory, loggerFactory.CreateLogger<Ppu>());
+            Ppu = new Ppu(loggerFactory, loggerFactory.CreateLogger<Ppu>());
 
             _internalRam = new CpuRam();
-            _cartridge = cartridge;
+        }
+
+        public void PowerOn()
+        {
+            Ppu.PowerOn();
+            Cpu.PowerOn();
         }
 
         public void Reset()
@@ -49,8 +52,20 @@ namespace Ninu.Emulator
             Cpu.Reset();
         }
 
+        public void LoadCartridge(Cartridge cartridge)
+        {
+            _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
+
+            Ppu.LoadCartridge(_cartridge);
+        }
+
         public PpuClockResult Clock()
         {
+            if (_cartridge == null)
+            {
+                return PpuClockResult.Nothing;
+            }
+
             var ppuResult = Ppu.Clock();
 
             // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
@@ -108,6 +123,11 @@ namespace Ninu.Emulator
 
         public void CompleteFrame()
         {
+            if (_cartridge == null)
+            {
+                return;
+            }
+
             while (Clock() != PpuClockResult.FrameComplete) ;
         }
 

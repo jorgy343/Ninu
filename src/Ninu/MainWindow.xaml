@@ -6,37 +6,10 @@
         xmlns:local="clr-namespace:Ninu"
         mc:Ignorable="d"
         Title="Ninu" Width="1300" Height="900" SnapsToDevicePixels="True" UseLayoutRounding="True">
-    <Window.Resources>
-        <ResourceDictionary>
-            <Style x:Key="PaletteListBoxStyle" TargetType="{x:Type ListBox}">
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="KeyboardNavigation.DirectionalNavigation" Value="Cycle" />
-                <Setter Property="ItemContainerStyle">
-                    <Setter.Value>
-                        <Style TargetType="{x:Type ListBoxItem}" >
-                            <Setter Property="Margin" Value="2, 2, 2, 0" />
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate>
-                                        <Border Background="Transparent">
-                                            <RadioButton
-                                                Content="{TemplateBinding ContentPresenter.Content}"
-                                                VerticalAlignment="Center"
-                                                IsChecked="{Binding Path=IsSelected, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-        </ResourceDictionary>
-    </Window.Resources>
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Load Rom" />
+                <MenuItem Header="_Load Rom" Command="{Binding Path=LoadRom}" />
             </MenuItem>
             <MenuItem Header="_Save State">
                 <MenuItem Header="S_ave" Command="{Binding Path=SaveState}" />

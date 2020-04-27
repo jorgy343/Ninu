@@ -13,8 +13,6 @@ namespace Ninu
 
             var window = new MainWindow(viewModel);
             window.Show();
-
-            viewModel.StartRendering();
         }
     }
 }

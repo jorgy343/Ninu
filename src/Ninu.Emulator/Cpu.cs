@@ -74,7 +74,7 @@ namespace Ninu.Emulator
             }
         }
 
-        public void Reset()
+        public void PowerOn()
         {
             CpuState.A = 0;
             CpuState.X = 0;
@@ -89,6 +89,19 @@ namespace Ninu.Emulator
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
             _remainingCycles = 8;
+        }
+
+        public void Reset()
+        {
+            CpuState.S -= 3;
+            CpuState.P |= CpuFlags.I;
+
+            var pcLow = (ushort)_cpuBus.Read(0xfffc);
+            var pcHigh = (ushort)_cpuBus.Read(0xfffd);
+
+            CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
+
+            _remainingCycles = 8; // TODO: What should this actually be?
         }
 
         public void Interrupt()
