@@ -70,6 +70,7 @@ namespace Ninu.ViewModels
                 StopRendering();
                 StopRenderingThread();
 
+                // TODO: Pull this out to be a service.
                 var openFileDialog = new OpenFileDialog
                 {
                     Title = "Load ROM File",

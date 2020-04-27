@@ -2,9 +2,6 @@
 
 namespace Ninu.Emulator
 {
-    // The basic pattern ram is 8KiB on the cartridge. This is typically split into two sections: the left and the
-    // right. Each tile is 8 pixels by 8 pixels. Each section contains 256 tiles in a 16 by 16 grid.
-
     public readonly struct PatternTile
     {
         private readonly byte[] _paletteEntryIndices;

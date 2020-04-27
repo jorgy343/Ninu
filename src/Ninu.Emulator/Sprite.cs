@@ -1,9 +1,9 @@
 ﻿namespace Ninu.Emulator
 {
     /// <summary>
-    /// Represents an 8x8 sprite in OAM memory.
+    /// Represents a sprite entry in OAM memory.
     /// </summary>
-    public class Sprite8x8
+    public class Sprite
     {
         /// <summary>
         /// Gets or sets the sprite's Y coordinate. When rendered, sprites are behind by one scanline and so sprites
@@ -35,7 +35,7 @@
         [Save]
         public byte X { get; set; }
 
-        public Sprite8x8(byte byte0, byte byte1, byte byte2, byte byte3)
+        public Sprite(byte byte0, byte byte1, byte byte2, byte byte3)
         {
             Y = byte0;
             TileIndex = byte1;
@@ -43,6 +43,11 @@
             X = byte3;
         }
 
+        /// <summary>
+        /// Gets the palette index to use for this sprite. This is a number between 0 and 3 inclusive. Since the first
+        /// four palettes are for backgrounds and the last four are for sprites, to get the actual palette index, 4
+        /// must be added to the returned palette index.
+        /// </summary>
         public byte PaletteIndex
         {
             get => Bits.GetBits(Attributes, 0, 2);
@@ -83,7 +88,7 @@
         /// Copies the data from the sprite this method is being called on to <paramref name="otherSprite"/>.
         /// </summary>
         /// <param name="otherSprite">The sprite that will receive the copied data.</param>
-        public void CopyTo(Sprite8x8 otherSprite)
+        public void CopyTo(Sprite otherSprite)
         {
             otherSprite.Y = Y;
             otherSprite.TileIndex = TileIndex;

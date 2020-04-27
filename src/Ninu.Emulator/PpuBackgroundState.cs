@@ -1,5 +1,8 @@
 ﻿namespace Ninu.Emulator
 {
+    /// <summary>
+    /// Holds state data for the background rendering process.
+    /// </summary>
     public class PpuBackgroundState
     {
         [Save]

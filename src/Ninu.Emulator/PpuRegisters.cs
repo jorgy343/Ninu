@@ -4,9 +4,19 @@ namespace Ninu.Emulator
 {
     public class PpuRegisters
     {
+        /// <summary>
+        /// The backing data for the PPUCTRL register. This is a write only register. Generally the
+        /// <see cref="WriteControlRegister(byte)"/> method should be used to set the data of this register since
+        /// specific logic is required to properly implement this register.
+        /// </summary>
         [Save]
         public byte Control { get; set; }
 
+        /// <summary>
+        /// The backing data for the PPUMASK register. This is a write only register. Generally the
+        /// <see cref="WriteMaskRegister(byte)"/> method should be used to set the data of this register for
+        /// consistency.
+        /// </summary>
         [Save]
         public byte Mask { get; set; }
 

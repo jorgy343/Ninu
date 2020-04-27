@@ -9,6 +9,21 @@ namespace Ninu.Emulator
     {
         private readonly Dictionary<string, object?> _values = new Dictionary<string, object?>();
 
+        public SaveStateContext()
+        {
+
+        }
+
+        public SaveStateContext(byte[] data)
+        {
+            if (data == null) throw new ArgumentNullException(nameof(data));
+
+            _values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(Encoding.UTF8.GetString(data), new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.All,
+            })!;
+        }
+
         public void AddToState(string key, object? value) => _values[key] = value;
 
         public bool TryGetFromState(string key, Type type, out object? value)
@@ -45,21 +60,6 @@ namespace Ninu.Emulator
             }
 
             return true;
-        }
-
-        public SaveStateContext()
-        {
-
-        }
-
-        public SaveStateContext(byte[] data)
-        {
-            if (data == null) throw new ArgumentNullException(nameof(data));
-
-            _values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(Encoding.UTF8.GetString(data), new JsonSerializerSettings
-            {
-                TypeNameHandling = TypeNameHandling.All,
-            })!;
         }
 
         public string ToDataString()

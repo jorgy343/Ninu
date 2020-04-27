@@ -2,6 +2,8 @@
 
 namespace Ninu.Emulator
 {
+    // TODO: Add support for two controllers and other peripherals.
+
     public class Controllers : ICpuBusComponent
     {
         [Save("Data")]

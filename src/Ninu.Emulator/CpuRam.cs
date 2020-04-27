@@ -4,7 +4,7 @@
     {
         // This RAM is mirror four times (total of 8KiB).
         [Save("Ram")]
-        private byte[] _ram = new byte[2048];
+        private readonly byte[] _ram = new byte[2048];
 
         public bool CpuRead(ushort address, out byte data)
         {

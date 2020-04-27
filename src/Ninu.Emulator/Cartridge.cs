@@ -99,12 +99,6 @@ namespace Ninu.Emulator
 
             if (translated)
             {
-                if (Image.PatternRom.Length == 0)
-                {
-                    data = 0;
-                    return true;
-                }
-
                 data = Image.PatternRom[translatedAddress];
                 return true;
             }

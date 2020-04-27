@@ -5,17 +5,17 @@ namespace Ninu.Emulator
     public class Oam
     {
         [SaveChildren]
-        public Sprite8x8[] Sprites { get; }
+        public Sprite[] Sprites { get; }
 
         public Oam(int spriteCount)
         {
             if (spriteCount < 0) throw new ArgumentOutOfRangeException(nameof(spriteCount));
 
-            Sprites = new Sprite8x8[spriteCount];
+            Sprites = new Sprite[spriteCount];
 
             for (var i = 0; i < spriteCount; i++)
             {
-                Sprites[i] = new Sprite8x8(0, 0, 0, 0);
+                Sprites[i] = new Sprite(0, 0, 0, 0);
             }
         }
 
