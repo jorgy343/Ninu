@@ -33,7 +33,7 @@ namespace Ninu.Emulator
         private bool _sprite0HitPossible;
 
         [Save]
-        public bool CallNmi { get; set; }
+        public bool Nmi { get; set; }
 
         [Save("Cycle")]
         private int _cycle;
@@ -466,7 +466,7 @@ namespace Ninu.Emulator
 
                 if (Registers.GenerateVerticalBlankingIntervalNmi)
                 {
-                    CallNmi = true;
+                    Nmi = true;
                 }
             }
 

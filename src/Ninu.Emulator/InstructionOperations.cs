@@ -479,6 +479,9 @@ namespace Ninu.Emulator
 
         public static int Brk(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
+            // The BRK instruction saves the address that is two after the BRK instruction. This allows for the
+            // application to store a byte of data directly after the BRK instruction, perhaps to signify the type of
+            // interrupt the application wants to process.
             cpuState.PC++;
 
             var pcHigh = (byte)((uint)cpuState.PC >> 8);

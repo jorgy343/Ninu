@@ -66,6 +66,12 @@ namespace Ninu.Emulator
                 return PpuClockResult.Nothing;
             }
 
+            if (Ppu.Nmi)
+            {
+                Cpu.Nmi = true;
+                Ppu.Nmi = false;
+            }
+
             var ppuResult = Ppu.Clock();
 
             // The CPU gets clocked every third system clock. This means that the CPU will get clocked on the first
@@ -106,14 +112,6 @@ namespace Ninu.Emulator
                 {
                     Cpu.Clock();
                 }
-            }
-
-            // TODO: Are we supposed to trigger the nmi after the CPU clocks?
-            if (Ppu.CallNmi)
-            {
-                Cpu.NonMaskableInterrupt();
-
-                Ppu.CallNmi = false;
             }
 
             TotalCycles++;

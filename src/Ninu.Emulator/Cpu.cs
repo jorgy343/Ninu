@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Ninu.Emulator
 {
     public class Cpu
     {
-        public StringBuilder Log { get; } = new StringBuilder();
-
         private readonly IBus _cpuBus;
 
         [Save("TotalCycles")]
@@ -15,6 +12,9 @@ namespace Ninu.Emulator
 
         [Save("RemainingCycles")]
         private int _remainingCycles;
+
+        [Save]
+        public bool Nmi{ get; set; }
 
         [SaveChildren]
         public CpuState CpuState { get; } = new CpuState();
@@ -28,25 +28,23 @@ namespace Ninu.Emulator
         {
             if (_remainingCycles == 0) // Read the next instruction when the previous is done executing.
             {
-                //var originalPc = CpuState.PC;
+                // Check for an NMI signal before processing the next instruction. When an NMI is triggered, it will
+                // always occur after the currently executing instruction.
+                if (Nmi)
+                {
+                    Nmi = false;
 
-                var opCode = _cpuBus.Read(CpuState.PC++);
-                var instruction = Instruction.GetInstruction(opCode);
+                    PerformNmi();
+                }
+                else
+                {
+                    var opCode = _cpuBus.Read(CpuState.PC++);
+                    var instruction = Instruction.GetInstruction(opCode);
 
-                //var machineCode = instruction.Size switch
-                //{
-                //    1 => $"{opCode:X2}      ",
-                //    2 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2}   ",
-                //    3 => $"{opCode:X2} {_cpuBus.Read(CpuState.PC):X2} {_cpuBus.Read((ushort)(CpuState.PC + 1)):X2}",
-                //    _ => throw new InvalidOperationException($"Unexpected instruction size of {instruction.Size} was found."),
-                //};
+                    var cycles = instruction.Execute(_cpuBus, CpuState);
 
-                //Log.Append($"{originalPc:X4}  {machineCode}  {instruction.Name.ToUpperInvariant()}  A:{CpuState.A:X2} X:{CpuState.X:X2} Y:{CpuState.Y:X2} P:{(byte)CpuState.P:X2} SP:{CpuState.S:X2} CYC:{_totalCycles - 1}");
-                //Log.AppendLine();
-
-                var cycles = instruction.Execute(_cpuBus, CpuState);
-
-                _remainingCycles = cycles;
+                    _remainingCycles = cycles;
+                }
             }
 
             _totalCycles++;
@@ -101,7 +99,7 @@ namespace Ninu.Emulator
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-            _remainingCycles = 8; // TODO: What should this actually be?
+            _remainingCycles = 6; // TODO: Pretty sure this is supposed to be 6.
         }
 
         public void Interrupt()
@@ -129,26 +127,24 @@ namespace Ninu.Emulator
             }
         }
 
-        public void NonMaskableInterrupt()
+        private void PerformNmi()
         {
             // Push the PC onto the stack.
             Push((byte)((CpuState.PC >> 8) & 0x00ff)); // High byte first so that when the PC is popped the low byte will come first.
             Push((byte)(CpuState.PC & 0x00ff));
+
+            Push((byte)CpuState.P);
 
             // Set some flags before we push the status register.
             CpuState.SetFlag(CpuFlags.B, false);
             CpuState.SetFlag(CpuFlags.U, true);
             CpuState.SetFlag(CpuFlags.I, true);
 
-            Push((byte)CpuState.P);
-
             // Read the interrupt address at 0xfffa.
             var pcLow = (ushort)_cpuBus.Read(0xfffa);
             var pcHigh = (ushort)_cpuBus.Read(0xfffb);
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
-
-            //Log.AppendLine($"nmi PC={CpuState.PC}");
 
             _remainingCycles = 8;
         }
