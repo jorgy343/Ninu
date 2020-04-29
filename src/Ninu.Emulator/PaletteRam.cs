@@ -24,6 +24,13 @@
     //           |
     //  Universal Background
     //         Color
+    //
+    // The memory addresses at 0x3f10, 0x3f14, 0x3f18, and 0x3f1c are actually mirrored to their lower counterparts.
+    //
+    // 0x3f10 => 0x3f00
+    // 0x3f14 => 0x3f04
+    // 0x3f18 => 0x3f08
+    // 0x3f1c => 0x3f0c
 
     public class PaletteRam : IPpuBusComponent
     {
