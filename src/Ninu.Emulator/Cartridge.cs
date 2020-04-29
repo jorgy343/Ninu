@@ -37,7 +37,9 @@ namespace Ninu.Emulator
             Mapper = Image.MapperType switch
             {
                 000 => new Mapper000(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper000>()),
-                001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper>()),
+                001 => new Mapper001(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper001>()),
+                002 => new Mapper002(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper002>()),
+                180 => new Mapper180(Image.ProgramRomBankCount, Image.PatternRomBankCount, _loggerFactory.CreateLogger<Mapper180>()),
                 _ => throw new Exception(), // TODO: Throw a better exception.
             };
         }
