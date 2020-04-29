@@ -79,7 +79,7 @@ namespace Ninu.Emulator
             CpuState.Y = 0;
 
             CpuState.S = 0xfd;
-            CpuState.P = 0x00 | CpuFlags.U | CpuFlags.I;
+            CpuState.P = 0x00 | CpuFlags.I;
 
             var pcLow = (ushort)_cpuBus.Read(0xfffc);
             var pcHigh = (ushort)_cpuBus.Read(0xfffd);
@@ -110,12 +110,9 @@ namespace Ninu.Emulator
                 Push((byte)((CpuState.PC >> 8) & 0x00ff)); // High byte first so that when the PC is popped the low byte will come first.
                 Push((byte)(CpuState.PC & 0x00ff));
 
-                // Set some flags before we push the status register.
-                CpuState.SetFlag(CpuFlags.B, false);
-                CpuState.SetFlag(CpuFlags.U, true);
-                CpuState.SetFlag(CpuFlags.I, true);
+                Push((byte)((byte)CpuState.P | 0x20)); // Push the program state with B = 0 and U = 1.
 
-                Push((byte)CpuState.P);
+                CpuState.SetFlag(CpuFlags.I, true);
 
                 // Read the interrupt address at 0xfffe.
                 var pcLow = (ushort)_cpuBus.Read(0xfffe);
@@ -133,11 +130,8 @@ namespace Ninu.Emulator
             Push((byte)((CpuState.PC >> 8) & 0x00ff)); // High byte first so that when the PC is popped the low byte will come first.
             Push((byte)(CpuState.PC & 0x00ff));
 
-            Push((byte)CpuState.P);
+            Push((byte)((byte)CpuState.P | 0x20)); // Push the program state with B = 0 and U = 1.
 
-            // Set some flags before we push the status register.
-            CpuState.SetFlag(CpuFlags.B, false);
-            CpuState.SetFlag(CpuFlags.U, true);
             CpuState.SetFlag(CpuFlags.I, true);
 
             // Read the interrupt address at 0xfffa.

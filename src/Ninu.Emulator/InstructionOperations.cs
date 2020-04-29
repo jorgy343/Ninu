@@ -490,9 +490,7 @@ namespace Ninu.Emulator
             Push(bus, cpuState, pcHigh);
             Push(bus, cpuState, pcLow);
 
-            cpuState.SetFlag(CpuFlags.B, true);
-
-            Push(bus, cpuState, (byte)cpuState.P);
+            Push(bus, cpuState, (byte)((byte)cpuState.P | 0x30)); // Push the program state with B = 1 and U = 1.
 
             cpuState.SetFlag(CpuFlags.I, true);
 
@@ -816,7 +814,7 @@ namespace Ninu.Emulator
 
         public static int Php(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
-            Push(bus, cpuState, (byte)(cpuState.P | CpuFlags.B));
+            Push(bus, cpuState, (byte)((byte)cpuState.P | 0x30)); // Push the program state with B = 1 and U = 1.
 
             return baseCycles;
         }
@@ -834,9 +832,6 @@ namespace Ninu.Emulator
         public static int Plp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.P = (CpuFlags)Pop(bus, cpuState);
-
-            cpuState.SetFlag(CpuFlags.U, true);
-            cpuState.SetFlag(CpuFlags.B, false);
 
             return baseCycles;
         }
@@ -942,9 +937,6 @@ namespace Ninu.Emulator
         public static int Rti(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.P = (CpuFlags)Pop(bus, cpuState);
-
-            cpuState.SetFlag(CpuFlags.U, true);
-            cpuState.SetFlag(CpuFlags.B, false);
 
             var pcLow = (ushort)Pop(bus, cpuState);
             var pcHigh = (ushort)(Pop(bus, cpuState) << 8);
