@@ -2,6 +2,9 @@
 
 namespace Ninu.Emulator
 {
+    /// <summary>
+    /// Exposes all of the CPU's instructions as static methods.
+    /// </summary>
     public static class InstructionOperations
     {
         /// <summary>
@@ -215,12 +218,24 @@ namespace Ninu.Emulator
             }
         }
 
+        /// <summary>
+        /// Writes a byte into the memory location 0x0100 + S and then decrements S.
+        /// </summary>
+        /// <param name="bus">The bus used to perform the write.</param>
+        /// <param name="cpuState">The CPU state to read and write S from.</param>
+        /// <param name="data">The data to write into memory.</param>
         private static void Push(IBus bus, CpuState cpuState, byte data)
         {
             bus.Write((ushort)(0x0100 + cpuState.S), data);
             cpuState.S--;
         }
 
+        /// <summary>
+        /// Increments S and then reads the byte into the memory location 0x0100 + S.
+        /// </summary>
+        /// <param name="bus">The bus used to perform the read.</param>
+        /// <param name="cpuState">The CPU state to read and write S from.</param>
+        /// <returns>The data read from memory.</returns>
         private static byte Pop(IBus bus, CpuState cpuState)
         {
             cpuState.S++;
