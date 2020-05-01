@@ -49,7 +49,7 @@ namespace Ninu.TraceLogParser
             {
                 var row = rows[i];
 
-                var instruction = Instruction.GetInstruction((byte)row.Instruction);
+                var instruction = CpuInstruction.GetInstruction((byte)row.Instruction);
 
                 await writer.WriteAsync($"{row.Pch:X2}{row.Pcl:X2}  {row.Instruction:X2}        {instruction.Name.ToUpperInvariant()}  A:{row.A:X2} X:{row.X:X2} Y: {row.Y:X2} CYC: {row.Cycle}");
                 await writer.WriteLineAsync();

@@ -21,6 +21,12 @@ namespace Ninu.InstructionParser
             {
                 var line = reader.ReadLine()!;
 
+                // Skip comment lines. Note that the very first character must be a '#'.
+                if (line.Length > 0 && line[0] == '#')
+                {
+                    continue;
+                }
+
                 var match = regex.Match(line);
 
                 if (!match.Success)
@@ -74,7 +80,7 @@ namespace Ninu.InstructionParser
             {
                 if (!instructionDict.ContainsKey(i))
                 {
-                    instructionDict[i] = $@"new Instruction(""???"", 0x{i:x2}, 1, 2, AddressingMode.Implied, Nop),";
+                    instructionDict[i] = $@"new CpuInstruction(""???"", 0x{i:x2}, 1, 2, AddressingMode.Implied, Nop),";
                 }
 
                 Console.WriteLine(instructionDict[i]);

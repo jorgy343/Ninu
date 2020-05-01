@@ -39,7 +39,7 @@ namespace Ninu.Emulator
                 else
                 {
                     var opCode = _cpuBus.Read(CpuState.PC++);
-                    var instruction = Instruction.GetInstruction(opCode);
+                    var instruction = CpuInstruction.GetInstruction(opCode);
 
                     var cycles = instruction.Execute(_cpuBus, CpuState);
 
@@ -54,7 +54,7 @@ namespace Ninu.Emulator
         public string DecodeInstruction(ushort address)
         {
             var opCode = _cpuBus.Read(address);
-            var instruction = Instruction.GetInstruction(opCode);
+            var instruction = CpuInstruction.GetInstruction(opCode);
 
             return instruction.Name;
         }
@@ -64,7 +64,7 @@ namespace Ninu.Emulator
             for (var i = 0; i < count; i++)
             {
                 var opCode = _cpuBus.Read(address);
-                var instruction = Instruction.GetInstruction(opCode);
+                var instruction = CpuInstruction.GetInstruction(opCode);
 
                 yield return instruction.Name;
 

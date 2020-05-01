@@ -5,7 +5,7 @@ namespace Ninu.Emulator
     /// <summary>
     /// Exposes all of the CPU's instructions as static methods.
     /// </summary>
-    public static class InstructionOperations
+    public static class CpuInstructionOperations
     {
         /// <summary>
         /// Gets a 16-bit address from memory based on the addressing mode. Addressing modes
@@ -288,6 +288,41 @@ namespace Ninu.Emulator
             return totalCycles;
         }
 
+        public static int Aac(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        {
+            var (data, address, additionalCycles) = FetchData(addressingMode, bus, cpuState);
+
+            var result = (byte)(cpuState.A & data);
+
+            cpuState.SetZeroFlag(data);
+            cpuState.SetNegativeFlag(data);
+
+            // If the result is negative (MSB is set), set carry flag.
+            // TODO: Do we clear carry flag if result is positive? This should be tested in Visual 6502.
+            if ((result & 0x80) != 0)
+            {
+                cpuState.SetFlag(CpuFlags.C, true);
+            }
+
+            bus.Write(address, data);
+
+            return baseCycles + additionalCycles;
+        }
+
+        public static int Aax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        {
+            var (address, additionalCycles) = GetAddress(addressingMode, bus, cpuState);
+
+            var data = (byte)(cpuState.A & cpuState.X);
+
+            cpuState.SetZeroFlag(data);
+            cpuState.SetNegativeFlag(data);
+
+            bus.Write(address, data);
+
+            return baseCycles + additionalCycles;
+        }
+
         public static int Adc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
@@ -447,6 +482,17 @@ namespace Ninu.Emulator
             }
 
             result = data;
+
+            return baseCycles;
+        }
+
+        public static int Axs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        {
+            var (data, _, _) = FetchData(addressingMode, bus, cpuState);
+
+            cpuState.X = (byte)(cpuState.A & cpuState.X);
+
+            cpuState.X -= data;
 
             return baseCycles;
         }
@@ -689,7 +735,7 @@ namespace Ninu.Emulator
         }
 
         // This instruction is supposed to lock up the CPU. We'll just do nothing.
-        public static int Jam(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        public static int Kil(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return baseCycles;
         }
@@ -972,20 +1018,6 @@ namespace Ninu.Emulator
             return baseCycles;
         }
 
-        public static int Sax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
-        {
-            var (address, additionalCycles) = GetAddress(addressingMode, bus, cpuState);
-
-            var data = (byte)(cpuState.A & cpuState.X);
-
-            cpuState.SetZeroFlag(data);
-            cpuState.SetNegativeFlag(data);
-
-            bus.Write(address, data);
-
-            return baseCycles + additionalCycles;
-        }
-
         public static int Sbc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
@@ -1001,17 +1033,6 @@ namespace Ninu.Emulator
             cpuState.A = resultByte;
 
             return baseCycles + additionalCycles;
-        }
-
-        public static int Sbx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
-        {
-            var (data, _, _) = FetchData(addressingMode, bus, cpuState);
-
-            cpuState.X = (byte)(cpuState.A & cpuState.X);
-
-            cpuState.X -= data;
-
-            return baseCycles;
         }
 
         public static int Sec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
