@@ -14,7 +14,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.TraceLogParser", "Ninu.TraceLogParser\Ninu.TraceLogParser.csproj", "{AC0D089C-A88E-4783-A627-8CC780035593}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.TraceLogParser", "Ninu.TraceLogParser\Ninu.TraceLogParser.csproj", "{AC0D089C-A88E-4783-A627-8CC780035593}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502", "Ninu.Visual6502\Ninu.Visual6502.csproj", "{A179BD28-A909-4B72-AE7E-B61C544D4A8D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502.Tests", "Ninu.Visual6502.Tests\Ninu.Visual6502.Tests.csproj", "{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +42,14 @@ Global
 		{AC0D089C-A88E-4783-A627-8CC780035593}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AC0D089C-A88E-4783-A627-8CC780035593}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AC0D089C-A88E-4783-A627-8CC780035593}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A179BD28-A909-4B72-AE7E-B61C544D4A8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A179BD28-A909-4B72-AE7E-B61C544D4A8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A179BD28-A909-4B72-AE7E-B61C544D4A8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A179BD28-A909-4B72-AE7E-B61C544D4A8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
