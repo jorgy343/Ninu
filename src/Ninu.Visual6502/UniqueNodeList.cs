@@ -2,6 +2,11 @@
 
 namespace Ninu.Visual6502
 {
+    /// <summary>
+    /// This type allows for a zero allocation means of storing a unique list of nodes. The internal data structures
+    /// are exposed as public fields. The fields with a 1 suffix are used as current and the fields with a 2 suffix are
+    /// used as previous.
+    /// </summary>
     public class UniqueNodeList
     {
         public Node[] Nodes1 = new Node[1725];
