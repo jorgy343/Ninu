@@ -20,6 +20,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502", "Ninu.Vis
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502.Tests", "Ninu.Visual6502.Tests\Ninu.Visual6502.Tests.csproj", "{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.Visual6502.Benchmark", "Ninu.Visual6502.Benchmark\Ninu.Visual6502.Benchmark.csproj", "{E0A887D2-164C-4A90-B61D-FD670D7216AC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,10 @@ Global
 		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE0BEA22-5BCF-4FAB-8882-83C311A2F3F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0A887D2-164C-4A90-B61D-FD670D7216AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0A887D2-164C-4A90-B61D-FD670D7216AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0A887D2-164C-4A90-B61D-FD670D7216AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0A887D2-164C-4A90-B61D-FD670D7216AC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

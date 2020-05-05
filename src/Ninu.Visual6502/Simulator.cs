@@ -61,13 +61,18 @@ namespace Ninu.Visual6502
 
         private readonly Dictionary<string, Transistor> _transistors = new Dictionary<string, Transistor>();
 
-        private readonly HashSet<Node> _updates = new HashSet<Node>();
+        private readonly UniqueNodeList _updates = new UniqueNodeList();
+        private readonly UniqueNodeList _group = new UniqueNodeList();
 
-        private Node? _ground;
-        private Node? _power;
+#nullable disable
+        private Node _groundNode;
+        private Node _powerNode;
 
-        private const int GroundNumber = 558;
-        private const int PowerNumber = 657;
+        private Node _rwNode;
+
+        private readonly Node[] _abNodes = new Node[16];
+        private readonly Node[] _dbNodes = new Node[8];
+#nullable restore
 
         private readonly byte[] _memory = new byte[65536];
 
@@ -114,7 +119,10 @@ namespace Ninu.Visual6502
 
         public void ExecuteCycles(int cycleCount)
         {
-            if (cycleCount < 0) throw new ArgumentOutOfRangeException(nameof(cycleCount));
+            if (cycleCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(cycleCount));
+            }
 
             for (var i = 0; i < cycleCount; i++)
             {
@@ -125,7 +133,7 @@ namespace Ninu.Visual6502
 
         private void HandleBusRead()
         {
-            if (_nodesByName["rw"].State)
+            if (_rwNode.State)
             {
                 var address = ReadAddressBus();
 
@@ -137,7 +145,7 @@ namespace Ninu.Visual6502
 
         private void HandleBusWrite()
         {
-            if (!_nodesByName["rw"].State)
+            if (!_rwNode.State)
             {
                 var address = ReadAddressBus();
                 var data = ReadDataBus();
@@ -146,6 +154,10 @@ namespace Ninu.Visual6502
             }
         }
 
+        /// <summary>
+        /// This method must be called before the simulator can run cycles. This method sets up the simulator to the
+        /// point where the start program can run.
+        /// </summary>
         public void Init()
         {
             _memory[0xfffe] = 0;
@@ -160,14 +172,11 @@ namespace Ninu.Visual6502
             SetupNodes();
             SetupTransistors();
 
-            var ground = _nodesById[GroundNumber];
-            var power = _nodesById[PowerNumber];
+            _groundNode.State = false;
+            _groundNode.Floating = false;
 
-            ground.State = false;
-            ground.Floating = false;
-
-            power.State = true;
-            power.Floating = false;
+            _powerNode.State = true;
+            _powerNode.Floating = false;
 
             SetLow("res");
             SetLow("clk0");
@@ -177,8 +186,9 @@ namespace Ninu.Visual6502
             SetHigh("nmi");
 
             RecalcNodeList(_nodes
-                .Where(x => x != _ground && x != _power)
-                .Select(x => x));
+                .Where(x => x != _groundNode && x != _powerNode)
+                .Select(x => x)
+                .ToArray());
 
             for (var i = 0; i < 8; i++)
             {
@@ -189,6 +199,10 @@ namespace Ninu.Visual6502
             SetHigh("res");
         }
 
+        /// <summary>
+        /// This method must be called after <see cref="Init"/> and before the simulator can run cycles. This method
+        /// runs the start program which primes the first instruction that the reset vector points to.
+        /// </summary>
         public void RunStartProgram()
         {
             for (var i = 0; i < 18; i++)
@@ -212,8 +226,20 @@ namespace Ninu.Visual6502
                 }
             }
 
-            _ground = _nodesById[GroundNumber];
-            _power = _nodesById[PowerNumber];
+            _groundNode = _nodesById[558];
+            _powerNode = _nodesById[657];
+
+            _rwNode = _nodesByName["rw"];
+
+            for (var i = 0; i < 16; i++)
+            {
+                _abNodes[i] = _nodesByName["ab" + i];
+            }
+
+            for (var i = 0; i < 8; i++)
+            {
+                _dbNodes[i] = _nodesByName["db" + i];
+            }
         }
 
         private void SetupTransistors()
@@ -223,16 +249,16 @@ namespace Ninu.Visual6502
                 var c1 = transistorDefinition.C1;
                 var c2 = transistorDefinition.C2;
 
-                if (c1 == GroundNumber)
+                if (c1 == _groundNode.Number)
                 {
                     c1 = c2;
-                    c2 = GroundNumber;
+                    c2 = _groundNode.Number;
                 }
 
-                if (c1 == PowerNumber)
+                if (c1 == _powerNode.Number)
                 {
                     c1 = c2;
-                    c2 = PowerNumber;
+                    c2 = _powerNode.Number;
                 }
 
                 var transistor = new Transistor(
@@ -250,42 +276,83 @@ namespace Ninu.Visual6502
             }
         }
 
-        private void RecalcNodeList(IEnumerable<Node> nodeNumberList)
+        private void RecalcNodeList(Node[] nodeList)
         {
-            if (nodeNumberList == null) throw new ArgumentNullException(nameof(nodeNumberList));
+            if (nodeList == null)
+            {
+                throw new ArgumentNullException(nameof(nodeList));
+            }
 
-            _updates.Clear();
+            _updates.ClearCurrent();
+            _updates.ClearPrevious();
+
+            foreach (var node in nodeList)
+            {
+                _updates.AddToCurrent(node);
+            }
 
             for (var i = 0; i < 100; i++)
             {
-                if (!nodeNumberList.Any())
+                if (_updates.NodeInsertIndex1 == 0) // If there are no items in the list.
                 {
                     return;
                 }
 
-                foreach (var nodeNumber in nodeNumberList)
+                for (var j = 0; j < _updates.NodeInsertIndex1; j++)
                 {
-                    RecalcNode(nodeNumber);
+                    RecalcNode(_updates.Nodes1[j]);
                 }
 
-                nodeNumberList = _updates.ToArray();
+                _updates.Swap();
+                _updates.ClearPrevious();
+            }
+        }
 
-                _updates.Clear();
+        private void RecalcNodeList(Node node)
+        {
+            if (node == null)
+            {
+                throw new ArgumentNullException(nameof(node));
+            }
+
+            _updates.ClearCurrent();
+            _updates.ClearPrevious();
+
+            _updates.AddToCurrent(node);
+
+            for (var i = 0; i < 100; i++)
+            {
+                if (_updates.NodeInsertIndex1 == 0) // If there are no items in the list.
+                {
+                    return;
+                }
+
+                for (var j = 0; j < _updates.NodeInsertIndex1; j++)
+                {
+                    RecalcNode(_updates.Nodes1[j]);
+                }
+
+                _updates.Swap();
+                _updates.ClearPrevious();
             }
         }
 
         private void RecalcNode(Node node)
         {
-            if (node == _ground || node == _power)
+            if (node == _groundNode || node == _powerNode)
             {
                 return;
             }
 
-            var group = GetNodeGroup(node);
-            var newState = GetNodeValue(group);
+            _group.ClearCurrent();
 
-            foreach (var groupNode in group)
+            AddNodeToGroup(node);
+            var newState = GetNodeValue();
+
+            for (var i = 0; i < _group.NodeInsertIndex1; i++)
             {
+                var groupNode = _group.Nodes1[i];
+
                 if (groupNode.State == newState)
                 {
                     continue;
@@ -330,31 +397,23 @@ namespace Ninu.Visual6502
 
         private void AddRecalcNode(Node node)
         {
-            if (node != _ground && node != _power)
+            if (node != _groundNode && node != _powerNode)
             {
-                _updates.Add(node);
+                _updates.AddToPrevious(node);
             }
         }
 
-        private HashSet<Node> GetNodeGroup(Node node)
+        private void AddNodeToGroup(Node node)
         {
-            var group = new HashSet<Node>();
-
-            AddNodeToGroup(group, node);
-
-            return group;
-        }
-
-        private void AddNodeToGroup(HashSet<Node> group, Node node)
-        {
-            if (group.Contains(node))
+            // Don't do anything is the node has already been added to the group.
+            if (_group.CurrentHasNode(node))
             {
                 return;
             }
 
-            group.Add(node);
+            _group.AddToCurrent(node);
 
-            if (node == _ground || node == _power)
+            if (node == _groundNode || node == _powerNode)
             {
                 return;
             }
@@ -363,25 +422,27 @@ namespace Ninu.Visual6502
             {
                 if (transistor.On)
                 {
-                    AddNodeToGroup(group, transistor.C1 == node ? transistor.C2 : transistor.C1);
+                    AddNodeToGroup(transistor.C1 == node ? transistor.C2 : transistor.C1);
                 }
             }
         }
 
-        private bool GetNodeValue(HashSet<Node> group)
+        private bool GetNodeValue()
         {
-            if (group.Contains(_ground))
+            if (_group.CurrentHasNode(_groundNode))
             {
                 return false;
             }
 
-            if (group.Contains(_power))
+            if (_group.CurrentHasNode(_powerNode))
             {
                 return true;
             }
 
-            foreach (var node in group)
+            for (var i = 0; i < _group.NodeInsertIndex1; i++)
             {
+                var node = _group.Nodes1[i];
+
                 if (node.PullUp)
                 {
                     return true;
@@ -408,7 +469,7 @@ namespace Ninu.Visual6502
             node.PullUp = true;
             node.PullDown = false;
 
-            RecalcNodeList(new[] { node });
+            RecalcNodeList(node);
         }
 
         private void SetLow(string nodeName)
@@ -418,7 +479,7 @@ namespace Ninu.Visual6502
             node.PullUp = false;
             node.PullDown = true;
 
-            RecalcNodeList(new[] { node });
+            RecalcNodeList(node);
         }
 
         public int ComputeNodeHash()
@@ -457,8 +518,20 @@ namespace Ninu.Visual6502
             return value;
         }
 
-        public int ReadAddressBus() => ReadBits("ab", 16);
-        public int ReadDataBus() => ReadBits("db", 8);
+        public int ReadBits(Node[] nodes)
+        {
+            var value = 0;
+
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                value |= (nodes[i].State ? 1 : 0) << i;
+            }
+
+            return value;
+        }
+
+        public int ReadAddressBus() => ReadBits(_abNodes);
+        public int ReadDataBus() => ReadBits(_dbNodes);
         public int ReadPCLow() => ReadBits("pcl", 8);
         public int ReadPCHigh() => ReadBits("pch", 8);
         public int ReadA() => ReadBits("a", 8);
@@ -492,6 +565,25 @@ namespace Ninu.Visual6502
             RecalcNodeList(nodeRecalcs);
         }
 
-        public void WriteDataBus(int data) => WriteBits("db", 8, data);
+        public void WriteDataBus(int data)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                var node = _dbNodes[i];
+
+                if (((data >> i) & 0x1) == 0)
+                {
+                    node.PullUp = false;
+                    node.PullDown = true;
+                }
+                else
+                {
+                    node.PullUp = true;
+                    node.PullDown = false;
+                }
+            }
+
+            RecalcNodeList(_dbNodes);
+        }
     }
 }
