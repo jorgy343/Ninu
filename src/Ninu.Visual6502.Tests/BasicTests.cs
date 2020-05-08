@@ -26,8 +26,6 @@ namespace Ninu.Visual6502.Tests
         [Fact]
         public void LoadRegisters()
         {
-            var simulator = new Simulator();
-
             var assembler = new PatchAssembler();
 
             var asm = @"
@@ -54,7 +52,7 @@ namespace Ninu.Visual6502.Tests
 
             var data = assembler.Assemble(0, null, asm);
 
-            simulator.SetMemory(data);
+            var simulator = new Simulator(data);
 
             simulator.Init();
             simulator.RunStartProgram();

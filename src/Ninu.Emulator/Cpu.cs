@@ -143,13 +143,13 @@ namespace Ninu.Emulator
             _remainingCycles = 8;
         }
 
-        public void Push(byte data)
+        private void Push(byte data)
         {
             _cpuBus.Write((ushort)(0x0100 + CpuState.S), data);
             CpuState.S--;
         }
 
-        public byte Pop()
+        private byte Pop()
         {
             CpuState.S++;
             return _cpuBus.Read((ushort)(0x0100 + CpuState.S));

@@ -20,8 +20,6 @@ namespace Ninu.Visual6502.Benchmark
 
         private static Simulator CreateSimulator()
         {
-            var simulator = new Simulator();
-
             var assembler = new PatchAssembler();
 
             var asm = @"
@@ -44,7 +42,7 @@ namespace Ninu.Visual6502.Benchmark
 
             var data = assembler.Assemble(0, null, asm);
 
-            simulator.SetMemory(data);
+            var simulator = new Simulator(data);
 
             simulator.Init();
             simulator.RunStartProgram();

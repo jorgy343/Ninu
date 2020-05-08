@@ -74,31 +74,32 @@ namespace Ninu.Visual6502
         private readonly Node[] _dbNodes = new Node[8];
 #nullable restore
 
-        private readonly byte[] _memory = new byte[65536];
+        public byte[] Memory { get; }
 
-        public void SetMemory(ReadOnlySpan<byte> data, int offset = 0)
+        public Simulator()
+            : this(new byte[65536])
         {
-            if (offset + data.Length > _memory.Length)
-            {
-                throw new InvalidOperationException();
-            }
 
-            data.CopyTo(_memory.AsSpan(offset, data.Length));
+        }
+
+        public Simulator(byte[] memory)
+        {
+            Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         }
 
         public void SetVectors(ushort nmiVector, ushort resetVector, ushort irqVector)
         {
-            _memory[0xfffa] = (byte)((nmiVector & 0x00ff) >> 0);
-            _memory[0xfffb] = (byte)((nmiVector & 0x00ff) >> 8);
+            Memory[0xfffa] = (byte)((nmiVector & 0x00ff) >> 0);
+            Memory[0xfffb] = (byte)((nmiVector & 0x00ff) >> 8);
 
-            _memory[0xfffc] = (byte)((resetVector & 0x00ff) >> 0);
-            _memory[0xfffd] = (byte)((resetVector & 0x00ff) >> 8);
+            Memory[0xfffc] = (byte)((resetVector & 0x00ff) >> 0);
+            Memory[0xfffd] = (byte)((resetVector & 0x00ff) >> 8);
 
-            _memory[0xfffe] = (byte)((irqVector & 0x00ff) >> 0);
-            _memory[0xffff] = (byte)((irqVector & 0x00ff) >> 8);
+            Memory[0xfffe] = (byte)((irqVector & 0x00ff) >> 0);
+            Memory[0xffff] = (byte)((irqVector & 0x00ff) >> 8);
         }
 
-        public void HalfStep()
+        public void HalfClock()
         {
             var node = _nodesByName["clk0"];
             var clk = node.State;
@@ -117,6 +118,12 @@ namespace Ninu.Visual6502
             }
         }
 
+        public void Clock()
+        {
+            HalfClock();
+            HalfClock();
+        }
+
         public void ExecuteCycles(int cycleCount)
         {
             if (cycleCount < 0)
@@ -126,8 +133,8 @@ namespace Ninu.Visual6502
 
             for (var i = 0; i < cycleCount; i++)
             {
-                HalfStep();
-                HalfStep();
+                HalfClock();
+                HalfClock();
             }
         }
 
@@ -137,7 +144,7 @@ namespace Ninu.Visual6502
             {
                 var address = ReadAddressBus();
 
-                var data = _memory[address & 0xffff];
+                var data = Memory[address & 0xffff];
 
                 WriteDataBus(data);
             }
@@ -150,7 +157,7 @@ namespace Ninu.Visual6502
                 var address = ReadAddressBus();
                 var data = ReadDataBus();
 
-                _memory[address & 0xffff] = (byte)(data & 0xff);
+                Memory[address & 0xffff] = (byte)(data & 0xff);
             }
         }
 
@@ -160,15 +167,6 @@ namespace Ninu.Visual6502
         /// </summary>
         public void Init()
         {
-            _memory[0xfffe] = 0;
-            _memory[0xffff] = 0;
-
-            _memory[0xfffc] = 20;
-            _memory[0xfffd] = 0;
-
-            _memory[0xfffa] = 0;
-            _memory[0xfffb] = 0;
-
             SetupNodes();
             SetupTransistors();
 
@@ -207,7 +205,7 @@ namespace Ninu.Visual6502
         {
             for (var i = 0; i < 18; i++)
             {
-                HalfStep();
+                HalfClock();
             }
         }
 

@@ -19,8 +19,6 @@ namespace Ninu.Visual6502.Benchmark
         [GlobalSetup]
         public void Setup()
         {
-            _simulator = new Simulator();
-
             var assembler = new PatchAssembler();
 
             var asm = @"
@@ -43,7 +41,7 @@ namespace Ninu.Visual6502.Benchmark
 
             var data = assembler.Assemble(0, null, asm);
 
-            _simulator.SetMemory(data);
+            _simulator = new Simulator(data);
 
             _simulator.Init();
             _simulator.RunStartProgram();
