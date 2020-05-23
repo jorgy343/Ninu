@@ -1,17 +1,14 @@
-﻿; Memory Setup
-; [00f5] = a3
-; [120b:120e] = 10 00 fd e2
+﻿; #Init
+; [00f5] := a3
+; [120b:120e] := 10 00 fd e2
 
-; Expected Test Results
-; A = ?
-; X = ?
-; Y = ?
-; S = ?
-; P = ?
-; PC = ?
-; [a000] = ff
-; [a001:a003] = ae 00 28
-; [b000:b0ff] = 00 .. ff
+; #Checkpoint 01
+; [a000] == 2e
+; [a001:a099] == 0 + 2n
+;
+; [a000] := ff
+; [a001:a003] := ae 00 28
+; [b000:b0ff] := 00 .. ff
 
 *= $0000
 
