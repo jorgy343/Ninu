@@ -6,7 +6,8 @@ namespace Ninu.Visual6502.Benchmark
 {
     [SimpleJob(RuntimeMoniker.NetCoreApp31, baseline: true)]
     [SimpleJob(RuntimeMoniker.CoreRt31)]
-    [SimpleJob(RuntimeMoniker.Mono)]
+    [SimpleJob(RuntimeMoniker.NetCoreApp50)]
+    [SimpleJob(RuntimeMoniker.CoreRt50)]
     public class CyclesBenchmarks
     {
 #nullable disable
