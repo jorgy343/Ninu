@@ -1,4 +1,5 @@
-﻿using Patcher6502;
+﻿using Ninu.Emulator.Tests.TestHeaders;
+using Patcher6502;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,7 +34,7 @@ namespace Ninu.Emulator.Tests
             var assembler = new PatchAssembler();
             var simulationMemory = assembler.Assemble(0, null, asm);
 
-            yield return new object[] { simulationMemory };
+            yield return new object[] { simulationMemory, AssemblyHeaderParser.ParseHeaders(asm), };
         }
     }
 }

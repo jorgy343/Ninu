@@ -1,4 +1,10 @@
-﻿*= $0000
+﻿; #Checkpoint 01
+; [a000:a0ff] == 00
+
+; #Checkpoint 02
+; [a100:a1ff] == 00 .. ff
+
+*= $0000
 
 ; Test 1
 ldx #$00                ; Loop counter.
@@ -10,6 +16,9 @@ testOneLoop:
     inx
     bne testOneLoop
 
+lda #$01
+sta $fd01
+
 ; Test 2
 ldx #$00                ; Loop counter.
 testTwoLoop:
@@ -19,6 +28,9 @@ testTwoLoop:
 
     inx
     bne testTwoLoop
+
+lda #$02
+sta $fd01
 
 ; Done
 lda #$a3                ; Show that the test ran to the end.
