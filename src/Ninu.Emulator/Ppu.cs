@@ -93,7 +93,7 @@ namespace Ninu.Emulator
 
         public PpuClockResult Clock()
         {
-            if (_cartridge == null)
+            if (_cartridge is null)
             {
                 return PpuClockResult.Nothing;
             }

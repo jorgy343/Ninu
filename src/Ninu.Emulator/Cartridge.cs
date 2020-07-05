@@ -90,7 +90,7 @@ namespace Ninu.Emulator
         {
             if (address >= 0x0000 && address <= 0x1fff)
             {
-                if (CharacterRam != null)
+                if (CharacterRam is not null)
                 {
                     data = CharacterRam[address];
                     return true;
@@ -113,7 +113,7 @@ namespace Ninu.Emulator
         {
             if (address >= 0x0000 && address <= 0x1fff)
             {
-                if (CharacterRam != null)
+                if (CharacterRam is not null)
                 {
                     CharacterRam[address] = data;
                     return true;

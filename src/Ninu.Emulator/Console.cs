@@ -61,7 +61,7 @@ namespace Ninu.Emulator
 
         public PpuClockResult Clock()
         {
-            if (_cartridge == null)
+            if (_cartridge is null)
             {
                 return PpuClockResult.Nothing;
             }
@@ -121,7 +121,7 @@ namespace Ninu.Emulator
 
         public void CompleteFrame()
         {
-            if (_cartridge == null)
+            if (_cartridge is null)
             {
                 return;
             }

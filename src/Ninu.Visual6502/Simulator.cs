@@ -218,7 +218,7 @@ namespace Ninu.Visual6502
                 _nodes.Add(node);
                 _nodesById[node.Number] = node;
 
-                if (node.Name != null)
+                if (node.Name is not null)
                 {
                     _nodesByName[node.Name] = node;
                 }
@@ -276,7 +276,7 @@ namespace Ninu.Visual6502
 
         private void RecalcNodeList(Node[] nodeList)
         {
-            if (nodeList == null)
+            if (nodeList is null)
             {
                 throw new ArgumentNullException(nameof(nodeList));
             }
@@ -308,7 +308,7 @@ namespace Ninu.Visual6502
 
         private void RecalcNodeList(Node node)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new ArgumentNullException(nameof(node));
             }

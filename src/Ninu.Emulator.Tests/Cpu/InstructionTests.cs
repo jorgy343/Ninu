@@ -10,7 +10,7 @@ namespace Ninu.Emulator.Tests.Cpu
         [AsmData("Cpu/TestFiles/And.6502.asm")]
         public void And_Immediate(byte[] memory)
         {
-            if (memory == null)
+            if (memory is null)
             {
                 throw new ArgumentNullException(nameof(memory));
             }

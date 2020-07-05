@@ -15,7 +15,7 @@ namespace Ninu.Emulator.Tests.Cpu.Expectations
 
         public bool AssertExpectation(byte[] memory)
         {
-            if (memory == null)
+            if (memory is null)
             {
                 throw new ArgumentNullException(nameof(memory));
             }

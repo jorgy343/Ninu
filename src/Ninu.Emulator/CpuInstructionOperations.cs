@@ -327,7 +327,7 @@ namespace Ninu.Emulator
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }
@@ -438,7 +438,7 @@ namespace Ninu.Emulator
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }
@@ -460,7 +460,7 @@ namespace Ninu.Emulator
 
             var (data, address, _) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }
@@ -851,7 +851,7 @@ namespace Ninu.Emulator
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }
@@ -914,7 +914,7 @@ namespace Ninu.Emulator
 
             var (data, address, _) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }
@@ -953,7 +953,7 @@ namespace Ninu.Emulator
 
             var (data, address, _) = FetchData(addressingMode, bus, cpuState);
 
-            if (dataIn != null)
+            if (dataIn is not null)
             {
                 data = dataIn.Value;
             }

@@ -339,12 +339,12 @@ namespace Ninu.Emulator
 
         public int Execute(IBus bus, CpuState cpuState)
         {
-            if (_instructionExecutor != null)
+            if (_instructionExecutor is not null)
             {
                 return _instructionExecutor(AddressingMode, BaseCycles, bus, cpuState);
             }
 
-            if (_instructionExecutorEx != null)
+            if (_instructionExecutorEx is not null)
             {
                 return _instructionExecutorEx(AddressingMode, BaseCycles, bus, cpuState, null, out _);
             }

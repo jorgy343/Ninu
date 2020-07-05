@@ -27,7 +27,7 @@ namespace Ninu.Emulator
 
         public NesImage(string filePath)
         {
-            if (filePath == null) throw new ArgumentNullException(nameof(filePath));
+            if (filePath is null) throw new ArgumentNullException(nameof(filePath));
             if (!File.Exists(filePath)) throw new FileNotFoundException();
 
             using var fileStream = File.OpenRead(filePath);

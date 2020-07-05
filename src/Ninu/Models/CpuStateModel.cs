@@ -22,7 +22,7 @@ namespace Ninu.Models
 
         public void Update(CpuState cpuState)
         {
-            if (cpuState == null) throw new ArgumentNullException(nameof(cpuState));
+            if (cpuState is null) throw new ArgumentNullException(nameof(cpuState));
 
             A = cpuState.A;
             X = cpuState.X;

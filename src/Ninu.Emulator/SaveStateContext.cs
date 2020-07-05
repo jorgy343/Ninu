@@ -16,7 +16,7 @@ namespace Ninu.Emulator
 
         public SaveStateContext(byte[] data)
         {
-            if (data == null) throw new ArgumentNullException(nameof(data));
+            if (data is null) throw new ArgumentNullException(nameof(data));
 
             _values = JsonConvert.DeserializeObject<Dictionary<string, object?>>(Encoding.UTF8.GetString(data), new JsonSerializerSettings
             {
