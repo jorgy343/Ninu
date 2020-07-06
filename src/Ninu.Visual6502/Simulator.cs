@@ -55,14 +55,14 @@ namespace Ninu.Visual6502
 {
     public class Simulator
     {
-        private readonly List<Node> _nodes = new List<Node>();
-        private readonly Dictionary<int, Node> _nodesById = new Dictionary<int, Node>();
-        private readonly Dictionary<string, Node> _nodesByName = new Dictionary<string, Node>();
+        private readonly List<Node> _nodes = new();
+        private readonly Dictionary<int, Node> _nodesById = new();
+        private readonly Dictionary<string, Node> _nodesByName = new();
 
-        private readonly Dictionary<string, Transistor> _transistors = new Dictionary<string, Transistor>();
+        private readonly Dictionary<string, Transistor> _transistors = new();
 
-        private readonly UniqueNodeList _updates = new UniqueNodeList();
-        private readonly UniqueNodeList _group = new UniqueNodeList();
+        private readonly UniqueNodeList _updates = new();
+        private readonly UniqueNodeList _group = new();
 
 #nullable disable
         private Node _groundNode;

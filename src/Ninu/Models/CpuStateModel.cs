@@ -16,7 +16,7 @@ namespace Ninu.Models
         public byte P { get; set; }
         public ushort PC { get; set; }
 
-        public ObservableCollection<string> Instructions { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> Instructions { get; } = new();
 
         public string? SelectedInstruction { get; set; }
 

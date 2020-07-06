@@ -12,8 +12,8 @@ namespace Ninu.Visual6502
         public bool PullDown { get; set; }
         public bool Floating { get; set; } = true;
 
-        public List<Transistor> Gates { get; } = new List<Transistor>();
-        public List<Transistor> C1C2S { get; } = new List<Transistor>();
+        public List<Transistor> Gates { get; } = new();
+        public List<Transistor> C1C2S { get; } = new();
 
         public Node(int number, bool pullUp, string? name)
         {

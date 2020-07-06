@@ -14,10 +14,10 @@ namespace Ninu.Emulator
         private int _remainingCycles;
 
         [Save]
-        public bool Nmi{ get; set; }
+        public bool Nmi { get; set; }
 
         [SaveChildren]
-        public CpuState CpuState { get; } = new CpuState();
+        public CpuState CpuState { get; } = new();
 
         public Cpu(IBus cpuBus)
         {

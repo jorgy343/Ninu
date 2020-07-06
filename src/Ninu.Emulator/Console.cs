@@ -21,10 +21,10 @@ namespace Ninu.Emulator
         private readonly CpuRam _internalRam;
 
         [SaveChildren("DmaState")]
-        private readonly DmaState _dmaState = new DmaState();
+        private readonly DmaState _dmaState = new();
 
         [SaveChildren]
-        public Controllers Controllers { get; } = new Controllers();
+        public Controllers Controllers { get; } = new();
 
         [Save]
         public long TotalCycles { get; set; }

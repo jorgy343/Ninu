@@ -12,19 +12,19 @@ namespace Ninu.Emulator
         private Cartridge? _cartridge; // Don't save this as the console handles that.
 
         [SaveChildren("NameTableRam")]
-        private readonly NameTableRam _nameTableRam = new NameTableRam();
+        private readonly NameTableRam _nameTableRam = new();
 
         [SaveChildren]
-        public PaletteRam PaletteRam { get; } = new PaletteRam();
+        public PaletteRam PaletteRam { get; } = new();
 
         [SaveChildren]
-        public PpuRegisters Registers { get; } = new PpuRegisters();
+        public PpuRegisters Registers { get; } = new();
 
         [SaveChildren]
-        public Oam Oam { get; } = new Oam(64);
+        public Oam Oam { get; } = new(64);
 
         [SaveChildren]
-        public Oam TemporaryOam { get; } = new Oam(8);
+        public Oam TemporaryOam { get; } = new(8);
 
         [Save("OamAddress")]
         private byte _oamAddress;
@@ -45,7 +45,7 @@ namespace Ninu.Emulator
         private ushort _readAddress;
 
         [SaveChildren("BackgroundState")]
-        private readonly PpuBackgroundState _backgroundState = new PpuBackgroundState();
+        private readonly PpuBackgroundState _backgroundState = new();
 
         [Save("Odd")]
         private bool _odd;

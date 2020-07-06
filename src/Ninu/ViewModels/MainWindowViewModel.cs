@@ -17,7 +17,7 @@ namespace Ninu.ViewModels
     public class MainWindowViewModel : ViewModelBase
     {
         private Thread _renderingThread;
-        private readonly ManualResetEvent _resetEvent = new ManualResetEvent(false);
+        private readonly ManualResetEvent _resetEvent = new(false);
 
         private readonly byte[] _patternRom1Pixels = new byte[128 * 128 * 4];
         private readonly byte[] _patternRom2Pixels = new byte[128 * 128 * 4];
@@ -25,7 +25,7 @@ namespace Ninu.ViewModels
         private readonly byte[] _pixels = new byte[256 * 240 * 4];
 
         private byte _controllerData;
-        private readonly object _controllerDataLock = new object();
+        private readonly object _controllerDataLock = new();
 
         public Console Console { get; }
 
