@@ -1,4 +1,6 @@
-﻿namespace Ninu.Emulator
+﻿using static Ninu.Emulator.Bits;
+
+namespace Ninu.Emulator
 {
     /// <summary>
     /// Represents a sprite entry in OAM memory.
@@ -50,8 +52,8 @@
         /// </summary>
         public byte PaletteIndex
         {
-            get => Bits.GetBits(Attributes, 0, 2);
-            set => Attributes = (byte)Bits.SetBits(Attributes, 0, 2, value);
+            get => GetBits(Attributes, 0, 2);
+            set => Attributes = (byte)SetBits(Attributes, 0, 2, value);
         }
 
         /// <summary>
@@ -60,8 +62,8 @@
         /// </summary>
         public bool Priority
         {
-            get => Bits.GetBit(Attributes, 5);
-            set => Attributes = (byte)Bits.SetBit(Attributes, 5, value);
+            get => GetBit(Attributes, 5);
+            set => Attributes = (byte)SetBit(Attributes, 5, value);
         }
 
         /// <summary>
@@ -70,8 +72,8 @@
         /// </summary>
         public bool FlipHorizontal
         {
-            get => Bits.GetBit(Attributes, 6);
-            set => Attributes = (byte)Bits.SetBit(Attributes, 6, value);
+            get => GetBit(Attributes, 6);
+            set => Attributes = (byte)SetBit(Attributes, 6, value);
         }
 
         /// <summary>
@@ -80,8 +82,8 @@
         /// </summary>
         public bool FlipVertical
         {
-            get => Bits.GetBit(Attributes, 7);
-            set => Attributes = (byte)Bits.SetBit(Attributes, 7, value);
+            get => GetBit(Attributes, 7);
+            set => Attributes = (byte)SetBit(Attributes, 7, value);
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
 using Microsoft.Extensions.Logging;
+using static Ninu.Emulator.Bits;
 
 namespace Ninu.Emulator.Mappers
 {
@@ -312,9 +313,9 @@ namespace Ninu.Emulator.Mappers
             return false;
         }
 
-        private ProgramRomSwapBank CurrentProgramRomSwapBank => (ProgramRomSwapBank)Bits.GetBits(_controlRegister, 2, 1);
-        private ProgramRomBankSize CurrentProgramRomBankSize => (ProgramRomBankSize)Bits.GetBits(_controlRegister, 3, 1);
-        private PatternRomBankSize CurrentPatternRomBankSize => (PatternRomBankSize)Bits.GetBits(_controlRegister, 4, 1);
+        private ProgramRomSwapBank CurrentProgramRomSwapBank => (ProgramRomSwapBank)GetBits(_controlRegister, 2, 1);
+        private ProgramRomBankSize CurrentProgramRomBankSize => (ProgramRomBankSize)GetBits(_controlRegister, 3, 1);
+        private PatternRomBankSize CurrentPatternRomBankSize => (PatternRomBankSize)GetBits(_controlRegister, 4, 1);
 
         private enum ProgramRomSwapBank
         {
