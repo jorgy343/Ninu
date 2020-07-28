@@ -1,5 +1,8 @@
-﻿using Ninu.Visual6502;
+﻿using Ninu.Emulator.Tests.TestHeaders;
+using Ninu.Visual6502;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace Ninu.Emulator.Tests.Cpu
@@ -8,7 +11,7 @@ namespace Ninu.Emulator.Tests.Cpu
     {
         [Theory]
         [AsmData("Cpu/TestFiles/And.6502.asm")]
-        public void And_Immediate(byte[] memory)
+        public void And_Immediate(byte[] memory, IEnumerable<Checkpoint> checkpoints)
         {
             if (memory is null)
             {
@@ -18,21 +21,20 @@ namespace Ninu.Emulator.Tests.Cpu
             var testMemory = new byte[memory.Length];
             memory.CopyTo(testMemory, 0);
 
-            RunSimulation(memory);
-            RunEmulator(testMemory);
-
-            Assert.Equal(0xa3, testMemory[0xfd00]);
-
-            for (var i = 0; i < 256; i++)
+            void checkpointHit(byte[] memory, byte checkpointNumber)
             {
-                Assert.Equal(0x00, testMemory[0xa000 + i]);
-                Assert.Equal(i, testMemory[0xa100 + i]);
+                var checkpoint = checkpoints.FirstOrDefault(x => x.Number == checkpointNumber);
+
+                Assert.True(checkpoint.AssertExpectations(memory));
             }
 
-            Assert.Equal(memory, testMemory);
+            RunSimulation(memory, checkpointHit);
+            RunEmulator(testMemory, checkpointHit);
+
+            Assert.True(Enumerable.SequenceEqual(memory, testMemory));
         }
 
-        protected void RunSimulation(byte[] memory)
+        protected void RunSimulation(byte[] memory, Action<byte[], byte> checkpointHit)
         {
             var simulator = new Simulator(memory);
 
@@ -43,14 +45,21 @@ namespace Ninu.Emulator.Tests.Cpu
             {
                 simulator.Clock();
 
-                if (memory[0xfd00] == 0xa3)
+                if (memory[0xfd01] != 0x00) // A checkpoint has been hit.
+                {
+                    checkpointHit(memory, memory[0xfd01]);
+
+                    memory[0xfd01] = 0; // Reset the checkpoint so we don't hit it again on the next cycle.
+                }
+
+                if (memory[0xfd00] == 0xa3) // A value of 0xa3 at memory location 0xfd00 means the test is complete.
                 {
                     break;
                 }
             }
         }
 
-        protected void RunEmulator(byte[] memory)
+        protected void RunEmulator(byte[] memory, Action<byte[], byte> checkpointHit)
         {
             var memoryBus = new EmulatorBus(memory);
             var cpu = new Emulator.Cpu(memoryBus);
@@ -60,6 +69,13 @@ namespace Ninu.Emulator.Tests.Cpu
             for (var i = 0; i < 50_000; i++)
             {
                 cpu.Clock();
+
+                if (memory[0xfd01] != 0x00) // A checkpoint has been hit.
+                {
+                    checkpointHit(memory, memory[0xfd01]);
+
+                    memory[0xfd01] = 0; // Reset the checkpoint so we don't hit it again on the next cycle.
+                }
 
                 if (memory[0xfd00] == 0xa3)
                 {
