@@ -4,9 +4,13 @@
 ; #Checkpoint 02
 ; [a100:a1ff] == 00 .. ff
 
+.include "..\..\..\Cpu\TestFiles\std.6502.asm"
+
 *= $0000
 
 ; Test 1
+; AND all numbers 00 through ff against 00 and store the results at $a000 through $a0ff. All
+; addresses from $a000 through $a0ff should be 00.
 ldx #$00                ; Loop counter.
 testOneLoop:
     txa                 ; Move loop counter to A.
@@ -16,10 +20,12 @@ testOneLoop:
     inx
     bne testOneLoop
 
-lda #$01
-sta $fd01
+.checkpoint $01
 
 ; Test 2
+; AND all numbers 00 through ff against ff and store the results at $a100 through $a1ff. All
+; addresses from $a100 through $a1ff should be numbers starting at 00 and incrementing by one for
+; each memory address. For example, $a100 should be 00, $a101 should be 01, and $a102 should be 02.
 ldx #$00                ; Loop counter.
 testTwoLoop:
     txa                 ; Move loop counter to A.
@@ -29,19 +35,7 @@ testTwoLoop:
     inx
     bne testTwoLoop
 
-lda #$02
-sta $fd01
+.checkpoint $02
 
-; Done
-lda #$a3                ; Show that the test ran to the end.
-sta $fd00
-loop: jmp loop
-
-; Setup the vectors.
-*= $ff00
-rti
-
-*= $fffa
-nmi .addr $ff00
-reset .addr $0000
-irq .addr $ff00
+.done
+.vectors

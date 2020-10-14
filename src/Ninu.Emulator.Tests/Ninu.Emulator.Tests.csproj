@@ -8,23 +8,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Cpu\TestFiles\Example.asm" />
+    <None Remove="Cpu\TestFiles\example.6502.asm" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Cpu\TestFiles\And.6502.asm">
+    <Content Include="Cpu\TestFiles\and.6502.asm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Cpu\TestFiles\Example.asm">
+    <Content Include="Cpu\TestFiles\example.6502.asm">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
     <PackageReference Include="Patcher6502" Version="0.3.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.2">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

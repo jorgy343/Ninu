@@ -6,10 +6,9 @@ namespace Ninu.Emulator.Tests.Cpu.Expectations
     public class CollectionMemoryRangeExpectation : IExpectation
     {
         private readonly Range _memoryRange;
+        private readonly IList<byte> _expectedValues;
 
-        private readonly List<byte> _expectedValues;
-
-        public CollectionMemoryRangeExpectation(Range memoryRange, List<byte> expectedValues)
+        public CollectionMemoryRangeExpectation(Range memoryRange, IList<byte> expectedValues)
         {
             _memoryRange = memoryRange;
             _expectedValues = expectedValues ?? throw new ArgumentNullException(nameof(expectedValues));
@@ -20,7 +19,7 @@ namespace Ninu.Emulator.Tests.Cpu.Expectations
             }
         }
 
-        public bool AssertExpectation(byte[] memory)
+        public bool AssertExpectation(byte[] memory, CpuFlags flags, byte a, byte x, byte y)
         {
             var index = 0;
 

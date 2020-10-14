@@ -17,7 +17,7 @@ namespace Ninu.Emulator.Tests.Cpu.Expectations
             _endValue = endValue;
         }
 
-        public bool AssertExpectation(byte[] memory)
+        public bool AssertExpectation(byte[] memory, CpuFlags flags, byte a, byte x, byte y)
         {
             var currentExpectedValue = _startValue;
 

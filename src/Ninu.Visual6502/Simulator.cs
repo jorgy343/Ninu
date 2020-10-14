@@ -535,6 +535,7 @@ namespace Ninu.Visual6502
         public int ReadA() => ReadBits("a", 8);
         public int ReadX() => ReadBits("x", 8);
         public int ReadY() => ReadBits("y", 8);
+        public int ReadS() => ReadBits("s", 8);
 
         public int ReadPC() => ReadPCLow() | (ReadPCHigh() << 8);
 
