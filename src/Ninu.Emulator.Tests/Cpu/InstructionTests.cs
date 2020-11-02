@@ -1,7 +1,7 @@
-﻿using Ninu.Emulator.Tests.TestHeaders;
+﻿using Ninu.Emulator.CentralProcessor;
+using Ninu.Emulator.Tests.TestHeaders;
 using Ninu.Visual6502;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -19,6 +19,11 @@ namespace Ninu.Emulator.Tests.Cpu
                 throw new ArgumentNullException(nameof(memory));
             }
 
+            if (checkpoints is null)
+            {
+                throw new ArgumentNullException(nameof(checkpoints));
+            }
+
             var testMemory = new byte[memory.Length];
             memory.CopyTo(testMemory, 0);
 
@@ -34,6 +39,53 @@ namespace Ninu.Emulator.Tests.Cpu
             RunEmulator(testMemory, checkpointHit);
 
             Assert.True(Enumerable.SequenceEqual(memory, testMemory));
+        }
+
+        [Theory]
+        [AsmData("Cpu/TestFiles/and.6502.asm")]
+        public void TestInstructions(byte[] memory, IEnumerable<Checkpoint> checkpoints)
+        {
+            if (memory is null)
+            {
+                throw new ArgumentNullException(nameof(memory));
+            }
+
+            if (checkpoints is null)
+            {
+                throw new ArgumentNullException(nameof(checkpoints));
+            }
+
+            var testMemory = new byte[memory.Length];
+            memory.CopyTo(testMemory, 0);
+
+            var simulator = new Simulator(memory);
+
+            simulator.Init();
+            simulator.RunStartProgram();
+
+            var memoryBus = new EmulatorBus(memory);
+            var cpu = new CentralProcessor.Cpu(memoryBus);
+
+            cpu.PowerOn();
+
+            for (var i = 0; i < 10_000; i++)
+            {
+                if (cpu.RemainingCycles == 0)
+                {
+                    // Do the comparisons.
+                    Assert.Equal(memory, testMemory);
+                }
+                else
+                {
+                    cpu.Clock();
+                    simulator.Clock();
+                }
+
+                if (testMemory[0xff00] == 0xa3) // A value of 0xa3 at memory location 0xff00 means the test is complete.
+                {
+                    break;
+                }
+            }
         }
 
         protected void RunSimulation(byte[] memory, Action<byte, byte[], CpuFlags, byte, byte, byte> checkpointHit)
@@ -70,7 +122,7 @@ namespace Ninu.Emulator.Tests.Cpu
         protected void RunEmulator(byte[] memory, Action<byte, byte[], CpuFlags, byte, byte, byte> checkpointHit)
         {
             var memoryBus = new EmulatorBus(memory);
-            var cpu = new Emulator.Cpu(memoryBus);
+            var cpu = new CentralProcessor.Cpu(memoryBus);
 
             cpu.PowerOn();
 

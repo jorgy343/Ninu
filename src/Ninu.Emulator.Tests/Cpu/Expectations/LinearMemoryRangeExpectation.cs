@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ninu.Emulator.CentralProcessor;
+using System;
 
 namespace Ninu.Emulator.Tests.Cpu.Expectations
 {

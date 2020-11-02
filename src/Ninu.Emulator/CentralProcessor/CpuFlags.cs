@@ -1,7 +1,7 @@
 ﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
 using System;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.CentralProcessor
 {
     [Flags]
     public enum CpuFlags : byte

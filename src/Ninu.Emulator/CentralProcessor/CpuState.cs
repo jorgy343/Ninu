@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.CentralProcessor
 {
     public class CpuState
     {

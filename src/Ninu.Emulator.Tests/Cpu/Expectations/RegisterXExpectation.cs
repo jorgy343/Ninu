@@ -1,4 +1,6 @@
-﻿namespace Ninu.Emulator.Tests.Cpu.Expectations
+﻿using Ninu.Emulator.CentralProcessor;
+
+namespace Ninu.Emulator.Tests.Cpu.Expectations
 {
     public class RegisterXExpectation : IExpectation
     {

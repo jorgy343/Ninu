@@ -1,4 +1,5 @@
-﻿using Ninu.Emulator.Tests.Cpu.Expectations;
+﻿using Ninu.Emulator.CentralProcessor;
+using Ninu.Emulator.Tests.Cpu.Expectations;
 using System;
 using System.Collections.Generic;
 using System.Linq;

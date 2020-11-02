@@ -1,17 +1,21 @@
-﻿using System;
+﻿using Ninu.Emulator.CentralProcessor.Profilers;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.CentralProcessor
 {
     public class Cpu
     {
         private readonly IBus _cpuBus;
 
+        private readonly List<IProfiler> _profilers = new List<IProfiler>();
+
         [Save("TotalCycles")]
         private long _totalCycles;
 
         [Save("RemainingCycles")]
-        private int _remainingCycles;
+        public int RemainingCycles { get; protected set; }
 
         [Save]
         public bool Nmi { get; set; }
@@ -24,9 +28,27 @@ namespace Ninu.Emulator
             _cpuBus = cpuBus ?? throw new ArgumentNullException(nameof(cpuBus));
         }
 
+        public void AddProfiler(IProfiler profiler)
+        {
+            _profilers.Add(profiler);
+        }
+
+        public void RemoveProfiler(IProfiler profiler)
+        {
+            if (_profilers.Contains(profiler))
+            {
+                _profilers.Remove(profiler);
+            }
+        }
+
+        public void ClearAllProfilers()
+        {
+            _profilers.Clear();
+        }
+
         public void Clock()
         {
-            if (_remainingCycles == 0) // Read the next instruction when the previous is done executing.
+            if (RemainingCycles == 0) // Read the next instruction when the previous is done executing.
             {
                 // Check for an NMI signal before processing the next instruction. When an NMI is triggered, it will
                 // always occur after the currently executing instruction.
@@ -35,20 +57,56 @@ namespace Ninu.Emulator
                     Nmi = false;
 
                     PerformNmi();
+
+                    foreach (var profiler in _profilers.OfType<INmiProfiler>())
+                    {
+                        profiler.NmiPerformed(CpuState);
+                    }
                 }
                 else
                 {
                     var opCode = _cpuBus.Read(CpuState.PC++);
                     var instruction = CpuInstruction.GetInstruction(opCode);
 
+                    foreach (var profiler in _profilers.OfType<IInstructionExecutingProfiler>())
+                    {
+                        profiler.InstructionExecuting(instruction, CpuState);
+                    }
+
+                    var currentPC = CpuState.PC;
+
                     var cycles = instruction.Execute(_cpuBus, CpuState);
 
-                    _remainingCycles = cycles;
+                    foreach (var profiler in _profilers.OfType<IInstructionExecutedProfiler>())
+                    {
+                        profiler.InstructionExecuted(instruction, CpuState, cycles);
+                    }
+
+                    foreach (var profiler in _profilers.OfType<IJumpProfiler>())
+                    {
+                        // TODO: Refactor so we don't create a new JumpResult object each loop.
+                        switch (instruction.Name)
+                        {
+                            case "bcc":
+                            case "bcs":
+                            case "beq":
+                            case "bmi":
+                            case "bne":
+                            case "bpl":
+                            case "bvc":
+                            case "bvs":
+                                var jumpResult = new JumpResult(JumpType.Conditional, currentPC, CpuState.PC, currentPC + instruction.Size != CpuState.PC);
+                                profiler.JumpEncountered(jumpResult);
+                                break;
+                        }
+                    }
+
+                    RemainingCycles = cycles;
                 }
             }
 
             _totalCycles++;
-            _remainingCycles--;
+            RemainingCycles--;
         }
 
         public string DecodeInstruction(ushort address)
@@ -86,7 +144,7 @@ namespace Ninu.Emulator
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-            _remainingCycles = 8;
+            RemainingCycles = 8;
         }
 
         public void Reset()
@@ -99,7 +157,7 @@ namespace Ninu.Emulator
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-            _remainingCycles = 6; // TODO: Pretty sure this is supposed to be 6.
+            RemainingCycles = 6; // TODO: Pretty sure this is supposed to be 6.
         }
 
         public void Interrupt()
@@ -120,7 +178,7 @@ namespace Ninu.Emulator
 
                 CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-                _remainingCycles = 7;
+                RemainingCycles = 7;
             }
         }
 
@@ -140,7 +198,7 @@ namespace Ninu.Emulator
 
             CpuState.PC = (ushort)(pcLow | (pcHigh << 8));
 
-            _remainingCycles = 8;
+            RemainingCycles = 8;
         }
 
         private void Push(byte data)

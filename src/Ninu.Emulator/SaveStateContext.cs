@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Ninu.Emulator.CentralProcessor;
 using System;
 using System.Collections.Generic;
 using System.Text;

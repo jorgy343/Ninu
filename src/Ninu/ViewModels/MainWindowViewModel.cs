@@ -1,5 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using Ninu.Emulator;
+using Ninu.Emulator.CentralProcessor;
+using Ninu.Emulator.CentralProcessor.Profilers;
 using Ninu.Models;
 using System;
 using System.Diagnostics;
@@ -9,7 +12,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Microsoft.Win32;
 using Console = Ninu.Emulator.Console;
 
 namespace Ninu.ViewModels
@@ -54,6 +56,8 @@ namespace Ninu.ViewModels
             });
 
             Console = new Console(loggerFactory, loggerFactory.CreateLogger<Console>());
+
+            Console.Cpu.AddProfiler(new NmiProfiler());
 
             //Console.CompleteFrame();
             //Console.CompleteFrame();

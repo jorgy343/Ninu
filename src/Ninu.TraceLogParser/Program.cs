@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Ninu.Emulator.CentralProcessor;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Ninu.Emulator;
 
 namespace Ninu.TraceLogParser
 {

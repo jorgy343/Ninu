@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.CentralProcessor
 {
     /// <summary>
     /// Exposes all of the CPU's instructions as static methods.

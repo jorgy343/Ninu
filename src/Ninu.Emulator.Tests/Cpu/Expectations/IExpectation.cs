@@ -1,4 +1,6 @@
-﻿namespace Ninu.Emulator.Tests.Cpu.Expectations
+﻿using Ninu.Emulator.CentralProcessor;
+
+namespace Ninu.Emulator.Tests.Cpu.Expectations
 {
     /// <summary>
     /// Represents an assertion of the memory. This requires testing one or more memory

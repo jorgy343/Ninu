@@ -1,8 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
-using static Ninu.Emulator.CpuInstructionOperations;
+using static Ninu.Emulator.CentralProcessor.CpuInstructionOperations;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.CentralProcessor
 {
     public delegate int InstructionExecutor(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState);
 

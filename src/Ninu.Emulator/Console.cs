@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Ninu.Emulator.CentralProcessor;
 using System;
 
 namespace Ninu.Emulator

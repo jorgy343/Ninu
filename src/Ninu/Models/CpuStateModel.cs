@@ -1,4 +1,4 @@
-﻿using Ninu.Emulator;
+﻿using Ninu.Emulator.CentralProcessor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
