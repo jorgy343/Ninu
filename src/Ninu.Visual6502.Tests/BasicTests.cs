@@ -1,3 +1,4 @@
+using Ninu.Base;
 using Patcher6502;
 using Xunit;
 
@@ -52,7 +53,7 @@ namespace Ninu.Visual6502.Tests
 
             var data = assembler.Assemble(0, null, asm);
 
-            var simulator = new Simulator(data);
+            var simulator = new Simulator(new ArrayMemory(data));
 
             simulator.Init();
             simulator.RunStartProgram();

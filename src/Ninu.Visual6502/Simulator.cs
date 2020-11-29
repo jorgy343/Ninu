@@ -47,6 +47,7 @@ var computeTransistorHash = function()
 }
 */
 
+using Ninu.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,15 +75,15 @@ namespace Ninu.Visual6502
         private readonly Node[] _dbNodes = new Node[8];
 #nullable restore
 
-        public byte[] Memory { get; }
+        public IMemory Memory { get; }
 
         public Simulator()
-            : this(new byte[65536])
+            : this(new ArrayMemory(65535))
         {
 
         }
 
-        public Simulator(byte[] memory)
+        public Simulator(IMemory memory)
         {
             Memory = memory ?? throw new ArgumentNullException(nameof(memory));
         }
@@ -144,7 +145,7 @@ namespace Ninu.Visual6502
             {
                 var address = ReadAddressBus();
 
-                var data = Memory[address & 0xffff];
+                var data = Memory[(ushort)(address & 0xffff)];
 
                 WriteDataBus(data);
             }
@@ -157,7 +158,7 @@ namespace Ninu.Visual6502
                 var address = ReadAddressBus();
                 var data = ReadDataBus();
 
-                Memory[address & 0xffff] = (byte)(data & 0xff);
+                Memory[(ushort)(address & 0xffff)] = (byte)(data & 0xff);
             }
         }
 

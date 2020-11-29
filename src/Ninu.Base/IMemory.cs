@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Ninu.Emulator
+namespace Ninu.Base
 {
     public interface IMemory : IEnumerable<byte>
     {

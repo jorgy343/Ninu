@@ -1,5 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
+using Ninu.Base;
 using Patcher6502;
 
 namespace Ninu.Visual6502.Benchmark
@@ -42,7 +43,7 @@ namespace Ninu.Visual6502.Benchmark
 
             var data = assembler.Assemble(0, null, asm);
 
-            _simulator = new Simulator(data);
+            _simulator = new Simulator(new ArrayMemory(data));
 
             _simulator.Init();
             _simulator.RunStartProgram();

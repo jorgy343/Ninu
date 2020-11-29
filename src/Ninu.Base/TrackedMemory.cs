@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Ninu.Emulator
+namespace Ninu.Base
 {
     public class TrackedMemory : IMemory
     {
@@ -11,9 +11,26 @@ namespace Ninu.Emulator
         private readonly HashSet<ushort> _changedAddresses = new HashSet<ushort>(128);
         private readonly Dictionary<ushort, byte> _changes = new Dictionary<ushort, byte>(128);
 
-        public TrackedMemory(ushort size)
+        public TrackedMemory(int size)
         {
+            if (size < 0 || size > 65536)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size), $"The argument for parameter {nameof(size)} must be greater than or equal to 0 and less or equal to 65536.");
+            }
+
             _memory = new byte[size];
+        }
+
+        public TrackedMemory(byte[] memory)
+        {
+            if (memory.Length > 65536)
+            {
+                throw new ArgumentOutOfRangeException(nameof(memory), $"The argument for parameter {nameof(memory)} must be less than or equal to 65536.");
+            }
+
+            _memory = new byte[memory.Length];
+
+            Array.Copy(memory, _memory, memory.Length);
         }
 
         /// <summary>
