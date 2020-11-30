@@ -5,9 +5,7 @@ using Patcher6502;
 
 namespace Ninu.Visual6502.Benchmark
 {
-    [SimpleJob(RuntimeMoniker.NetCoreApp31, baseline: true)]
-    [SimpleJob(RuntimeMoniker.CoreRt31)]
-    [SimpleJob(RuntimeMoniker.NetCoreApp50)]
+    [SimpleJob(RuntimeMoniker.NetCoreApp50, baseline: true)]
     [SimpleJob(RuntimeMoniker.CoreRt50)]
     public class CyclesBenchmarks
     {
