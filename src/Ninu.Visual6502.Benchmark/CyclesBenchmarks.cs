@@ -24,7 +24,10 @@ namespace Ninu.Visual6502.Benchmark
             var asm = @"
                 .org $0000
 
-                loop: jmp loop
+                loop:
+                inx
+                stx $a00
+                jmp loop
 
                 .org $f000
                 rti
