@@ -51,6 +51,7 @@ using Ninu.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Ninu.Visual6502
 {
@@ -70,15 +71,15 @@ namespace Ninu.Visual6502
         private Node _powerNode;
 
         private Node _rwNode;
+#nullable restore
 
         private readonly Node[] _abNodes = new Node[16];
         private readonly Node[] _dbNodes = new Node[8];
-#nullable restore
 
         public IMemory Memory { get; }
 
         public Simulator()
-            : this(new ArrayMemory(65535))
+            : this(new ArrayMemory(65536))
         {
 
         }
@@ -186,7 +187,6 @@ namespace Ninu.Visual6502
 
             RecalcNodeList(_nodes
                 .Where(x => x != _groundNode && x != _powerNode)
-                .Select(x => x)
                 .ToArray());
 
             for (var i = 0; i < 8; i++)
@@ -404,7 +404,7 @@ namespace Ninu.Visual6502
 
         private void AddNodeToGroup(Node node)
         {
-            // Don't do anything is the node has already been added to the group.
+            // Don't do anything if the node has already been added to the group.
             if (_group.CurrentHasNode(node))
             {
                 return;
@@ -517,6 +517,19 @@ namespace Ninu.Visual6502
             return value;
         }
 
+        public int ReadBits8(string namePrefix)
+        {
+            return
+                (_nodesByName[namePrefix + 0].State ? 1 : 0) << 0
+                | (_nodesByName[namePrefix + 1].State ? 1 : 0) << 1
+                | (_nodesByName[namePrefix + 2].State ? 1 : 0) << 2
+                | (_nodesByName[namePrefix + 3].State ? 1 : 0) << 3
+                | (_nodesByName[namePrefix + 4].State ? 1 : 0) << 4
+                | (_nodesByName[namePrefix + 5].State ? 1 : 0) << 5
+                | (_nodesByName[namePrefix + 6].State ? 1 : 0) << 6
+                | (_nodesByName[namePrefix + 7].State ? 1 : 0) << 7;
+        }
+
         public int ReadBits(Node[] nodes)
         {
             var value = 0;
@@ -529,15 +542,31 @@ namespace Ninu.Visual6502
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public int ReadAddressBus() => ReadBits(_abNodes);
-        public int ReadDataBus() => ReadBits(_dbNodes);
-        public int ReadPCLow() => ReadBits("pcl", 8);
-        public int ReadPCHigh() => ReadBits("pch", 8);
-        public int ReadA() => ReadBits("a", 8);
-        public int ReadX() => ReadBits("x", 8);
-        public int ReadY() => ReadBits("y", 8);
-        public int ReadS() => ReadBits("s", 8);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadDataBus() => ReadBits(_dbNodes);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadPCLow() => ReadBits8("pcl");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadPCHigh() => ReadBits8("pch");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadA() => ReadBits8("a");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadX() => ReadBits8("x");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadY() => ReadBits8("y");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int ReadS() => ReadBits8("s");
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public int ReadPC() => ReadPCLow() | (ReadPCHigh() << 8);
 
         public void WriteBits(string namePrefix, int size, int data)

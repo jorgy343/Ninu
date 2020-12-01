@@ -1,6 +1,4 @@
 ﻿using BenchmarkDotNet.Running;
-using Ninu.Base;
-using Patcher6502;
 
 namespace Ninu.Visual6502.Benchmark
 {
@@ -10,45 +8,10 @@ namespace Ninu.Visual6502.Benchmark
         {
             BenchmarkRunner.Run<CyclesBenchmarks>();
 
-            //var simulator = CreateSimulator();
+            //var benchmark = new CyclesBenchmarks();
 
-            //for (var i = 0; i < 100_000; i++)
-            //{
-            //    simulator.HalfStep();
-            //    simulator.HalfStep();
-            //}
-        }
-
-        private static Simulator CreateSimulator()
-        {
-            var assembler = new PatchAssembler();
-
-            var asm = @"
-                .org $0000
-
-                loop: jmp loop
-
-                .org $f000
-                rti
-
-                .org $fffa
-                nmi .addr $f000
-
-                .org $fffc
-                reset .addr $0000
-
-                .org $fffe
-                irq .addr $f000
-            ".Replace(".org", "* =");
-
-            var data = assembler.Assemble(0, null, asm);
-
-            var simulator = new Simulator(new ArrayMemory(data));
-
-            simulator.Init();
-            simulator.RunStartProgram();
-
-            return simulator;
+            //benchmark.Setup();
+            //benchmark.RunCycles();
         }
     }
 }
