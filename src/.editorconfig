@@ -3,7 +3,13 @@ root = true
 [*]
 indent_style = space
 
-[.*cs]
+[*.{xml,json,yml,yaml,csproj}]
+indent_size = 2
+
+[*.{xaml}]
+indent_size = 4
+
+[*.{cs}]
 indent_size = 4
 insert_final_newline = false
 

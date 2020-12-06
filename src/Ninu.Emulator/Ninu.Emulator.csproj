@@ -16,4 +16,8 @@
     <Folder Include="AudioProcessor\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ninu.Base\Ninu.Base.csproj" />
+  </ItemGroup>
+
 </Project>

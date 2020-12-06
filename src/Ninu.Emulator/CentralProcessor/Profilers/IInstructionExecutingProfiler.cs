@@ -1,7 +1,9 @@
-﻿namespace Ninu.Emulator.CentralProcessor.Profilers
+﻿using Ninu.Base;
+
+namespace Ninu.Emulator.CentralProcessor.Profilers
 {
     public interface IInstructionExecutingProfiler : IProfiler
     {
-        void InstructionExecuting(CpuInstruction instruction, CpuState cpuState);
+        void InstructionExecuting(Instruction instruction, CpuState cpuState);
     }
 }

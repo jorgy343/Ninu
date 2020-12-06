@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Base
 {
     public enum AddressingMode
     {
@@ -15,6 +15,11 @@
         IndirectZeroPageWithXOffset,
         IndirectZeroPageWithYOffset,
         Relative,
-        Dummy, // Does nothing. This is used to simplify undocumented instructions.
+
+        /// <summary>
+        /// Does nothing. This is used by the emulator only to simplify the implementation of
+        /// undocumented instructions.
+        /// </summary>
+        Dummy,
     }
 }

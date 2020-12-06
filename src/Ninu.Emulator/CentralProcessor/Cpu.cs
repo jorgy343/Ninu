@@ -1,4 +1,5 @@
-﻿using Ninu.Emulator.CentralProcessor.Profilers;
+﻿using Ninu.Base;
+using Ninu.Emulator.CentralProcessor.Profilers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,7 +67,7 @@ namespace Ninu.Emulator.CentralProcessor
                 else
                 {
                     var opCode = _cpuBus.Read(CpuState.PC++);
-                    var instruction = CpuInstruction.GetInstruction(opCode);
+                    var instruction = Instruction.GetByOpCode(opCode);
 
                     foreach (var profiler in _profilers.OfType<IInstructionExecutingProfiler>())
                     {
@@ -75,7 +76,7 @@ namespace Ninu.Emulator.CentralProcessor
 
                     var currentPC = CpuState.PC;
 
-                    var cycles = instruction.Execute(_cpuBus, CpuState);
+                    var cycles = CpuInstructionOperations.ExecuteInstruction(instruction, _cpuBus, CpuState);
 
                     foreach (var profiler in _profilers.OfType<IInstructionExecutedProfiler>())
                     {
@@ -112,7 +113,7 @@ namespace Ninu.Emulator.CentralProcessor
         public string DecodeInstruction(ushort address)
         {
             var opCode = _cpuBus.Read(address);
-            var instruction = CpuInstruction.GetInstruction(opCode);
+            var instruction = Instruction.GetByOpCode(opCode);
 
             return instruction.Name;
         }
@@ -122,7 +123,7 @@ namespace Ninu.Emulator.CentralProcessor
             for (var i = 0; i < count; i++)
             {
                 var opCode = _cpuBus.Read(address);
-                var instruction = CpuInstruction.GetInstruction(opCode);
+                var instruction = Instruction.GetByOpCode(opCode);
 
                 yield return instruction.Name;
 

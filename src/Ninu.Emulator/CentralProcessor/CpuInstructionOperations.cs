@@ -1,12 +1,309 @@
-﻿using System;
+﻿using Ninu.Base;
+using System;
+using System.Collections.Generic;
 
 namespace Ninu.Emulator.CentralProcessor
 {
+    public delegate int InstructionExecutor(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState);
+    public delegate int InstructionExecutorEx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result);
+
     /// <summary>
     /// Exposes all of the CPU's instructions as static methods.
     /// </summary>
     public static class CpuInstructionOperations
     {
+        private static readonly Dictionary<Instruction, (InstructionExecutor? Executor, InstructionExecutorEx? ExecutorEx)> _instructionExecutors;
+
+        private static (InstructionExecutor? Executor, InstructionExecutorEx? ExecutorEx) CreateTuple(InstructionExecutor executor) =>
+            (executor, null);
+
+        private static (InstructionExecutor? Executor, InstructionExecutorEx? ExecutorEx) CreateTuple(InstructionExecutorEx executorEx) =>
+            (null, executorEx);
+
+        static CpuInstructionOperations()
+        {
+            _instructionExecutors = new(256)
+            {
+                [Instruction.GetByOpCode(0x00)] = CreateTuple(Brk),
+                [Instruction.GetByOpCode(0x01)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x02)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x03)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x04)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x05)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x06)] = CreateTuple(Asl),
+                [Instruction.GetByOpCode(0x07)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x08)] = CreateTuple(Php),
+                [Instruction.GetByOpCode(0x09)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x0a)] = CreateTuple(Asl),
+                [Instruction.GetByOpCode(0x0b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x0c)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0x0d)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x0e)] = CreateTuple(Asl),
+                [Instruction.GetByOpCode(0x0f)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x10)] = CreateTuple(Bpl),
+                [Instruction.GetByOpCode(0x11)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x12)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x13)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x14)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x15)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x16)] = CreateTuple(Asl),
+                [Instruction.GetByOpCode(0x17)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x18)] = CreateTuple(Clc),
+                [Instruction.GetByOpCode(0x19)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x1a)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x1b)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x1c)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0x1d)] = CreateTuple(Ora),
+                [Instruction.GetByOpCode(0x1e)] = CreateTuple(Asl),
+                [Instruction.GetByOpCode(0x1f)] = CreateTuple(Slo),
+                [Instruction.GetByOpCode(0x20)] = CreateTuple(Jsr),
+                [Instruction.GetByOpCode(0x21)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x22)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x23)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x24)] = CreateTuple(Bit),
+                [Instruction.GetByOpCode(0x25)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x26)] = CreateTuple(Rol),
+                [Instruction.GetByOpCode(0x27)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x28)] = CreateTuple(Plp),
+                [Instruction.GetByOpCode(0x29)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x2a)] = CreateTuple(Rol),
+                [Instruction.GetByOpCode(0x2b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x2c)] = CreateTuple(Bit),
+                [Instruction.GetByOpCode(0x2d)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x2e)] = CreateTuple(Rol),
+                [Instruction.GetByOpCode(0x2f)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x30)] = CreateTuple(Bmi),
+                [Instruction.GetByOpCode(0x31)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x32)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x33)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x34)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x35)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x36)] = CreateTuple(Rol),
+                [Instruction.GetByOpCode(0x37)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x38)] = CreateTuple(Sec),
+                [Instruction.GetByOpCode(0x39)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x3a)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x3b)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x3c)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0x3d)] = CreateTuple(And),
+                [Instruction.GetByOpCode(0x3e)] = CreateTuple(Rol),
+                [Instruction.GetByOpCode(0x3f)] = CreateTuple(Rla),
+                [Instruction.GetByOpCode(0x40)] = CreateTuple(Rti),
+                [Instruction.GetByOpCode(0x41)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x42)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x43)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x44)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x45)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x46)] = CreateTuple(Lsr),
+                [Instruction.GetByOpCode(0x47)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x48)] = CreateTuple(Pha),
+                [Instruction.GetByOpCode(0x49)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x4a)] = CreateTuple(Lsr),
+                [Instruction.GetByOpCode(0x4b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x4c)] = CreateTuple(Jmp),
+                [Instruction.GetByOpCode(0x4d)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x4e)] = CreateTuple(Lsr),
+                [Instruction.GetByOpCode(0x4f)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x50)] = CreateTuple(Bvc),
+                [Instruction.GetByOpCode(0x51)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x52)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x53)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x54)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x55)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x56)] = CreateTuple(Lsr),
+                [Instruction.GetByOpCode(0x57)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x58)] = CreateTuple(Cli),
+                [Instruction.GetByOpCode(0x59)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x5a)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x5b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x5c)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0x5d)] = CreateTuple(Eor),
+                [Instruction.GetByOpCode(0x5e)] = CreateTuple(Lsr),
+                [Instruction.GetByOpCode(0x5f)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x60)] = CreateTuple(Rts),
+                [Instruction.GetByOpCode(0x61)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x62)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x63)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x64)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x65)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x66)] = CreateTuple(Ror),
+                [Instruction.GetByOpCode(0x67)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x68)] = CreateTuple(Pla),
+                [Instruction.GetByOpCode(0x69)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x6a)] = CreateTuple(Ror),
+                [Instruction.GetByOpCode(0x6b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x6c)] = CreateTuple(Jmp),
+                [Instruction.GetByOpCode(0x6d)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x6e)] = CreateTuple(Ror),
+                [Instruction.GetByOpCode(0x6f)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x70)] = CreateTuple(Bvs),
+                [Instruction.GetByOpCode(0x71)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x72)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x73)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x74)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x75)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x76)] = CreateTuple(Ror),
+                [Instruction.GetByOpCode(0x77)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x78)] = CreateTuple(Sei),
+                [Instruction.GetByOpCode(0x79)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x7a)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x7b)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x7c)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0x7d)] = CreateTuple(Adc),
+                [Instruction.GetByOpCode(0x7e)] = CreateTuple(Ror),
+                [Instruction.GetByOpCode(0x7f)] = CreateTuple(Rra),
+                [Instruction.GetByOpCode(0x80)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x81)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x82)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x83)] = CreateTuple(Aax),
+                [Instruction.GetByOpCode(0x84)] = CreateTuple(Sty),
+                [Instruction.GetByOpCode(0x85)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x86)] = CreateTuple(Stx),
+                [Instruction.GetByOpCode(0x87)] = CreateTuple(Aax),
+                [Instruction.GetByOpCode(0x88)] = CreateTuple(Dey),
+                [Instruction.GetByOpCode(0x89)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0x8a)] = CreateTuple(Txa),
+                [Instruction.GetByOpCode(0x8b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x8c)] = CreateTuple(Sty),
+                [Instruction.GetByOpCode(0x8d)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x8e)] = CreateTuple(Stx),
+                [Instruction.GetByOpCode(0x8f)] = CreateTuple(Aax),
+                [Instruction.GetByOpCode(0x90)] = CreateTuple(Bcc),
+                [Instruction.GetByOpCode(0x91)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x92)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0x93)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x94)] = CreateTuple(Sty),
+                [Instruction.GetByOpCode(0x95)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x96)] = CreateTuple(Stx),
+                [Instruction.GetByOpCode(0x97)] = CreateTuple(Aax),
+                [Instruction.GetByOpCode(0x98)] = CreateTuple(Tya),
+                [Instruction.GetByOpCode(0x99)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x9a)] = CreateTuple(Txs),
+                [Instruction.GetByOpCode(0x9b)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x9c)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x9d)] = CreateTuple(Sta),
+                [Instruction.GetByOpCode(0x9e)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0x9f)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xa0)] = CreateTuple(Ldy),
+                [Instruction.GetByOpCode(0xa1)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xa2)] = CreateTuple(Ldx),
+                [Instruction.GetByOpCode(0xa3)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xa4)] = CreateTuple(Ldy),
+                [Instruction.GetByOpCode(0xa5)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xa6)] = CreateTuple(Ldx),
+                [Instruction.GetByOpCode(0xa7)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xa8)] = CreateTuple(Tay),
+                [Instruction.GetByOpCode(0xa9)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xaa)] = CreateTuple(Tax),
+                [Instruction.GetByOpCode(0xab)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xac)] = CreateTuple(Ldy),
+                [Instruction.GetByOpCode(0xad)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xae)] = CreateTuple(Ldx),
+                [Instruction.GetByOpCode(0xaf)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xb0)] = CreateTuple(Bcs),
+                [Instruction.GetByOpCode(0xb1)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xb2)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0xb3)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xb4)] = CreateTuple(Ldy),
+                [Instruction.GetByOpCode(0xb5)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xb6)] = CreateTuple(Ldx),
+                [Instruction.GetByOpCode(0xb7)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xb8)] = CreateTuple(Clv),
+                [Instruction.GetByOpCode(0xb9)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xba)] = CreateTuple(Tsx),
+                [Instruction.GetByOpCode(0xbb)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xbc)] = CreateTuple(Ldy),
+                [Instruction.GetByOpCode(0xbd)] = CreateTuple(Lda),
+                [Instruction.GetByOpCode(0xbe)] = CreateTuple(Ldx),
+                [Instruction.GetByOpCode(0xbf)] = CreateTuple(Lax),
+                [Instruction.GetByOpCode(0xc0)] = CreateTuple(Cpy),
+                [Instruction.GetByOpCode(0xc1)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xc2)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0xc3)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xc4)] = CreateTuple(Cpy),
+                [Instruction.GetByOpCode(0xc5)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xc6)] = CreateTuple(Dec),
+                [Instruction.GetByOpCode(0xc7)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xc8)] = CreateTuple(Iny),
+                [Instruction.GetByOpCode(0xc9)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xca)] = CreateTuple(Dex),
+                [Instruction.GetByOpCode(0xcb)] = CreateTuple(Axs),
+                [Instruction.GetByOpCode(0xcc)] = CreateTuple(Cpy),
+                [Instruction.GetByOpCode(0xcd)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xce)] = CreateTuple(Dec),
+                [Instruction.GetByOpCode(0xcf)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xd0)] = CreateTuple(Bne),
+                [Instruction.GetByOpCode(0xd1)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xd2)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0xd3)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xd4)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0xd5)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xd6)] = CreateTuple(Dec),
+                [Instruction.GetByOpCode(0xd7)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xd8)] = CreateTuple(Cld),
+                [Instruction.GetByOpCode(0xd9)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xda)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xdb)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xdc)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0xdd)] = CreateTuple(Cmp),
+                [Instruction.GetByOpCode(0xde)] = CreateTuple(Dec),
+                [Instruction.GetByOpCode(0xdf)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xe0)] = CreateTuple(Cpx),
+                [Instruction.GetByOpCode(0xe1)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xe2)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0xe3)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xe4)] = CreateTuple(Cpx),
+                [Instruction.GetByOpCode(0xe5)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xe6)] = CreateTuple(Inc),
+                [Instruction.GetByOpCode(0xe7)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xe8)] = CreateTuple(Inx),
+                [Instruction.GetByOpCode(0xe9)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xea)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xeb)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xec)] = CreateTuple(Cpx),
+                [Instruction.GetByOpCode(0xed)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xee)] = CreateTuple(Inc),
+                [Instruction.GetByOpCode(0xef)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xf0)] = CreateTuple(Beq),
+                [Instruction.GetByOpCode(0xf1)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xf2)] = CreateTuple(Kil),
+                [Instruction.GetByOpCode(0xf3)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xf4)] = CreateTuple(Dop),
+                [Instruction.GetByOpCode(0xf5)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xf6)] = CreateTuple(Inc),
+                [Instruction.GetByOpCode(0xf7)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xf8)] = CreateTuple(Sed),
+                [Instruction.GetByOpCode(0xf9)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xfa)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xfb)] = CreateTuple(Nop),
+                [Instruction.GetByOpCode(0xfc)] = CreateTuple(Top),
+                [Instruction.GetByOpCode(0xfd)] = CreateTuple(Sbc),
+                [Instruction.GetByOpCode(0xfe)] = CreateTuple(Inc),
+                [Instruction.GetByOpCode(0xff)] = CreateTuple(Nop),
+            };
+        }
+
+        public static int ExecuteInstruction(Instruction cpuInstruction, IBus bus, CpuState cpuState)
+        {
+            if (cpuInstruction is null) throw new ArgumentNullException(nameof(cpuInstruction));
+            if (bus is null) throw new ArgumentNullException(nameof(bus));
+            if (cpuState is null) throw new ArgumentNullException(nameof(cpuState));
+
+            var executors = _instructionExecutors[cpuInstruction];
+
+            if (executors.Executor is not null)
+            {
+                return executors.Executor(cpuInstruction.AddressingMode, cpuInstruction.BaseCycles, bus, cpuState);
+            }
+
+            if (executors.ExecutorEx is not null)
+            {
+                return executors.ExecutorEx(cpuInstruction.AddressingMode, cpuInstruction.BaseCycles, bus, cpuState, null, out _);
+            }
+
+            return 0;
+        }
+
         /// <summary>
         /// Gets a 16-bit address from memory based on the addressing mode. Addressing modes
         /// <see cref="AddressingMode.Implied"/>, <see cref="AddressingMode.Accumulator"/>, and
@@ -288,7 +585,7 @@ namespace Ninu.Emulator.CentralProcessor
             return totalCycles;
         }
 
-        public static int Aac(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Aac(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, address, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -309,7 +606,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Aax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Aax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (address, additionalCycles) = GetAddress(addressingMode, bus, cpuState);
 
@@ -323,7 +620,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Adc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int Adc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -434,7 +731,7 @@ namespace Ninu.Emulator.CentralProcessor
         /// <param name="dataIn">Optionally specifies the data that is to be used for the operation. If provided, this overrides the data that would ordinarily be gathered from the data fetch. The data fetch will still occur.</param>
         /// <param name="result">Contains the result of the operation.</param>
         /// <returns>The number of cycles used to execute this instruction taking into account any penalties.</returns>
-        public static int And(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int And(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -453,7 +750,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Asl(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int Asl(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             // Note: This instruction operators on and stores the result to either memory or accumulator.
             // Note: This instruction always takes a constant amount of cycles to complete.
@@ -486,7 +783,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Axs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Axs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, _) = FetchData(addressingMode, bus, cpuState);
 
@@ -497,22 +794,22 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Bcc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bcc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.C));
         }
 
-        public static int Bcs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bcs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.C));
         }
 
-        public static int Beq(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Beq(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.Z));
         }
 
-        public static int Bit(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bit(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, _) = FetchData(addressingMode, bus, cpuState);
 
@@ -523,22 +820,22 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Bmi(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bmi(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.N));
         }
 
-        public static int Bne(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bne(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.Z));
         }
 
-        public static int Bpl(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bpl(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.N));
         }
 
-        public static int Brk(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Brk(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // The BRK instruction saves the address that is two after the BRK instruction. This allows for the
             // application to store a byte of data directly after the BRK instruction, perhaps to signify the type of
@@ -565,41 +862,41 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Bvc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bvc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, !cpuState.GetFlag(CpuFlags.V));
         }
 
-        public static int Bvs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Bvs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return PerformConditionalJump(baseCycles, bus, cpuState, cpuState.GetFlag(CpuFlags.V));
         }
 
-        public static int Clc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Clc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.C, false);
             return baseCycles;
         }
 
-        public static int Cld(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Cld(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.D, false);
             return baseCycles;
         }
 
-        public static int Cli(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Cli(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.I, false);
             return baseCycles;
         }
 
-        public static int Clv(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Clv(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.V, false);
             return baseCycles;
         }
 
-        public static int Cmp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Cmp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -612,7 +909,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Cpx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Cpx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -625,7 +922,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Cpy(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Cpy(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -638,7 +935,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Dec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Dec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // No addressing mode of this instruction incurs additional addressing penalties. All cycles are counted in
             // the base cycles of this instruction.
@@ -656,7 +953,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Dex(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Dex(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.X--;
 
@@ -666,7 +963,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Dey(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Dey(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.Y--;
 
@@ -677,14 +974,14 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Undocumented Instruction
-        public static int Dop(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Dop(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             FetchData(addressingMode, bus, cpuState);
 
             return baseCycles;
         }
 
-        public static int Eor(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Eor(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -696,7 +993,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Inc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Inc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // No addressing mode of this instruction incurs additional addressing penalties. All cycles are counted in
             // the base cycles of this instruction.
@@ -714,7 +1011,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Inx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Inx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.X++;
 
@@ -724,7 +1021,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Iny(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Iny(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.Y++;
 
@@ -735,12 +1032,12 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // This instruction is supposed to lock up the CPU. We'll just do nothing.
-        public static int Kil(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Kil(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return baseCycles;
         }
 
-        public static int Jmp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Jmp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
@@ -749,7 +1046,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Jsr(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Jsr(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
@@ -767,7 +1064,7 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Undocumented Instruction
-        public static int Lax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Lax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -780,7 +1077,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Lda(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Lda(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -792,7 +1089,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Ldx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Ldx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -804,7 +1101,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Ldy(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Ldy(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -816,7 +1113,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Lsr(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Lsr(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // Note: This instruction operators on and stores the result to either memory or accumulator.
             // Note: This instruction always takes a constant amount of cycles to complete.
@@ -842,12 +1139,12 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Nop(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Nop(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             return baseCycles;
         }
 
-        public static int Ora(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int Ora(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -866,21 +1163,21 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Pha(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Pha(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             Push(bus, cpuState, cpuState.A);
 
             return baseCycles;
         }
 
-        public static int Php(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Php(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             Push(bus, cpuState, (byte)((byte)cpuState.P | 0x30)); // Push the program state with B = 1 and U = 1.
 
             return baseCycles;
         }
 
-        public static int Pla(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Pla(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.A = Pop(bus, cpuState);
 
@@ -890,14 +1187,14 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Plp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Plp(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.P = (CpuFlags)Pop(bus, cpuState);
 
             return baseCycles;
         }
 
-        public static int Rla(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Rla(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // Note: This instruction always takes a constant amount of cycles to complete.
 
@@ -907,7 +1204,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Rol(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int Rol(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             // Note: This instruction operators on and stores the result to either memory or accumulator.
             // Note: This instruction always takes a constant amount of cycles to complete.
@@ -946,7 +1243,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Ror(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
+        private static int Ror(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState, byte? dataIn, out byte result)
         {
             // Note: This instruction operators on and stores the result to either memory or accumulator.
             // Note: This instruction always takes a constant amount of cycles to complete.
@@ -985,7 +1282,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Rra(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Rra(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // Note: This instruction always takes a constant amount of cycles to complete.
 
@@ -995,7 +1292,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Rti(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Rti(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.P = (CpuFlags)Pop(bus, cpuState);
 
@@ -1007,7 +1304,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Rts(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Rts(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var pcLow = (ushort)Pop(bus, cpuState);
             var pcHigh = (ushort)(Pop(bus, cpuState) << 8);
@@ -1018,7 +1315,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Sbc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sbc(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (data, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
@@ -1035,25 +1332,25 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles + additionalCycles;
         }
 
-        public static int Sec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sec(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.C, true);
             return baseCycles;
         }
 
-        public static int Sed(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sed(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.D, true);
             return baseCycles;
         }
 
-        public static int Sei(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sei(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.SetFlag(CpuFlags.I, true);
             return baseCycles;
         }
 
-        public static int Slo(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Slo(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // Note: This instruction always takes a constant amount of cycles to complete.
 
@@ -1063,7 +1360,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Sta(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sta(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             // Note: This instruction always takes a constant amount of cycles to complete.
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
@@ -1073,7 +1370,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Stx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Stx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
@@ -1082,7 +1379,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Sty(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Sty(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (address, _) = GetAddress(addressingMode, bus, cpuState);
 
@@ -1091,7 +1388,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Tax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Tax(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.X = cpuState.A;
 
@@ -1101,7 +1398,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Tay(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Tay(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.Y = cpuState.A;
 
@@ -1112,14 +1409,14 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Undocumented Instruction
-        public static int Top(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Top(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             var (_, _, additionalCycles) = FetchData(addressingMode, bus, cpuState);
 
             return baseCycles + additionalCycles;
         }
 
-        public static int Tsx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Tsx(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.X = cpuState.S;
 
@@ -1129,7 +1426,7 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Txa(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Txa(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.A = cpuState.X;
 
@@ -1139,13 +1436,13 @@ namespace Ninu.Emulator.CentralProcessor
             return baseCycles;
         }
 
-        public static int Txs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Txs(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.S = cpuState.X;
             return baseCycles;
         }
 
-        public static int Tya(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
+        private static int Tya(AddressingMode addressingMode, int baseCycles, IBus bus, CpuState cpuState)
         {
             cpuState.A = cpuState.Y;
 

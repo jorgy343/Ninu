@@ -1,4 +1,6 @@
-﻿namespace Ninu.Emulator.CentralProcessor.Profilers
+﻿using Ninu.Base;
+
+namespace Ninu.Emulator.CentralProcessor.Profilers
 {
     public class NmiProfiler : INmiProfiler, IInstructionExecutedProfiler
     {
@@ -17,7 +19,7 @@
             _inNmi = true;
         }
 
-        public void InstructionExecuted(CpuInstruction instruction, CpuState cpuState, int cycles)
+        public void InstructionExecuted(Instruction instruction, CpuState cpuState, int cycles)
         {
             if (_inNmi && instruction.Name == "rti")
             {
