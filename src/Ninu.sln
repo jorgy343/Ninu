@@ -24,7 +24,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502.Benchmark",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Emulator.Tests", "Ninu.Emulator.Tests\Ninu.Emulator.Tests.csproj", "{CD03FA69-51EA-453A-B86D-76100E6323B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.Base", "Ninu.Base\Ninu.Base.csproj", "{E60FA24E-9849-4632-BD3C-41639D0336D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Base", "Ninu.Base\Ninu.Base.csproj", "{E60FA24E-9849-4632-BD3C-41639D0336D6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Assembler.Library", "Ninu.Assembler.Library\Ninu.Assembler.Library.csproj", "{0A273559-F91C-4710-B888-1F32F98B077C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Assembler", "Ninu.Assembler\Ninu.Assembler.csproj", "{D80D4ECC-8C6B-4926-A8E4-91AEA3436624}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Assembler.Antlr", "Ninu.Assembler.Antlr\Ninu.Assembler.Antlr.csproj", "{41763D58-14B9-4805-B1FF-A13ECFE6DB79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.Assembler.Library.Tests", "Ninu.Assembler.Library.Tests\Ninu.Assembler.Library.Tests.csproj", "{58531E21-68F2-4519-A02A-D4270ACE4F4D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +76,22 @@ Global
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A273559-F91C-4710-B888-1F32F98B077C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A273559-F91C-4710-B888-1F32F98B077C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A273559-F91C-4710-B888-1F32F98B077C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A273559-F91C-4710-B888-1F32F98B077C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D80D4ECC-8C6B-4926-A8E4-91AEA3436624}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D80D4ECC-8C6B-4926-A8E4-91AEA3436624}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D80D4ECC-8C6B-4926-A8E4-91AEA3436624}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D80D4ECC-8C6B-4926-A8E4-91AEA3436624}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41763D58-14B9-4805-B1FF-A13ECFE6DB79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41763D58-14B9-4805-B1FF-A13ECFE6DB79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41763D58-14B9-4805-B1FF-A13ECFE6DB79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41763D58-14B9-4805-B1FF-A13ECFE6DB79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58531E21-68F2-4519-A02A-D4270ACE4F4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58531E21-68F2-4519-A02A-D4270ACE4F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58531E21-68F2-4519-A02A-D4270ACE4F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58531E21-68F2-4519-A02A-D4270ACE4F4D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
