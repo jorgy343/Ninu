@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ninu.Assembler.Antlr\Ninu.Assembler.Antlr.csproj" />
+    <ProjectReference Include="..\Ninu.Base\Ninu.Base.csproj" />
   </ItemGroup>
 
 </Project>

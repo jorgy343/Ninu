@@ -6,26 +6,26 @@ namespace Ninu.Assembler.Library
 {
     public class Compiler
     {
-        public void Assemble()
+        public (byte[] Data, AssemblerContext Context) AssembleWithContext(string asm)
         {
-            var input = @"
-                const orig = $32 * 4
-                origin(orig)
-
-                a:
-                and b:lo
-                ";
-
-            var lexer = new Asm6502Lexer(new AntlrInputStream(input));
+            var lexer = new Asm6502Lexer(new AntlrInputStream(asm));
             var parser = new Asm6502Parser(new CommonTokenStream(lexer));
 
+            var errorListener = new ErrorListener();
+
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(errorListener);
+
             var context = parser.prog();
+            var assemblerContext = new AssemblerContext();
 
-            // Walk it and attach our listener
-            var walker = new ParseTreeWalker();
-            var listener = new Listener();
+            var labelResolverListener = new LabelResolverListener(assemblerContext);
+            var assemblerListener = new AssemblerListener(assemblerContext);
 
-            walker.Walk(listener, context);
+            ParseTreeWalker.Default.Walk(labelResolverListener, context);
+            ParseTreeWalker.Default.Walk(assemblerListener, context);
+
+            return (assemblerListener.GetCompiledBytes(), assemblerContext);
         }
     }
 }

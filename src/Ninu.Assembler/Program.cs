@@ -8,7 +8,11 @@ namespace Ninu.Assembler
         {
             var compiler = new Compiler();
 
-            compiler.Assemble();
+            var asm = @"
+                const value = 11101101%%%01011001
+                ";
+
+            var (data, context) = compiler.AssembleWithContext(asm);
         }
     }
 }
