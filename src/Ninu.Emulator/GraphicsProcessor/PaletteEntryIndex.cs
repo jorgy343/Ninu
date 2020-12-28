@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.GraphicsProcessor
 {
     /// <summary>
     /// Represents an index into a palette. This is a wrapper that is guaranteed to represent a number between 0 and 3

@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using Ninu.Emulator;
 using Ninu.Emulator.CentralProcessor;
 using Ninu.Emulator.CentralProcessor.Profilers;
+using Ninu.Emulator.GraphicsProcessor;
 using Ninu.Models;
 using System;
 using System.Diagnostics;

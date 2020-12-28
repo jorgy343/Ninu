@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.GraphicsProcessor
 {
     /// <summary>
     /// Specifies which pattern table is being used.

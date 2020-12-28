@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Ninu.Emulator.CentralProcessor;
+using Ninu.Emulator.GraphicsProcessor;
 using System;
 
 namespace Ninu.Emulator
@@ -138,7 +139,7 @@ namespace Ninu.Emulator
         /// <returns>The data that was read or 0 if no data was read.</returns>
         public byte Read(ushort address)
         {
-            if (_cartridge.CpuRead(address, out var data))
+            if (_cartridge is not null && _cartridge.CpuRead(address, out var data))
             {
                 return data;
             }
@@ -163,7 +164,7 @@ namespace Ninu.Emulator
 
         public void Write(ushort address, byte data)
         {
-            _cartridge.CpuWrite(address, data);
+            _cartridge?.CpuWrite(address, data);
             _internalRam.CpuWrite(address, data);
 
             Ppu.CpuWrite(address, data);

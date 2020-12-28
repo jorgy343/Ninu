@@ -7,7 +7,9 @@ namespace Ninu.Models
 {
     public class CpuStateModel : INotifyPropertyChanged
     {
+#pragma warning disable CS0067
         public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0067
 
         public byte A { get; set; }
         public byte X { get; set; }

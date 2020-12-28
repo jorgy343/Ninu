@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Ninu.Emulator.CentralProcessor;
 using System;
 using System.ComponentModel;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     public class Ppu : ICpuBusComponent
     {

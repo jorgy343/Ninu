@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.GraphicsProcessor
 {
     public enum PpuClockResult
     {

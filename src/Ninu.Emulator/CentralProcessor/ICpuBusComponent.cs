@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.CentralProcessor
 {
     /// <summary>
     /// Represents a component on the CPU bus that is capable of handling reading and writing from memory addresses.

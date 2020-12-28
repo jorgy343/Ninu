@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.GraphicsProcessor
 {
     // Palette RAM exists in the PPU address space at 0x3f00-0x3f1f which is 32 bytes in length. This is mirrored in
     // the address range 0x2f20-0x2fff seven times.

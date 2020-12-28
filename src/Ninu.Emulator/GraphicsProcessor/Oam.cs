@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     public class Oam
     {

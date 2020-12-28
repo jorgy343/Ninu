@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="GraphicsProcessor\" />
     <Folder Include="AudioProcessor\" />
   </ItemGroup>
 

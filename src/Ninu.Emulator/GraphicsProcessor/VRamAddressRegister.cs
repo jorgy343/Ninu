@@ -1,6 +1,6 @@
 ﻿using static Ninu.Emulator.Bits;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     public struct VRamAddressRegister
     {
