@@ -9,7 +9,8 @@ namespace Ninu.Assembler.Library
         public (byte[] Data, AssemblerContext Context) AssembleWithContext(string asm)
         {
             var lexer = new Asm6502Lexer(new AntlrInputStream(asm));
-            var parser = new Asm6502Parser(new CommonTokenStream(lexer));
+            TokenStreamRewriter
+            var parser = new Asm6502GrammarParser(new CommonTokenStream(lexer));
 
             var errorListener = new ErrorListener();
 

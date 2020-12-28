@@ -1,5 +1,5 @@
 ﻿using Antlr4.Runtime.Misc;
-using Ninu.Assembler.Antlr;
+using static Ninu.Assembler.Antlr.Asm6502GrammarParser;
 
 namespace Ninu.Assembler.Library
 {
@@ -18,7 +18,7 @@ namespace Ninu.Assembler.Library
             HasUndefinedLabel = false;
         }
 
-        public override void EnterConstantExpressionIdentifier([NotNull] Asm6502Parser.ConstantExpressionIdentifierContext context)
+        public override void EnterConstantExpressionIdentifier([NotNull] ConstantExpressionIdentifierContext context)
         {
             var name = context.identifier().GetText();
 
@@ -28,7 +28,7 @@ namespace Ninu.Assembler.Library
             }
         }
 
-        public override void EnterConstantExpressionIdentifierHiLo([NotNull] Asm6502Parser.ConstantExpressionIdentifierHiLoContext context)
+        public override void EnterConstantExpressionIdentifierHiLo([NotNull] ConstantExpressionIdentifierHiLoContext context)
         {
             var name = context.identifierHiLo().identifier().GetText();
 

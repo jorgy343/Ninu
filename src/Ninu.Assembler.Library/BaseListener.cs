@@ -1,10 +1,9 @@
 ﻿using Ninu.Assembler.Antlr;
 using System;
-using static Ninu.Assembler.Antlr.Asm6502Parser;
 
 namespace Ninu.Assembler.Library
 {
-    internal abstract class BaseListener : Asm6502BaseListener
+    internal abstract class BaseListener : Asm6502GrammarBaseListener
     {
         public BaseListener(AssemblerContext context)
         {

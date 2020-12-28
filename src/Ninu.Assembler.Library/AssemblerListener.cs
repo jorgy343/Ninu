@@ -2,7 +2,7 @@
 using Ninu.Base;
 using System;
 using System.IO;
-using static Ninu.Assembler.Antlr.Asm6502Parser;
+using static Ninu.Assembler.Antlr.Asm6502GrammarParser;
 
 namespace Ninu.Assembler.Library
 {
