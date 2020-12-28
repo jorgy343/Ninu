@@ -20,10 +20,10 @@ namespace Ninu.Emulator
         private Cartridge? _cartridge;
 
         [SaveChildren("InternalRam")]
-        private readonly CpuRam _internalRam;
+        public CpuRam InternalRam { get; } = new();
 
         [SaveChildren("DmaState")]
-        private readonly DmaState _dmaState = new();
+        public DmaState DmaState { get; } = new();
 
         [SaveChildren]
         public Controllers Controllers { get; } = new();
@@ -38,8 +38,6 @@ namespace Ninu.Emulator
 
             Cpu = new Cpu(this);
             Ppu = new Ppu(loggerFactory, loggerFactory.CreateLogger<Ppu>());
-
-            _internalRam = new CpuRam();
         }
 
         public void PowerOn()
@@ -61,11 +59,11 @@ namespace Ninu.Emulator
             Ppu.LoadCartridge(_cartridge);
         }
 
-        public PpuClockResult Clock()
+        public ClockResult Clock()
         {
             if (_cartridge is null)
             {
-                return PpuClockResult.Nothing;
+                return ClockResult.Nothing;
             }
 
             if (Ppu.Nmi)
@@ -81,31 +79,31 @@ namespace Ninu.Emulator
             if (TotalCycles % 3 == 0)
             {
                 // Perform a DMA transfer cycle if we are processing a DMA.
-                if (_dmaState.Processing)
+                if (DmaState.Processing)
                 {
-                    if (!_dmaState.Synchronized)
+                    if (!DmaState.Synchronized)
                     {
                         if (TotalCycles % 2 == 1)
                         {
-                            _dmaState.Synchronized = true;
+                            DmaState.Synchronized = true;
                         }
                     }
                     else
                     {
                         if (TotalCycles % 2 == 0) // Read on even cycles.
                         {
-                            var address = (ushort)((_dmaState.CpuHighAddress << 8) | _dmaState.CurrentByte);
-                            _dmaState.ReadByte = Read(address);
+                            var address = (ushort)((DmaState.CpuHighAddress << 8) | DmaState.CurrentByte);
+                            DmaState.ReadByte = Read(address);
                         }
                         else // Write on odd cycles.
                         {
-                            Ppu.Oam.Write((byte)_dmaState.CurrentByte, _dmaState.ReadByte);
+                            Ppu.Oam.Write((byte)DmaState.CurrentByte, DmaState.ReadByte);
 
-                            _dmaState.CurrentByte++;
+                            DmaState.CurrentByte++;
 
-                            if (_dmaState.CurrentByte == 256)
+                            if (DmaState.CurrentByte == 256)
                             {
-                                _dmaState.Processing = false;
+                                DmaState.Processing = false;
                             }
                         }
                     }
@@ -121,6 +119,10 @@ namespace Ninu.Emulator
             return ppuResult;
         }
 
+        /// <summary>
+        /// Clocks the system until the PPU completes a frame. This will leave the PPU in a state
+        /// such that the next system clock will be the first PPU clock into the next frame.
+        /// </summary>
         public void CompleteFrame()
         {
             if (_cartridge is null)
@@ -128,7 +130,7 @@ namespace Ninu.Emulator
                 return;
             }
 
-            while (Clock() != PpuClockResult.FrameComplete) ;
+            while (Clock() != ClockResult.FrameComplete) ;
         }
 
         /// <summary>
@@ -144,7 +146,7 @@ namespace Ninu.Emulator
                 return data;
             }
 
-            if (_internalRam.CpuRead(address, out data))
+            if (InternalRam.CpuRead(address, out data))
             {
                 return data;
             }
@@ -165,7 +167,7 @@ namespace Ninu.Emulator
         public void Write(ushort address, byte data)
         {
             _cartridge?.CpuWrite(address, data);
-            _internalRam.CpuWrite(address, data);
+            InternalRam.CpuWrite(address, data);
 
             Ppu.CpuWrite(address, data);
 
@@ -174,10 +176,10 @@ namespace Ninu.Emulator
             // Process a DMA request.
             if (address == 0x4014)
             {
-                _dmaState.Processing = true;
-                _dmaState.Synchronized = false;
-                _dmaState.CurrentByte = 0;
-                _dmaState.CpuHighAddress = data;
+                DmaState.Processing = true;
+                DmaState.Synchronized = false;
+                DmaState.CurrentByte = 0;
+                DmaState.CpuHighAddress = data;
             }
         }
     }

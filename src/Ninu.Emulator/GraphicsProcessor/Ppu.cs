@@ -92,11 +92,11 @@ namespace Ninu.Emulator.GraphicsProcessor
             _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
         }
 
-        public PpuClockResult Clock()
+        public ClockResult Clock()
         {
             if (_cartridge is null)
             {
-                return PpuClockResult.Nothing;
+                return ClockResult.Nothing;
             }
 
             if (_scanline == 0 && _cycle == 0)
@@ -490,15 +490,15 @@ namespace Ninu.Emulator.GraphicsProcessor
             {
                 (CurrentImageBuffer, PreviousImageBuffer) = (PreviousImageBuffer, CurrentImageBuffer); // Swap the buffers.
 
-                return PpuClockResult.FrameComplete;
+                return ClockResult.FrameComplete;
             }
             else if (_scanline == 241 && _cycle == 1)
             {
-                return PpuClockResult.VBlankStart;
+                return ClockResult.VBlankInterruptComplete;
             }
             else
             {
-                return PpuClockResult.NormalCycle;
+                return ClockResult.NormalPpuCycleComplete;
             }
         }
 
