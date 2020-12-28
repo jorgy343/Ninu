@@ -740,12 +740,12 @@ namespace Ninu.Emulator.GraphicsProcessor
         {
             address &= 0x3fff; // Ensure we never read outside of the PPU bus's address range.
 
-            if (_cartridge.PpuRead(address, out var data))
+            if (_cartridge is not null && _cartridge.PpuRead(address, out var data))
             {
                 return data;
             }
 
-            if (_nameTableRam.PpuRead(_cartridge.GetMirrorMode(), address, out data))
+            if (_cartridge is not null && _nameTableRam.PpuRead(_cartridge.GetMirrorMode(), address, out data))
             {
                 return data;
             }
@@ -768,11 +768,11 @@ namespace Ninu.Emulator.GraphicsProcessor
         {
             address &= 0x3fff; // Ensure we never write outside of the PPU bus's address range.
 
-            if (_cartridge.PpuWrite(address, data))
+            if (_cartridge is not null && _cartridge.PpuWrite(address, data))
             {
 
             }
-            else if (_nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data))
+            else if (_cartridge is not null && _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data))
             {
 
             }
