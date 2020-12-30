@@ -1,7 +1,6 @@
-﻿// ReSharper disable InconsistentNaming
-using static Ninu.Emulator.Bits;
+﻿using static Ninu.Emulator.Bits;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     public class PpuRegisters
     {
@@ -46,7 +45,7 @@ namespace Ninu.Emulator
             Control = (byte)(data & 0b1111_1100);
 
             // Bits 10 and 11 of the temporary address register are set to the two lowest bits of the data. These are
-            // the name table select 
+            // the name table select
             TAddress.NameTableSelect = GetBits(data, 0, 2);
         }
 
@@ -77,7 +76,7 @@ namespace Ninu.Emulator
                 // the course X scroll.
                 FineX = (byte)(data & 0b000_0111);
 
-                // Set course X in the temporary address register without touching the other 
+                // Set course X in the temporary address register without touching the other
                 TAddress = (ushort)((TAddress & ~0x001f) | ((data >> 3) & 0x001f));
 
                 WriteLatch = true;
@@ -87,7 +86,7 @@ namespace Ninu.Emulator
                 // The data is split into two parts again. The first 5 bits are the course Y scroll and the upper 3
                 // bits are the fine Y scroll.
 
-                // First set the course Y scroll in the temporary address register without touching the other 
+                // First set the course Y scroll in the temporary address register without touching the other
                 // Course Y is stored as bits 3-7 in data so we only have to left shift data by 2 to get bits 3-7 into
                 // positions 5-9 for the temporary address register.
                 TAddress = (ushort)((TAddress & ~0x03e0) | ((data << 2) & 0x03e0));
@@ -111,7 +110,7 @@ namespace Ninu.Emulator
 
                 // We do have to set bit 15 of the temporary address register to zero since it technically doesn't
                 // exist.
-                TAddress &= 0x7fff; // Mask the bottom 15 
+                TAddress &= 0x7fff; // Mask the bottom 15
 
                 WriteLatch = true;
             }

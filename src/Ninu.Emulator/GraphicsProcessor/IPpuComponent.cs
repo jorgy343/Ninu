@@ -1,4 +1,4 @@
-﻿namespace Ninu.Emulator
+﻿namespace Ninu.Emulator.GraphicsProcessor
 {
     /// <summary>
     /// Represents a component on the PPU bus that is capable of handling reading and writing from memory addresses.

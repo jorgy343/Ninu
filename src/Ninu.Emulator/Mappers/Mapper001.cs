@@ -1,5 +1,4 @@
-﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using static Ninu.Emulator.Bits;
 
 namespace Ninu.Emulator.Mappers

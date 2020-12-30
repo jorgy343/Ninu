@@ -1,6 +1,6 @@
 ﻿using static Ninu.Emulator.Bits;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     /// <summary>
     /// Represents a sprite entry in OAM memory.

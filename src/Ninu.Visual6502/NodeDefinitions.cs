@@ -39,8 +39,6 @@
  * http://www.ncsu.edu/wcae/WCAE1/hanson.pdf
  */
 
-// ReSharper disable StringLiteralTypo
-
 namespace Ninu.Visual6502
 {
     public static class NodeDefinitions

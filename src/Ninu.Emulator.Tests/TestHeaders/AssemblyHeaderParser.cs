@@ -9,34 +9,34 @@ namespace Ninu.Emulator.Tests.TestHeaders
     public static class AssemblyHeaderParser
     {
         // ;
-        private static readonly Regex _blankComment = new Regex(@"^\s*;\s*$", RegexOptions.Compiled);
+        private static readonly Regex _blankComment = new(@"^\s*;\s*$", RegexOptions.Compiled);
 
         // ; #Init
-        private static readonly Regex _init = new Regex(@"^\s*;\s*#Init\s*(;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _init = new(@"^\s*;\s*#Init\s*(;.*)?$", RegexOptions.Compiled);
 
         // ; #Checkpoint 01
         // ; #Checkpoint c7
-        private static readonly Regex _checkpoint = new Regex(@"^\s*;\s*#Checkpoint\s*([0-9a-fA-F]{1,2})\s*(;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _checkpoint = new(@"^\s*;\s*#Checkpoint\s*([0-9a-fA-F]{1,2})\s*(;.*)?$", RegexOptions.Compiled);
 
         // ; [7] == fa
         // ; [18fb] = 3
-        private static readonly Regex _singleMemoryExpectation = new Regex(@"^\s*;\s*\[\s*(?<location>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _singleMemoryExpectation = new(@"^\s*;\s*\[\s*(?<location>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
 
         // ; [7:92] == fa
         // ; [18fb:39a6] = 3
-        private static readonly Regex _scalarRangeMemoryExpectation = new Regex(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _scalarRangeMemoryExpectation = new(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
 
         // ; [7:92] == fa .. 97
         // ; [18fb:39a6] = 3 .. f
-        private static readonly Regex _linearRangeMemoryExpectation = new Regex(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<valueStart>[0-9a-zA-Z]{1,2})\s*\.\.\s*(?<valueEnd>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _linearRangeMemoryExpectation = new(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<valueStart>[0-9a-zA-Z]{1,2})\s*\.\.\s*(?<valueEnd>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
 
-        private static readonly Regex _collectionRangeMemoryExpectation = new Regex(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<firstValue>[0-9a-zA-Z]{1,2})(?:\s+(?<otherValues>[0-9a-zA-Z]{1,2}))+\s*(?:;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _collectionRangeMemoryExpectation = new(@"^\s*;\s*\[\s*(?<locationStart>[0-9a-fA-F]{1,4})\s*\:\s*(?<locationEnd>[0-9a-fA-F]{1,4})\s*\]\s*==\s*(?<firstValue>[0-9a-zA-Z]{1,2})(?:\s+(?<otherValues>[0-9a-zA-Z]{1,2}))+\s*(?:;.*)?$", RegexOptions.Compiled);
 
         // ; p == fa
         // ; a == fa
         // ; x == fa
         // ; y == fa
-        private static readonly Regex _registerExpectation = new Regex(@"^\s*;\s*(?<register>[pP]|[aA]|[xX]|[yY])\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
+        private static readonly Regex _registerExpectation = new(@"^\s*;\s*(?<register>[pP]|[aA]|[xX]|[yY])\s*==\s*(?<value>[0-9a-zA-Z]{1,2})\s*(?:;.*)?$", RegexOptions.Compiled);
 
         public static IEnumerable<Checkpoint> ParseHeaders(string assembly)
         {

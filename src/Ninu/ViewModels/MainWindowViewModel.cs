@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using Ninu.Emulator;
 using Ninu.Emulator.CentralProcessor;
 using Ninu.Emulator.CentralProcessor.Profilers;
+using Ninu.Emulator.GraphicsProcessor;
 using Ninu.Models;
 using System;
 using System.Diagnostics;
@@ -16,7 +17,7 @@ using Console = Ninu.Emulator.Console;
 
 namespace Ninu.ViewModels
 {
-    public class MainWindowViewModel : ViewModelBase
+    public class MainWindowViewModel : ViewModelBase, IDisposable
     {
         private Thread _renderingThread;
         private readonly ManualResetEvent _resetEvent = new(false);
@@ -26,27 +27,42 @@ namespace Ninu.ViewModels
 
         private readonly byte[] _pixels = new byte[256 * 240 * 4];
 
-        private byte _controllerData;
-        private readonly object _controllerDataLock = new();
+        private readonly InputManager _inputManager;
 
         public Console Console { get; }
 
-        public CpuStateModel CpuState { get; } = new CpuStateModel();
-        public PaletteColors PaletteColors { get; } = new PaletteColors();
+        public CpuStateModel CpuState { get; } = new();
+        public PaletteColors PaletteColors { get; } = new();
 
         public int SelectedPalette { get; set; }
 
-        public WriteableBitmap PatternTable1Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
-        public WriteableBitmap PatternTable2Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap PatternTable1Bitmap { get; } = new(128, 128, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap PatternTable2Bitmap { get; } = new(128, 128, 96, 96, PixelFormats.Bgra32, null);
 
-        public WriteableBitmap GameImageBitmap { get; } = new WriteableBitmap(256, 240, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap GameImageBitmap { get; } = new(256, 240, 96, 96, PixelFormats.Bgra32, null);
 
-        public ICommand LoadRom{ get; }
+        public ICommand LoadRom { get; }
         public ICommand SaveState { get; }
         public ICommand LoadState { get; }
 
-        public MainWindowViewModel()
+        public MainWindowViewModel(InputManager inputManager)
         {
+            _inputManager = inputManager ?? throw new ArgumentNullException(nameof(inputManager));
+
+            _inputManager.AcquireAll();
+
+            _inputManager.SetMappings(new[]
+            {
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickButton1, GamepadButtons.A),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickButton2, GamepadButtons.B),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickButton7, GamepadButtons.Select),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickButton8, GamepadButtons.Start),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickPov0North, GamepadButtons.Up),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickPov0East, GamepadButtons.Right),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickPov0South, GamepadButtons.Down),
+                new InputMapping(_inputManager._joysticks[0], DirectInputButton.JoystickPov0West, GamepadButtons.Left),
+            });
+
             var loggerFactory = LoggerFactory.Create(x =>
             {
                 x.ClearProviders();
@@ -59,20 +75,9 @@ namespace Ninu.ViewModels
 
             Console.Cpu.AddProfiler(new NmiProfiler());
 
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-            //Console.CompleteFrame();
-
-            //File.WriteAllText(@"C:\Users\Jorgy\Desktop\log.txt", Console.Cpu.Log.ToString());
-            //return;
-
             LoadRom = new RelayCommand(x =>
             {
                 StopRendering();
-                StopRenderingThread();
 
                 // TODO: Pull this out to be a service.
                 var openFileDialog = new OpenFileDialog
@@ -92,54 +97,55 @@ namespace Ninu.ViewModels
                     Console.PowerOn();
 
                     // TODO: If a ROM is already loaded and the user cancels the dialog, the current ROM will stop.
-                    StartRenderingThread();
                     StartRendering();
                 }
             });
 
             SaveState = new RelayCommand(x =>
             {
-                StopRenderingThread();
+                StopRendering();
 
                 var data = Emulator.SaveState.Save(Console);
                 File.WriteAllBytes(@"C:\Users\Jorgy\Desktop\save-state.json", data);
 
-                StartRenderingThread();
+                StartRendering();
             });
 
             LoadState = new RelayCommand(x =>
             {
-                StopRenderingThread();
+                StopRendering();
 
                 var data = File.ReadAllBytes(@"C:\Users\Jorgy\Desktop\save-state.json");
                 Emulator.SaveState.Load(Console, data);
 
-                StartRenderingThread();
+                StartRendering();
             });
 
             _resetEvent.Reset();
 
-            _renderingThread = new Thread(ProcessFrame)
+            _renderingThread = new Thread(BackgroundEmulation)
             {
-                Name = "Rendering Thread",
+                Name = "Emulation Thread",
             };
+        }
+
+        public void AcquireDevices()
+        {
+            _inputManager.AcquireAll();
+        }
+
+        public void Dispose()
+        {
+            _inputManager.Dispose();
         }
 
         public void StartRendering()
         {
             CompositionTarget.Rendering += Render;
-        }
 
-        public void StopRendering()
-        {
-            CompositionTarget.Rendering -= Render;
-        }
-
-        public void StartRenderingThread()
-        {
             _resetEvent.Reset();
 
-            _renderingThread = new Thread(ProcessFrame)
+            _renderingThread = new Thread(BackgroundEmulation)
             {
                 Name = "Rendering Thread",
             };
@@ -147,10 +153,12 @@ namespace Ninu.ViewModels
             _renderingThread.Start();
         }
 
-        public void StopRenderingThread()
+        public void StopRendering()
         {
             _resetEvent.Set();
             SpinWait.SpinUntil(() => !_renderingThread.IsAlive);
+
+            CompositionTarget.Rendering -= Render;
         }
 
         private void Render(object? sender, EventArgs e)
@@ -165,23 +173,9 @@ namespace Ninu.ViewModels
                 //UpdatePaletteColors();
                 //UpdatePatternRoms();
             }
-
-            lock (_controllerDataLock)
-            {
-                _controllerData = 0;
-
-                _controllerData |= Keyboard.IsKeyDown(Key.S) ? (byte)(1 << 7) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.D) ? (byte)(1 << 6) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.W) ? (byte)(1 << 5) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.E) ? (byte)(1 << 4) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.Up) ? (byte)(1 << 3) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.Down) ? (byte)(1 << 2) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.Left) ? (byte)(1 << 1) : (byte)0x00;
-                _controllerData |= Keyboard.IsKeyDown(Key.Right) ? (byte)(1 << 0) : (byte)0x00;
-            }
         }
 
-        private void ProcessFrame()
+        private void BackgroundEmulation()
         {
             const double targetFrameRateDelta = 1000.0 / 60.0;
 
@@ -196,10 +190,9 @@ namespace Ninu.ViewModels
 
                 previousTime = stopwatch.Elapsed;
 
-                lock (_controllerDataLock)
-                {
-                    Console.Controllers.SetControllerData(0, _controllerData);
-                }
+                var pressedButtons = _inputManager.GetPressedButtons();
+                var controllerData = pressedButtons.ToControlByte();
+                Console.Controllers.SetControllerData(0, controllerData);
 
                 Console.CompleteFrame();
 

@@ -5,7 +5,9 @@ namespace Ninu.Models
 {
     public class PaletteColors : INotifyPropertyChanged
     {
+#pragma warning disable CS0067
         public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0067
 
         public Color Palette0Color0 { get; set; }
         public Color Palette0Color1 { get; set; }

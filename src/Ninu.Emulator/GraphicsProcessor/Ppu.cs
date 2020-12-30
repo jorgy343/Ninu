@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Ninu.Emulator.CentralProcessor;
 using System;
 using System.ComponentModel;
 
-namespace Ninu.Emulator
+namespace Ninu.Emulator.GraphicsProcessor
 {
     public class Ppu : ICpuBusComponent
     {
@@ -91,11 +92,11 @@ namespace Ninu.Emulator
             _cartridge = cartridge ?? throw new ArgumentNullException(nameof(cartridge));
         }
 
-        public PpuClockResult Clock()
+        public ClockResult Clock()
         {
             if (_cartridge is null)
             {
-                return PpuClockResult.Nothing;
+                return ClockResult.Nothing;
             }
 
             if (_scanline == 0 && _cycle == 0)
@@ -489,15 +490,15 @@ namespace Ninu.Emulator
             {
                 (CurrentImageBuffer, PreviousImageBuffer) = (PreviousImageBuffer, CurrentImageBuffer); // Swap the buffers.
 
-                return PpuClockResult.FrameComplete;
+                return ClockResult.FrameComplete;
             }
             else if (_scanline == 241 && _cycle == 1)
             {
-                return PpuClockResult.VBlankStart;
+                return ClockResult.VBlankInterruptComplete;
             }
             else
             {
-                return PpuClockResult.NormalCycle;
+                return ClockResult.NormalPpuCycleComplete;
             }
         }
 
@@ -739,12 +740,12 @@ namespace Ninu.Emulator
         {
             address &= 0x3fff; // Ensure we never read outside of the PPU bus's address range.
 
-            if (_cartridge.PpuRead(address, out var data))
+            if (_cartridge is not null && _cartridge.PpuRead(address, out var data))
             {
                 return data;
             }
 
-            if (_nameTableRam.PpuRead(_cartridge.GetMirrorMode(), address, out data))
+            if (_cartridge is not null && _nameTableRam.PpuRead(_cartridge.GetMirrorMode(), address, out data))
             {
                 return data;
             }
@@ -767,11 +768,11 @@ namespace Ninu.Emulator
         {
             address &= 0x3fff; // Ensure we never write outside of the PPU bus's address range.
 
-            if (_cartridge.PpuWrite(address, data))
+            if (_cartridge is not null && _cartridge.PpuWrite(address, data))
             {
 
             }
-            else if (_nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data))
+            else if (_cartridge is not null && _nameTableRam.PpuWrite(_cartridge.GetMirrorMode(), address, data))
             {
 
             }
