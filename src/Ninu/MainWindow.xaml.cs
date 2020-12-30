@@ -1,7 +1,5 @@
-﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
-
+﻿using Ninu.ViewModels;
 using System;
-using Ninu.ViewModels;
 using System.Windows;
 
 namespace Ninu
@@ -22,8 +20,14 @@ namespace Ninu
         {
             base.OnClosed(e);
 
-            ViewModel.StopRenderingThread();
             ViewModel.StopRendering();
+        }
+
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+
+            ViewModel.AcquireDevices();
         }
     }
 }
