@@ -1,5 +1,4 @@
-﻿// ReSharper disable ShiftExpressionRealShiftCountIsZero
-using System;
+﻿using System;
 
 namespace Ninu.Emulator.CentralProcessor
 {

@@ -3,6 +3,6 @@
     public enum TvSystem
     {
         Pal,
-        Ntsc
+        Ntsc,
     }
 }

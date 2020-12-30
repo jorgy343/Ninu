@@ -1,6 +1,4 @@
-﻿// ReSharper disable ConditionIsAlwaysTrueOrFalse
-
-namespace Ninu.Emulator
+﻿namespace Ninu.Emulator
 {
     public class NameTableRam
     {

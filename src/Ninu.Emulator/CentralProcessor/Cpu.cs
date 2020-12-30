@@ -10,7 +10,7 @@ namespace Ninu.Emulator.CentralProcessor
     {
         private readonly IBus _cpuBus;
 
-        private readonly List<IProfiler> _profilers = new List<IProfiler>();
+        private readonly List<IProfiler> _profilers = new();
 
         [Save("TotalCycles")]
         private long _totalCycles;

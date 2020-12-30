@@ -8,8 +8,8 @@ namespace Ninu.Base
     {
         private readonly byte[] _memory;
 
-        private readonly HashSet<ushort> _changedAddresses = new HashSet<ushort>(128);
-        private readonly Dictionary<ushort, byte> _changes = new Dictionary<ushort, byte>(128);
+        private readonly HashSet<ushort> _changedAddresses = new(128);
+        private readonly Dictionary<ushort, byte> _changes = new(128);
 
         public TrackedMemory(int size)
         {

@@ -8,7 +8,7 @@ namespace Ninu.Emulator
 {
     public class SaveStateContext
     {
-        private readonly Dictionary<string, object?> _values = new Dictionary<string, object?>();
+        private readonly Dictionary<string, object?> _values = new();
 
         public SaveStateContext()
         {

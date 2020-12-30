@@ -5,7 +5,6 @@ using Ninu.Emulator.CentralProcessor;
 using Ninu.Emulator.CentralProcessor.Profilers;
 using Ninu.Emulator.GraphicsProcessor;
 using Ninu.Models;
-using SharpDX.DirectInput;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -28,21 +27,19 @@ namespace Ninu.ViewModels
 
         private readonly byte[] _pixels = new byte[256 * 240 * 4];
 
-        private readonly object _controllerDataLock = new();
-
         private readonly InputManager _inputManager;
 
         public Console Console { get; }
 
-        public CpuStateModel CpuState { get; } = new CpuStateModel();
-        public PaletteColors PaletteColors { get; } = new PaletteColors();
+        public CpuStateModel CpuState { get; } = new();
+        public PaletteColors PaletteColors { get; } = new();
 
         public int SelectedPalette { get; set; }
 
-        public WriteableBitmap PatternTable1Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
-        public WriteableBitmap PatternTable2Bitmap { get; } = new WriteableBitmap(128, 128, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap PatternTable1Bitmap { get; } = new(128, 128, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap PatternTable2Bitmap { get; } = new(128, 128, 96, 96, PixelFormats.Bgra32, null);
 
-        public WriteableBitmap GameImageBitmap { get; } = new WriteableBitmap(256, 240, 96, 96, PixelFormats.Bgra32, null);
+        public WriteableBitmap GameImageBitmap { get; } = new(256, 240, 96, 96, PixelFormats.Bgra32, null);
 
         public ICommand LoadRom { get; }
         public ICommand SaveState { get; }
