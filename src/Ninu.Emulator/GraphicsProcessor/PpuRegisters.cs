@@ -180,6 +180,11 @@ namespace Ninu.Emulator.GraphicsProcessor
             VAddress.NameTableSelectY = TAddress.NameTableSelectY;
         }
 
+        /// <summary>
+        /// Determines if either background rendering or sprite rendering is enabled. If either are
+        /// enabled, this property returns <c>true</c>. If both background rendering and sprite
+        /// rendering are disabled, this property returns <c>false</c>.
+        /// </summary>
         public bool RenderingEnabled => RenderBackground || RenderSprites;
 
         // Control Register

@@ -2,6 +2,7 @@
 using Ninu.Emulator.CentralProcessor;
 using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Ninu.Emulator.GraphicsProcessor
 {
@@ -83,6 +84,7 @@ namespace Ninu.Emulator.GraphicsProcessor
             Registers.TAddress = 0x0000; // TODO: I think part of this is unchanged.
 
             Registers.WriteLatch = false;
+            _oamAddress = 0x00;
 
             _odd = false;
         }
@@ -101,7 +103,9 @@ namespace Ninu.Emulator.GraphicsProcessor
 
             if (_scanline == 0 && _cycle == 0)
             {
-                if (_odd)
+                // On odd frames, the first cycle on scanline 0 is skipped, but only if rendering
+                // is enabled. If rendering is disabled, every frame is the same amount of cycles.
+                if (Registers.RenderingEnabled && _odd)
                 {
                     _cycle = 1;
                 }
@@ -168,6 +172,9 @@ namespace Ninu.Emulator.GraphicsProcessor
                             {
                                 var sprite = TemporaryOam.Sprites[i];
 
+                                // Since the secondary OAM is completely cleared to 0xff, if the
+                                // sprite's X coordinate is 0xff that means a sprite wasn't found
+                                // in the primary OAM so we can skip it.
                                 if (sprite.X == 0xff)
                                 {
                                     continue;
@@ -398,17 +405,20 @@ namespace Ninu.Emulator.GraphicsProcessor
                     Registers.TransferY();
                 }
 
-                // Handle the sprites.
+                // Get the prites ready for the next scanline. This is the correct way do it, but
+                // this isn't fully implemented yet.
                 //if (Registers.RenderSprites)
                 //{
-                //    if (_scanline >= 0 && _scanline <= 239) // All of the visible scanlines.
+                //    if (_scanline >= -1 && _scanline <= 239) // All of the visible scanlines and the pre-render scanline.
                 //    {
-                //        // Clear secondary OAM to 0xff.
+                //        // Clear secondary OAM to 0xff. For the first 64 cycles of each visible
+                //        // scanline
                 //        if (_cycle >= 1 && _cycle <= 64)
                 //        {
-                //            // The real hardware reads from the OAM memory and writes to the secondary OAM memory ever
-                //            // other cycle. However, the data line during the read is pulled to 0xff so the read itself
-                //            // doesn't do anything. We'll skip emulating the read and only emulate the writes.
+                //            // The real hardware reads from the OAM memory and writes to the
+                //            // secondary OAM memory every other cycle. However, the data line
+                //            // during the read is pulled to 0xff so the read itself doesn't do
+                //            // anything. We'll skip emulating the read and only emulate the writes.
                 //            if (_cycle % 2 == 0)
                 //            {
                 //                var secondaryOamByteIndex = (_cycle / 2) - 1;
@@ -419,6 +429,8 @@ namespace Ninu.Emulator.GraphicsProcessor
                 //    }
                 //}
 
+                // This is not the proper way to prepare sprites for the next scanline but it tends
+                // to work pretty well.
                 if (Registers.RenderSprites && _cycle == 340)
                 {
                     // TODO: Should this be called on the final visible scanline? It would load sprites for the next
@@ -461,6 +473,9 @@ namespace Ninu.Emulator.GraphicsProcessor
                 }
             }
 
+            // The vertical blank nmi is raised on (scanline 241, cycle 1). A CPU access to memory
+            // address 0x2002 (PPU STATUS register) near when the PPU raises the nmi, the nmi could
+            // be delayed or completely missed. TODO: This is currently not handled.
             if (_scanline == 241 && _cycle == 1)
             {
                 Registers.VerticalBlankStarted = true;
@@ -481,6 +496,12 @@ namespace Ninu.Emulator.GraphicsProcessor
 
                 if (_scanline > 260)
                 {
+                    // The first scanline is considered to be -1 to simplify the definition of when
+                    // a frame begins. Since -1 is the pre-render scanline, it is considered part
+                    // of the frame that it is pre-rendering for. Documentation and other emulators
+                    // may consider the pre-render scanline to be at the end of the frame and be
+                    // scanline 261. According to visual 2c02, considering the pre-render scanline
+                    // to be scanline 261 is correct.
                     _scanline = -1;
                 }
             }
@@ -648,16 +669,28 @@ namespace Ninu.Emulator.GraphicsProcessor
             {
                 switch (address & 0x7)
                 {
-                    case 2:
+                    case 2: // Register 0x2002
                         data = Registers.ReadStatusRegister();
                         return true;
 
-                    case 4:
-                        // TODO: Implement the weirdness of reading this register.
-                        data = Oam.Read(_oamAddress);
+                    case 4: // Register 0x2004
+                        // When the PPU is clearing the secondary OAM, this memory address is
+                        // pinned to the value 0xff. This is because the PPU is reading from the
+                        // OAM and than writing what it read to the temproary OAM. During the
+                        // cleaing process, memory address 0x2004 is pinned to 0xff so that the PPU
+                        // will always read 0xff and always write 0xff to the secondary OAM.
+                        if (Registers.RenderingEnabled && _scanline >= -1 && _scanline <= 239 && _cycle >= 1 && _cycle <= 64)
+                        {
+                            data = 0xff;
+                        }
+                        else
+                        {
+                            data = Oam.Read(_oamAddress);
+                        }
+
                         return true;
 
-                    case 7:
+                    case 7: // Register 0x2007
                         // TODO: There is some tricky stuff that needs to be handled here dealing with what the PPU is
                         // currently doing.
 
@@ -697,40 +730,38 @@ namespace Ninu.Emulator.GraphicsProcessor
             {
                 switch (address & 0x7)
                 {
-                    case 0:
+                    case 0: // Register 0x2000
                         Registers.WriteControlRegister(data);
-                        break;
+                        return true;
 
-                    case 1:
+                    case 1: // Register 0x2001
                         Registers.WriteMaskRegister(data);
-                        break;
+                        return true;
 
-                    case 3:
+                    case 3: // Register 0x2003
                         _oamAddress = data;
-                        break;
+                        return true;
 
-                    case 4:
+                    case 4: // Register 0x2004
                         Oam.Write(_oamAddress++, data); // Writing increments the OAM address, reading does not.
-                        break;
+                        return true;
 
-                    case 5:
+                    case 5: // Register 0x2005
                         Registers.WriteScroll(data);
-                        break;
+                        return true;
 
-                    case 6:
+                    case 6: // Register 0x2006
                         Registers.WriteAddress(data);
-                        break;
+                        return true;
 
-                    case 7:
+                    case 7: // Register 0x2007
                         PpuWrite(Registers.VAddress, data);
 
                         // Increment the address by either 1 or 32 depending on the VRAM address increment flag.
                         Registers.VAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
 
-                        break;
+                        return true;
                 }
-
-                return true;
             }
 
             return false;
