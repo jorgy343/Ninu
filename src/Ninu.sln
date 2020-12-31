@@ -24,7 +24,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Visual6502.Benchmark",
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Emulator.Tests", "Ninu.Emulator.Tests\Ninu.Emulator.Tests.csproj", "{CD03FA69-51EA-453A-B86D-76100E6323B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.Base", "Ninu.Base\Ninu.Base.csproj", "{E60FA24E-9849-4632-BD3C-41639D0336D6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ninu.Base", "Ninu.Base\Ninu.Base.csproj", "{E60FA24E-9849-4632-BD3C-41639D0336D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ninu.Visual6502.Analyzer", "Ninu.Visual6502.Analyzer\Ninu.Visual6502.Analyzer.csproj", "{04DE028F-6B49-4307-B396-5E9B02D2EA0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -68,6 +70,10 @@ Global
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E60FA24E-9849-4632-BD3C-41639D0336D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04DE028F-6B49-4307-B396-5E9B02D2EA0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04DE028F-6B49-4307-B396-5E9B02D2EA0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04DE028F-6B49-4307-B396-5E9B02D2EA0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04DE028F-6B49-4307-B396-5E9B02D2EA0F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
