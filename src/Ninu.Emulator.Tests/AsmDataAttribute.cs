@@ -9,7 +9,7 @@ using Xunit.Sdk;
 
 namespace Ninu.Emulator.Tests
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public class AsmDataAttribute : DataAttribute
     {
         private readonly string _filename;

@@ -48,10 +48,10 @@ namespace Ninu.Base
             }
 
             // Because we ensure that both objects have the same amount of changes, we only have to
-            // iterate through one of the object's dictionary's values. We check if the address in
+            // iterate through one of the object's dictionary's keys. We check if the address in
             // the left object exists in the changes in the right. If not, they are different. If
             // so, we compare their values.
-            foreach (var address in left._changes.Values)
+            foreach (var address in left._changes.Keys)
             {
                 if (!right._changedAddresses.Contains(address))
                 {

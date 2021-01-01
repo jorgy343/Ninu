@@ -7,4 +7,12 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ninu.Visual6502\Ninu.Visual6502.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Patcher6502" Version="0.3.0" />
+  </ItemGroup>
+
 </Project>
