@@ -5,6 +5,8 @@
 ; indirect address will be incremented (resulting in 0x00) and the high byte will be left alone.
 
 * = $0000
+.init
+
 ; If the emulator accounts for the bug, the low byte will be read from 0x12ff and the high byte
 ; from 0x1200.
 jmp ($12ff)

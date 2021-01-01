@@ -3,6 +3,7 @@
 ; All of the flag tests will run the clear and set instructions twice each.
 
 * = $0000
+.init
 
 ; Carry
 clc

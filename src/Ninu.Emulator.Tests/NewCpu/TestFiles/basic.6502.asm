@@ -1,6 +1,7 @@
 ﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
 
 * = $0000
+.init
 
 ; Random simple instructions
 nop

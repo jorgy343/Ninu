@@ -13,6 +13,7 @@ namespace Ninu.Emulator.Tests.NewCpu
         [Theory]
         [AsmData("NewCpu/TestFiles/basic.6502.asm")]
         [AsmData("NewCpu/TestFiles/flags.6502.asm")]
+        [AsmData("NewCpu/TestFiles/transfers.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect-buggy.6502.asm")]
         public void TestInstructions(byte[] memory, IEnumerable<Checkpoint> checkpoints)

@@ -153,12 +153,27 @@ namespace Ninu.Emulator.CentralProcessor
                     ImpliedDelayedExecution(Dey);
                     break;
 
+                // TXA implied
+                case 0x8a:
+                    Implied(Txa);
+                    break;
+
                 // STA absolute
                 case 0x8d:
                     _operations.Enqueue((new FetchAddressLowByPC(), true));
                     _operations.Enqueue((new FetchAddressHighByPC(), true));
                     _operations.Enqueue((new WriteAToAddressLatch(), true));
                     _operations.Enqueue((new FetchInstruction(), false));
+                    break;
+
+                // TYA implied
+                case 0x98:
+                    Implied(Tya);
+                    break;
+
+                // TXS implied
+                case 0x9a:
+                    Implied(Txs);
                     break;
 
                 // LDY immediate
@@ -173,15 +188,35 @@ namespace Ninu.Emulator.CentralProcessor
                     _operations.Enqueue((new FetchInstructionAndExecute(Ldx), true));
                     break;
 
+                // TAY implied
+                case 0xa8:
+                    Implied(Tay);
+                    break;
+
                 // LDA immediate
                 case 0xa9:
                     _operations.Enqueue((new FetchDataByPC(), true));
                     _operations.Enqueue((new FetchInstructionAndExecute(Lda), true));
                     break;
 
+                // TAX implied
+                case 0xaa:
+                    Implied(Tax);
+                    break;
+
                 // CLV implied
                 case 0xb8:
                     Implied(Clv);
+                    break;
+
+                // TSX implied
+                case 0xba:
+                    Implied(Tsx);
+                    break;
+
+                // INY implied
+                case 0xc8:
+                    ImpliedDelayedExecution(Iny);
                     break;
 
                 // DEX implied
@@ -202,11 +237,6 @@ namespace Ninu.Emulator.CentralProcessor
                 // NOP implied
                 case 0xea:
                     Implied();
-                    break;
-
-                // INY implied
-                case 0xc8:
-                    ImpliedDelayedExecution(Iny);
                     break;
 
                 // SED implied
@@ -345,6 +375,51 @@ namespace Ninu.Emulator.CentralProcessor
         private void Sei()
         {
             CpuState.SetFlag(CpuFlags.I, true);
+        }
+
+        private void Tax()
+        {
+            CpuState.X = CpuState.A;
+
+            CpuState.SetZeroFlag(CpuState.X);
+            CpuState.SetNegativeFlag(CpuState.X);
+        }
+
+        private void Tay()
+        {
+            CpuState.Y = CpuState.A;
+
+            CpuState.SetZeroFlag(CpuState.Y);
+            CpuState.SetNegativeFlag(CpuState.Y);
+        }
+
+        private void Tsx()
+        {
+            CpuState.X = CpuState.S;
+
+            CpuState.SetZeroFlag(CpuState.X);
+            CpuState.SetNegativeFlag(CpuState.X);
+        }
+
+        private void Txa()
+        {
+            CpuState.A = CpuState.X;
+
+            CpuState.SetZeroFlag(CpuState.A);
+            CpuState.SetNegativeFlag(CpuState.A);
+        }
+
+        private void Txs()
+        {
+            CpuState.S = CpuState.X;
+        }
+
+        private void Tya()
+        {
+            CpuState.A = CpuState.Y;
+
+            CpuState.SetZeroFlag(CpuState.A);
+            CpuState.SetNegativeFlag(CpuState.A);
         }
     }
 }
