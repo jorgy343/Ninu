@@ -3,6 +3,11 @@ of this emulated CPU is similar to how actual processors will decode instruction
 operations) and then execute the uops one by one. This allows for great reuse of code and also
 allows each operation to represent exactly one CPU cycle.
 
+There are some exceptions to the one operation is equal to one CPU cycle. Some instructions
+actually finish executing during the first cycle of the next instruction. Examples include `inx`
+and `iny` which don't update the `x` and `y` registers or the flags register until the third cycle
+even though both of these instructions are 2 cycle instructions.
+
 It should be noted that the actual 6502 processor used a PLA ROM for instruction decoding rather
 than uops. This allowed the circuitry of the 6502 to be more compact and ultimately cheaper to
 manufacture.

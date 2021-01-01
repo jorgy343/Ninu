@@ -12,6 +12,7 @@ namespace Ninu.Emulator.Tests.NewCpu
     {
         [Theory]
         [AsmData("NewCpu/TestFiles/basic.6502.asm")]
+        [AsmData("NewCpu/TestFiles/flags.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect-buggy.6502.asm")]
         public void TestInstructions(byte[] memory, IEnumerable<Checkpoint> checkpoints)
@@ -40,7 +41,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             simulator.HalfClock(); // See notes in the simulation's start program code.
 
             // Run the actual user code.
-            for (var i = 0; i < 500; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 cpu.Clock();
                 simulator.Clock();
@@ -64,6 +65,14 @@ namespace Ninu.Emulator.Tests.NewCpu
                 {
                     throw new Exception("Hit an error.");
                 }
+            }
+
+            // Make sure that after the test is ran we have the done marker set. If this isn't set
+            // then the test was probably not given enough cycles to complete or it did something
+            // wrong.
+            if (simulatorMemory[0xff00] != 0xa3)
+            {
+                throw new Exception("Did not hit done.");
             }
         }
     }

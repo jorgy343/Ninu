@@ -29,7 +29,7 @@ namespace Ninu.Emulator.CentralProcessor
         [Save]
         public byte EffectiveAddressLatchHigh { get; set; }
 
-        // TODO: This is going to be an allocation mess.
+        // TODO: Saving this won't work out of the box.
         [Save("Operations")]
         private readonly Queue<(CpuOperation Operation, bool IncrementPC)> _operations = new(16);
 
@@ -43,9 +43,15 @@ namespace Ninu.Emulator.CentralProcessor
             // Increment first so that the first cycle is considered 1.
             _totalCycles++;
 
-            // If there is nothing in the queue, we are probably in a jammed state. Do nothing.
-            if (_operations.Count > 0)
+            while (true)
             {
+                // If there is nothing in the queue, we are probably in a jammed state. Do nothing
+                // and break out of the infinite while loop.
+                if (_operations.Count == 0)
+                {
+                    return;
+                }
+
                 var (operation, incrementPC) = _operations.Dequeue();
 
                 // Increment the PC before it is actually used in the operation.
@@ -55,6 +61,15 @@ namespace Ninu.Emulator.CentralProcessor
                 }
 
                 operation.Execute(this, _cpuBus);
+
+                // If the operation is not free, we are done processing for this clock cycle. If
+                // the operation is free, we need to execute the next operation in the queue. If
+                // there are no more operations in the queue, the next pass in the infinite while
+                // loop will break out of the loop. Free operations do not increment the cycle.
+                if (!operation.IsFree)
+                {
+                    break;
+                }
             }
         }
 
@@ -97,11 +112,26 @@ namespace Ninu.Emulator.CentralProcessor
         {
             switch (opcode)
             {
+                // CLC implied
+                case 0x18:
+                    Implied(Clc);
+                    break;
+
+                // SEC implied
+                case 0x38:
+                    Implied(Sec);
+                    break;
+
                 // JMP absolute
                 case 0x4c:
                     _operations.Enqueue((new FetchAddressLowByPC(), true));
                     _operations.Enqueue((new FetchAddressHighByPC(), true));
                     _operations.Enqueue((new FetchInstructionAndExecute(Jmp), false));
+                    break;
+
+                // CLI implied
+                case 0x58:
+                    Implied(Cli);
                     break;
 
                 // JMP indirect
@@ -111,6 +141,16 @@ namespace Ninu.Emulator.CentralProcessor
                     _operations.Enqueue((new FetchEffectiveAddressLow(), true)); // PC increment doesn't matter, but it does happen.
                     _operations.Enqueue((new FetchEffectiveAddressHigh(), false));
                     _operations.Enqueue((new FetchInstructionAndExecute(JmpIndirect), false));
+                    break;
+
+                // SEI implied
+                case 0x78:
+                    Implied(Sei);
+                    break;
+
+                // DEY implied
+                case 0x88:
+                    ImpliedDelayedExecution(Dey);
                     break;
 
                 // STA absolute
@@ -139,9 +179,123 @@ namespace Ninu.Emulator.CentralProcessor
                     _operations.Enqueue((new FetchInstructionAndExecute(Lda), true));
                     break;
 
+                // CLV implied
+                case 0xb8:
+                    Implied(Clv);
+                    break;
+
+                // DEX implied
+                case 0xca:
+                    ImpliedDelayedExecution(Dex);
+                    break;
+
+                // CLD implied
+                case 0xd8:
+                    Implied(Cld);
+                    break;
+
+                // INX implied
+                case 0xe8:
+                    ImpliedDelayedExecution(Inx);
+                    break;
+
+                // NOP implied
+                case 0xea:
+                    Implied();
+                    break;
+
+                // INY implied
+                case 0xc8:
+                    ImpliedDelayedExecution(Iny);
+                    break;
+
+                // SED implied
+                case 0xf8:
+                    Implied(Sed);
+                    break;
+
                 default:
                     throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
             }
+        }
+
+        // Addressing Modes
+        private void Implied()
+        {
+            _operations.Enqueue((Nop.Singleton, true));
+            _operations.Enqueue((new FetchInstruction(), false));
+        }
+
+        private void Implied(Action action)
+        {
+            _operations.Enqueue((Nop.Singleton, true));
+            _operations.Enqueue((new FetchInstructionAndExecute(action), false));
+        }
+
+        /// <summary>
+        /// Same as <see cref="Implied"/> except that the instruction execution happens during the
+        /// first clock cycle of the next instruction. This is acomplished by inserting a free
+        /// action execution operation in the queue after the instruction fetch operation.
+        /// </summary>
+        /// <param name="action">The instruction operation to be executed.</param>
+        private void ImpliedDelayedExecution(Action action)
+        {
+            _operations.Enqueue((Nop.Singleton, true));
+            _operations.Enqueue((new FetchInstruction(), false));
+            _operations.Enqueue((new ExecuteForFree(action), false));
+        }
+
+        // Instructions
+        private void Clc()
+        {
+            CpuState.SetFlag(CpuFlags.C, false);
+        }
+
+        private void Cld()
+        {
+            CpuState.SetFlag(CpuFlags.D, false);
+        }
+
+        private void Cli()
+        {
+            CpuState.SetFlag(CpuFlags.I, false);
+        }
+
+        private void Clv()
+        {
+            CpuState.SetFlag(CpuFlags.V, false);
+        }
+
+        private void Dex()
+        {
+            CpuState.X--;
+
+            CpuState.SetZeroFlag(CpuState.X);
+            CpuState.SetNegativeFlag(CpuState.X);
+        }
+
+        private void Dey()
+        {
+            CpuState.Y--;
+
+            CpuState.SetZeroFlag(CpuState.Y);
+            CpuState.SetNegativeFlag(CpuState.Y);
+        }
+
+        private void Inx()
+        {
+            CpuState.X++;
+
+            CpuState.SetZeroFlag(CpuState.X);
+            CpuState.SetNegativeFlag(CpuState.X);
+        }
+
+        private void Iny()
+        {
+            CpuState.Y++;
+
+            CpuState.SetZeroFlag(CpuState.Y);
+            CpuState.SetNegativeFlag(CpuState.Y);
         }
 
         private void Jmp()
@@ -176,6 +330,21 @@ namespace Ninu.Emulator.CentralProcessor
 
             CpuState.SetZeroFlag(CpuState.Y);
             CpuState.SetNegativeFlag(CpuState.Y);
+        }
+
+        private void Sec()
+        {
+            CpuState.SetFlag(CpuFlags.C, true);
+        }
+
+        private void Sed()
+        {
+            CpuState.SetFlag(CpuFlags.D, true);
+        }
+
+        private void Sei()
+        {
+            CpuState.SetFlag(CpuFlags.I, true);
         }
     }
 }

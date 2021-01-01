@@ -9,61 +9,79 @@ namespace Ninu.Visual6502.Analyzer
         public static void Main(string[] args)
         {
             var asm = @"
-vectors .macro
+                vectors .macro
 
-    * = $fff0
-    rti
+                    * = $fff0
+                    rti
 
-    * = $fffa
-    nmi .addr $fff0
-    reset .addr $0000
-    irq .addr $fff0
+                    * = $fffa
+                    nmi .addr $fff0
+                    reset .addr $0000
+                    irq .addr $fff0
 
-.endmacro
+                .endmacro
 
-done .macro
+                init .macro
 
-    ; Show that the test ran to the end by storing 0xa3 in 0xff00.
-    lda #$a3
-    sta $ff00
-    doneLoop: jmp doneLoop
+                    ; Set the interrupt disable bit to prevent interrupts.
+                    sei
 
-.endmacro
+                    ; Clear the decimal bit. Decimal mode is disabled in the NES so this should cause CPU emulators
+                    ; to mimic that behavior.
+                    cld
 
-error .macro
+                    ; Load 0xff into the stack register.
+                    ldx #$ff
+                    txs
 
-    ; Show that the test ran to the end by storing 0xa3 in 0xff00.
-    lda #$c9
-    sta $ff00
-    doneLoop: jmp doneLoop
+                .endmacro
 
-.endmacro
+                done .macro
 
-* = $0000
-; If the emulator accounts for the bug, the low byte will be read from 0x12ff and the high byte
-; from 0x1200.
-jmp ($12ff)
+                    ; Show that the test ran to the end by storing 0xa3 in 0xff00.
+                    lda #$a3
+                    sta $ff00
+                    doneLoop: jmp doneLoop
 
-* = $1200
-.byte $56 ; High byte of the target address.
+                .endmacro
 
-* = $12ff
-.byte $12 ; Low byte of the target address.
+                error .macro
 
-* = $1300
-.byte $89 ; If the emulator is correct, this byte won't be read due to the bug.
+                    ; Show that the test ran to the end by storing 0xa3 in 0xff00.
+                    lda #$c9
+                    sta $ff00
+                    doneLoop: jmp doneLoop
 
-; The target address should be 0x5612 instead of what the 0x8912 that you would expect if this bug
-; didn't exist.
-* = $5612
-.done
+                .endmacro
 
-; If the emulator is correct, this shouldn't be hit.
-* = $8912
-.error
+                * = $0000
+                ldx #$ab
+                inx
 
-.vectors
-";
+                ; If the emulator accounts for the bug, the low byte will be read from 0x12ff and the high byte
+                ; from 0x1200.
+                jmp ($12ff)
+
+                * = $1200
+                .byte $56 ; High byte of the target address.
+
+                * = $12ff
+                .byte $12 ; Low byte of the target address.
+
+                * = $1300
+                .byte $89 ; If the emulator is correct, this byte won't be read due to the bug.
+
+                ; The target address should be 0x5612 instead of what the 0x8912 that you would expect if this bug
+                ; didn't exist.
+                * = $5612
+                .done
+
+                ; If the emulator is correct, this shouldn't be hit.
+                * = $8912
+                .error
+
+                .vectors
+            ";
 
             var assembler = new PatchAssembler();
             var simulationMemory = assembler.Assemble(0, null, asm);
