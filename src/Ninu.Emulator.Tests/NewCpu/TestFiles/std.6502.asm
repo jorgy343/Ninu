@@ -4,9 +4,9 @@
     rti
 
     * = $fffa
-    nmi .addr $fff0
-    reset .addr $0000
-    irq .addr $fff0
+    nmiVector   .addr $fff0
+    resetVector .addr $0000
+    irqVector   .addr $fff0
 
 .endmacro
 

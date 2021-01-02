@@ -164,62 +164,39 @@ namespace Ninu.Emulator.CentralProcessor
                 AddOperation(Nop.Singleton, false);
 
                 // Store the high byte of the PC onto the stack (0x100 + S) but do not touch S.
-                void PushPCHighOnStack()
-                {
-                    var pcHigh = (byte)(CpuState.PC >> 8);
-                    _bus.Write((ushort)(0x100 + CpuState.S), pcHigh);
-                }
-
-                AddOperation(Nop.Singleton, false, PushPCHighOnStack);
+                AddOperation(PushPCHighOnStack.Singleton, false);
 
                 // Store the low byte of the PC onto the stack (0x100 + S - 1) but do not touch S.
-                void PushPCLowOnStack()
-                {
-                    var pcLow = (byte)(CpuState.PC & 0x00ff);
-                    _bus.Write((ushort)(0x100 + CpuState.S - 1), pcLow);
-                }
-
-                AddOperation(Nop.Singleton, false, PushPCLowOnStack);
+                AddOperation(PushPCLowOnStack.Singleton, false);
 
                 // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
                 void PushPOnStack()
                 {
-                    var p = (byte)((byte)CpuState.P | 0x20); // Push the program state with B = 0 and U = 1.
+                    var p = (byte)((byte)CpuState.P | 0x20); // Push the program status flags with B = 0 and U = 1.
                     _bus.Write((ushort)(0x100 + CpuState.S - 2), p);
                 }
 
                 AddOperation(Nop.Singleton, false, PushPOnStack);
 
                 // Fetch the low byte of the interrupt vector address and decrement the stack by 3.
-                void FetchLowInterruptVectorAddress()
+                void DecrementStackBy3()
                 {
-                    AddressLatchLow = _bus.Read(0xfffa);
                     CpuState.S -= 3;
                 }
 
-                AddOperation(Nop.Singleton, false, FetchLowInterruptVectorAddress);
+                AddOperation(FetchNmiVectorLowIntoAddressLatchLow.Singleton, false, DecrementStackBy3);
 
                 // Fetch the high byte of the interrupt vector address.
-                void FetchHighInterruptVectorAddress()
-                {
-                    AddressLatchHigh = _bus.Read(0xfffb);
-                }
-
-                AddOperation(Nop.Singleton, false, FetchHighInterruptVectorAddress);
+                AddOperation(FetchNmiVectorHighIntoAddressLatchHigh.Singleton, false);
 
                 // Set PC to the address latch and fetch the instruction found at PC.
-                void SetPCAndFetchInstruction()
+                void SetNmiToFalse()
                 {
-                    CpuState.PC = (ushort)(AddressLatchLow | (AddressLatchHigh << 8));
-
-                    var instruction = _bus.Read(CpuState.PC);
-                    ExecuteInstruction(instruction);
-
                     // Set NMI to false to allow an NMI to occur again.
                     Nmi = false;
                 }
 
-                AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
+                AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false, SetNmiToFalse);
             }
         }
 
