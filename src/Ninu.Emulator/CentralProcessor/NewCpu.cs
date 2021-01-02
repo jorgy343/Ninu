@@ -7,10 +7,10 @@ namespace Ninu.Emulator.CentralProcessor
 {
     public class NewCpu
     {
-        private readonly IBus _cpuBus;
+        private readonly IBus _bus;
 
         [Save("TotalCycles")]
-        private long _totalCycles;
+        public long _totalCycles;
 
         [SaveChildren]
         public CpuState CpuState { get; } = new();
@@ -34,9 +34,38 @@ namespace Ninu.Emulator.CentralProcessor
         [Save("Operations")]
         private readonly Queue<(CpuOperation Operation, bool IncrementPC)> _operations = new(16);
 
-        public NewCpu(IBus cpuBus)
+        [Save]
+        public bool _nmi;
+
+        [Save]
+        public long _nmiCycle;
+
+        /// <summary>
+        /// When set to <c>true</c>, the CPU will enter the NMI routine as soon as the current
+        /// instruction is done executing. Note that in the real CPU the NMI line is held low which
+        /// causes a flipflop in the CPU to be set which indicates an NMI needs to be triggered.
+        /// This property is analogous to the flipflop, not the NMI line which is why we set this
+        /// property to <c>true</c> to incidate an NMI.
+        /// </summary>
+        public bool Nmi
         {
-            _cpuBus = cpuBus ?? throw new ArgumentNullException(nameof(cpuBus));
+            get => _nmi;
+            set
+            {
+                if (_nmi && value)
+                {
+                    // Don't set NMI to true if it is already true.
+                    return;
+                }
+
+                _nmi = value;
+                _nmiCycle = value ? _totalCycles : -1;
+            }
+        }
+
+        public NewCpu(IBus bus)
+        {
+            _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
 
         public void Clock()
@@ -61,7 +90,7 @@ namespace Ninu.Emulator.CentralProcessor
                     CpuState.PC++;
                 }
 
-                operation.Execute(this, _cpuBus);
+                operation.Execute(this, _bus);
 
                 // If the operation is not free, we are done processing for this clock cycle. If
                 // the operation is free, we need to execute the next operation in the queue. If
@@ -113,7 +142,71 @@ namespace Ninu.Emulator.CentralProcessor
 
         public void CheckForNmi()
         {
+            if (Nmi)
+            {
+                // TODO: When/if do we set P.I?
 
+                // First step is a NOP.
+                _operations.Enqueue((Nop.Singleton, false));
+
+                // Store the high byte of the PC onto the stack (0x100 + S) but do not touch S.
+                void PushPCHighOnStack()
+                {
+                    var pcHigh = (byte)(CpuState.PC >> 8);
+                    _bus.Write((ushort)(0x100 + CpuState.S), pcHigh);
+                }
+
+                _operations.Enqueue((new ExecuteAction(PushPCHighOnStack), false));
+
+                // Store the low byte of the PC onto the stack (0x100 + S - 1) but do not touch S.
+                void PushPCLowOnStack()
+                {
+                    var pcLow = (byte)(CpuState.PC & 0x00ff);
+                    _bus.Write((ushort)(0x100 + CpuState.S - 1), pcLow);
+                }
+
+                _operations.Enqueue((new ExecuteAction(PushPCLowOnStack), false));
+
+                // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
+                void PushPOnStack()
+                {
+                    var p = (byte)((byte)CpuState.P | 0x20); // Push the program state with B = 0 and U = 1.
+                    _bus.Write((ushort)(0x100 + CpuState.S - 2), p);
+                }
+
+                _operations.Enqueue((new ExecuteAction(PushPOnStack), false));
+
+                // Fetch the low byte of the interrupt vector address and decrement the stack by 3.
+                void FetchLowInterruptVectorAddress()
+                {
+                    AddressLatchLow = _bus.Read(0xfffa);
+                    CpuState.S -= 3;
+                }
+
+                _operations.Enqueue((new ExecuteAction(FetchLowInterruptVectorAddress), false));
+
+                // Fetch the high byte of the interrupt vector address.
+                void FetchHighInterruptVectorAddress()
+                {
+                    AddressLatchHigh = _bus.Read(0xfffb);
+                }
+
+                _operations.Enqueue((new ExecuteAction(FetchHighInterruptVectorAddress), false));
+
+                // Set PC to the address latch and fetch the instruction found at PC.
+                void SetPCAndFetchInstruction()
+                {
+                    CpuState.PC = (ushort)(AddressLatchLow | (AddressLatchHigh << 8));
+
+                    var instruction = _bus.Read(CpuState.PC);
+                    ExecuteInstruction(instruction);
+
+                    // Set NMI to false to allow an NMI to occur again.
+                    Nmi = false;
+                }
+
+                _operations.Enqueue((new ExecuteAction(SetPCAndFetchInstruction), false));
+            }
         }
 
         public void ExecuteInstruction(byte opcode)
@@ -183,6 +276,58 @@ namespace Ninu.Emulator.CentralProcessor
 
                 case Nop_Implied:
                     Implied();
+                    break;
+
+                case Rti_Implied:
+                    // TODO: Implement better?
+
+                    // The PC increments are inconsequential but do happen.
+                    _operations.Enqueue((Nop.Singleton, true));
+                    _operations.Enqueue((Nop.Singleton, true));
+
+                    // Pull P from stack and store it in the data latch but don't set P yet.
+                    void PullPFromStack()
+                    {
+                        DataLatch = _bus.Read((ushort)(0x100 + CpuState.S + 1));
+
+                        // During interrupts, bits 4 and 5 of the status register may be set in the
+                        // stack. Make sure to clear these when pulling P from the stack as these
+                        // two bits don't actually exist.
+                        DataLatch = (byte)(DataLatch & ~0x30);
+                    }
+
+                    _operations.Enqueue((new ExecuteAction(PullPFromStack), false));
+
+                    // Pull PC low from the stack. Set P to the data latch.
+                    void PullPCLowFromStack()
+                    {
+                        CpuState.P = (CpuFlags)DataLatch;
+
+                        AddressLatchLow = _bus.Read((ushort)(0x100 + CpuState.S + 2));
+                    }
+
+                    _operations.Enqueue((new ExecuteAction(PullPCLowFromStack), false));
+
+                    // Pull PC high from the stack. Increment S by 3.
+                    void PullPCHighFromStack()
+                    {
+                        AddressLatchHigh = _bus.Read((ushort)(0x100 + CpuState.S + 3));
+                        CpuState.S += 3;
+                    }
+
+                    _operations.Enqueue((new ExecuteAction(PullPCHighFromStack), false));
+
+                    // Load PC and fetch the next instruction.
+                    void SetPCAndFetchInstruction()
+                    {
+                        CpuState.PC = (ushort)(AddressLatchLow | (AddressLatchHigh << 8));
+
+                        var instruction = _bus.Read(CpuState.PC);
+                        ExecuteInstruction(instruction);
+                    }
+
+                    _operations.Enqueue((new ExecuteAction(SetPCAndFetchInstruction), false));
+
                     break;
 
                 case Sec_Implied:
@@ -415,7 +560,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Rra_IndirectZeroPageYIndexed_73:
                 case Rra_ZeroPage_67:
                 case Rra_ZeroPageXIndexed_77:
-                case Rti_Implied:
                 case Rts_Implied:
                 case Sax_Absolute_8F:
                 case Sax_IndirectZeroPageXIndexed_83:

@@ -30,3 +30,12 @@ decoding phase.
 
 If the decoding phase specifies that an operation is to increment PC, the incrementation is done
 prior to executing the operation. This is handled by the logic within the CPU.
+
+## NMI
+
+NMI is handled in a strange way. The NMI flag is checked just prior to an instruction fetch. If the
+NMI flag is true and the NMI flag was not set during this cycle, the instruction fetch isn't
+performed and the NMI routine is put on the queue. If the NMI flag was set during the same cycle as
+the instruction fetch, the fetch goes forward and the next instruction is executed. The next
+instruction's instruction fetch will then pick up the NMI and execute it instead of loading the
+next instruction.

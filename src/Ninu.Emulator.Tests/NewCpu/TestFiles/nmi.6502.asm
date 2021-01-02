@@ -2,14 +2,12 @@
 
 * = $0000
             ; cycles
-ldx #$ff    ; 01 - 02
-txs         ; 03 - 04
-
-ldx #$12    ; 05 - 06
+ldx #$ab    ; 01 - 02
+ldx #$ab    ; 03 - 04
+inx         ; 05 - 06
 inx         ; 07 - 08
-inx         ; 09 - 10
-inx         ; 11 - 12
-inx         ; 13 - 14
+iny         ; 09 - 10
+iny         ; 11 - 12
 
 .done
 

@@ -12,6 +12,7 @@ namespace Ninu.Visual6502.Analyzer
                 vectors .macro
 
                     * = $fff0
+                    sed
                     rti
 
                     * = $fffa
@@ -55,19 +56,24 @@ namespace Ninu.Visual6502.Analyzer
                 .endmacro
 
                 * = $0000
-
-                ldx #$ff    ; 01 - 02
-                txs         ; 03 - 04
-
-                ldx #$12    ; 05 - 06
-                inx         ; 07 - 08
-                inx         ; 09 - 10
-                inx         ; 11 - 12
-                inx         ; 13 - 14
+                            ; cycles
+                inx    ; 01 - 02
+                inx    ; 03 - 04
+                inx    ; 05 - 06
+                inx    ; 07 - 08
+                inx    ; 09 - 10
+                inx    ; 11 - 12
 
                 .done
 
-                .vectors
+                ; NMI handler.
+                * = $1200
+                rti
+
+                * = $fffa
+                nmi .addr $1200
+                reset .addr $0000
+                irq .addr $fff0
             ";
 
             var assembler = new PatchAssembler();
@@ -105,7 +111,7 @@ namespace Ninu.Visual6502.Analyzer
             {
                 cycle++;
 
-                if (cycle == 7)
+                if (cycle == 5)
                 {
                     simulator.WriteBit("nmi", false);
                 }

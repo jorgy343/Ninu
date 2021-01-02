@@ -19,9 +19,15 @@ namespace Ninu.Emulator.CentralProcessor.Operations
         {
             _execute();
 
-            var instruction = bus.Read(cpu.CpuState.PC);
-
-            cpu.ExecuteInstruction(instruction);
+            if (cpu._nmi && cpu._nmiCycle != cpu._totalCycles - 1)
+            {
+                cpu.CheckForNmi();
+            }
+            else
+            {
+                var instruction = bus.Read(cpu.CpuState.PC);
+                cpu.ExecuteInstruction(instruction);
+            }
         }
     }
 }
