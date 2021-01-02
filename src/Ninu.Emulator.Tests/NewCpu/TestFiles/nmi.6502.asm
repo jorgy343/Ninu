@@ -13,6 +13,7 @@ iny         ; 11 - 12
 
 ; NMI handler.
 * = $1200
+sed ; The D flag should be unset when entering the NMI. Set it to test to ensure that P is loaded correctly after RTI.
 rti
 
 * = $fffa

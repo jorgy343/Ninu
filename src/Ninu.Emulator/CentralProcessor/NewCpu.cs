@@ -1,4 +1,5 @@
 ﻿using Ninu.Emulator.CentralProcessor.Operations;
+using Ninu.Emulator.CentralProcessor.Operations.Interrupts;
 using System;
 using System.Collections.Generic;
 using static Ninu.Emulator.CentralProcessor.NewOpcode;
@@ -32,7 +33,7 @@ namespace Ninu.Emulator.CentralProcessor
 
         // TODO: Saving this won't work out of the box.
         [Save("Operations")]
-        private readonly Queue<(CpuOperation Operation, bool IncrementPC)> _operations = new(16);
+        private readonly Queue<NewCpuOperationQueueState> _queue = new(24);
 
         [Save]
         public bool _nmi;
@@ -68,6 +69,16 @@ namespace Ninu.Emulator.CentralProcessor
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
 
+        private void AddOperation(CpuOperation operation, bool incrementPC, Action? action = null)
+        {
+            _queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, false));
+        }
+
+        private void AddFreeOperation(CpuOperation operation, bool incrementPC, Action? action = null)
+        {
+            _queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, true));
+        }
+
         public void Clock()
         {
             // Increment first so that the first cycle is considered 1.
@@ -77,26 +88,28 @@ namespace Ninu.Emulator.CentralProcessor
             {
                 // If there is nothing in the queue, we are probably in a jammed state. Do nothing
                 // and break out of the infinite while loop.
-                if (_operations.Count == 0)
+                if (_queue.Count == 0)
                 {
                     return;
                 }
 
-                var (operation, incrementPC) = _operations.Dequeue();
+                var queueState = _queue.Dequeue();
 
                 // Increment the PC before it is actually used in the operation.
-                if (incrementPC)
+                if (queueState.IncrementPC)
                 {
                     CpuState.PC++;
                 }
 
-                operation.Execute(this, _bus);
+                queueState.Action?.Invoke();
+
+                queueState.Operation.Execute(this, _bus);
 
                 // If the operation is not free, we are done processing for this clock cycle. If
                 // the operation is free, we need to execute the next operation in the queue. If
                 // there are no more operations in the queue, the next pass in the infinite while
                 // loop will break out of the loop. Free operations do not increment the cycle.
-                if (!operation.IsFree)
+                if (!queueState.Free)
                 {
                     break;
                 }
@@ -123,21 +136,22 @@ namespace Ninu.Emulator.CentralProcessor
 
             // The first seven cycles do stuff in the actual CPU. We don't care about those
             // details, we just need to take up some cycles.
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false));
-            _operations.Enqueue((Nop.Singleton, false)); // This should technically load the low byte of the reset vector.
+            AddOperation(Nop.Singleton, false);
+            AddOperation(Nop.Singleton, false);
+            AddOperation(Nop.Singleton, false);
+            AddOperation(Nop.Singleton, false);
+            AddOperation(Nop.Singleton, false);
+            AddOperation(Nop.Singleton, false);
 
-            // Cycles 7 and 8 (or just 8 because we are lazy) loads the reset vector into PC.
-            _operations.Enqueue((LoadResetVector.Singleton, false));
+            // Cycles 7 and 8 load the reset vector into the address latch.
+            AddOperation(FetchResetVectorLowIntoAddressLatchLow.Singleton, false);
+            AddOperation(FetchResetVectorHighIntoAddressLatchHigh.Singleton, false);
 
-            // Cycle 9 loads the instruction found at PC and gets it ready for execution. This is
-            // typically the last cycle of an instruction and here it is technically the last cycle
-            // of the modified BRK instruction that is being executed.
-            _operations.Enqueue((FetchInstruction.Singleton, false));
+            // Cycle 9 sets PC to the address latch and then loads the instruction found at PC and
+            // gets it ready for execution. This is typically the last cycle of an instruction and
+            // here it is technically the last cycle of the modified BRK instruction that is being
+            // executed.
+            AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false);
         }
 
         public void CheckForNmi()
@@ -146,8 +160,8 @@ namespace Ninu.Emulator.CentralProcessor
             {
                 // TODO: When/if do we set P.I?
 
-                // First step is a NOP.
-                _operations.Enqueue((Nop.Singleton, false));
+                // First step is a NOP. The real CPU does some data access that gets thrown away.
+                AddOperation(Nop.Singleton, false);
 
                 // Store the high byte of the PC onto the stack (0x100 + S) but do not touch S.
                 void PushPCHighOnStack()
@@ -156,7 +170,7 @@ namespace Ninu.Emulator.CentralProcessor
                     _bus.Write((ushort)(0x100 + CpuState.S), pcHigh);
                 }
 
-                _operations.Enqueue((new ExecuteAction(PushPCHighOnStack), false));
+                AddOperation(Nop.Singleton, false, PushPCHighOnStack);
 
                 // Store the low byte of the PC onto the stack (0x100 + S - 1) but do not touch S.
                 void PushPCLowOnStack()
@@ -165,7 +179,7 @@ namespace Ninu.Emulator.CentralProcessor
                     _bus.Write((ushort)(0x100 + CpuState.S - 1), pcLow);
                 }
 
-                _operations.Enqueue((new ExecuteAction(PushPCLowOnStack), false));
+                AddOperation(Nop.Singleton, false, PushPCLowOnStack);
 
                 // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
                 void PushPOnStack()
@@ -174,7 +188,7 @@ namespace Ninu.Emulator.CentralProcessor
                     _bus.Write((ushort)(0x100 + CpuState.S - 2), p);
                 }
 
-                _operations.Enqueue((new ExecuteAction(PushPOnStack), false));
+                AddOperation(Nop.Singleton, false, PushPOnStack);
 
                 // Fetch the low byte of the interrupt vector address and decrement the stack by 3.
                 void FetchLowInterruptVectorAddress()
@@ -183,7 +197,7 @@ namespace Ninu.Emulator.CentralProcessor
                     CpuState.S -= 3;
                 }
 
-                _operations.Enqueue((new ExecuteAction(FetchLowInterruptVectorAddress), false));
+                AddOperation(Nop.Singleton, false, FetchLowInterruptVectorAddress);
 
                 // Fetch the high byte of the interrupt vector address.
                 void FetchHighInterruptVectorAddress()
@@ -191,7 +205,7 @@ namespace Ninu.Emulator.CentralProcessor
                     AddressLatchHigh = _bus.Read(0xfffb);
                 }
 
-                _operations.Enqueue((new ExecuteAction(FetchHighInterruptVectorAddress), false));
+                AddOperation(Nop.Singleton, false, FetchHighInterruptVectorAddress);
 
                 // Set PC to the address latch and fetch the instruction found at PC.
                 void SetPCAndFetchInstruction()
@@ -205,7 +219,7 @@ namespace Ninu.Emulator.CentralProcessor
                     Nmi = false;
                 }
 
-                _operations.Enqueue((new ExecuteAction(SetPCAndFetchInstruction), false));
+                AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
             }
         }
 
@@ -246,32 +260,32 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Jmp_Absolute:
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Jmp), false));
+                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false, Jmp);
                     break;
 
                 case Jmp_Indirect:
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
-                    _operations.Enqueue((FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true)); // PC increment doesn't matter, but it does happen.
-                    _operations.Enqueue((FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false));
-                    _operations.Enqueue((new FetchInstructionAndExecute(JmpIndirect), false));
+                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false, JmpIndirect);
                     break;
 
                 case Lda_Immediate:
-                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Lda), true));
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, true, Lda);
                     break;
 
                 case Ldx_Immediate:
-                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Ldx), true));
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, true, Ldx);
                     break;
 
                 case Ldy_Immediate:
-                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Ldy), true));
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, true, Ldy);
                     break;
 
                 case Nop_Implied:
@@ -282,8 +296,8 @@ namespace Ninu.Emulator.CentralProcessor
                     // TODO: Implement better?
 
                     // The PC increments are inconsequential but do happen.
-                    _operations.Enqueue((Nop.Singleton, true));
-                    _operations.Enqueue((Nop.Singleton, true));
+                    AddOperation(Nop.Singleton, true);
+                    AddOperation(Nop.Singleton, true);
 
                     // Pull P from stack and store it in the data latch but don't set P yet.
                     void PullPFromStack()
@@ -296,7 +310,7 @@ namespace Ninu.Emulator.CentralProcessor
                         DataLatch = (byte)(DataLatch & ~0x30);
                     }
 
-                    _operations.Enqueue((new ExecuteAction(PullPFromStack), false));
+                    AddOperation(Nop.Singleton, false, PullPFromStack);
 
                     // Pull PC low from the stack. Set P to the data latch.
                     void PullPCLowFromStack()
@@ -306,7 +320,7 @@ namespace Ninu.Emulator.CentralProcessor
                         AddressLatchLow = _bus.Read((ushort)(0x100 + CpuState.S + 2));
                     }
 
-                    _operations.Enqueue((new ExecuteAction(PullPCLowFromStack), false));
+                    AddOperation(Nop.Singleton, false, PullPCLowFromStack);
 
                     // Pull PC high from the stack. Increment S by 3.
                     void PullPCHighFromStack()
@@ -315,7 +329,7 @@ namespace Ninu.Emulator.CentralProcessor
                         CpuState.S += 3;
                     }
 
-                    _operations.Enqueue((new ExecuteAction(PullPCHighFromStack), false));
+                    AddOperation(Nop.Singleton, false, PullPCHighFromStack);
 
                     // Load PC and fetch the next instruction.
                     void SetPCAndFetchInstruction()
@@ -326,7 +340,7 @@ namespace Ninu.Emulator.CentralProcessor
                         ExecuteInstruction(instruction);
                     }
 
-                    _operations.Enqueue((new ExecuteAction(SetPCAndFetchInstruction), false));
+                    AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
 
                     break;
 
@@ -343,10 +357,10 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sta_Absolute:
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
-                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
-                    _operations.Enqueue((WriteAToAddressLatch.Singleton, true));
-                    _operations.Enqueue((FetchInstruction.Singleton, false));
+                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
+                    AddOperation(WriteAToMemoryByAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
                     break;
 
                 case Tax_Implied:
@@ -612,27 +626,28 @@ namespace Ninu.Emulator.CentralProcessor
         // Addressing Modes
         private void Implied()
         {
-            _operations.Enqueue((Nop.Singleton, true));
-            _operations.Enqueue((FetchInstruction.Singleton, false));
+            AddOperation(Nop.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false);
         }
 
         private void Implied(Action action)
         {
-            _operations.Enqueue((Nop.Singleton, true));
-            _operations.Enqueue((new FetchInstructionAndExecute(action), false));
+            AddOperation(Nop.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false, action);
         }
 
         /// <summary>
         /// Same as <see cref="Implied"/> except that the instruction execution happens during the
         /// first clock cycle of the next instruction. This is acomplished by inserting a free
-        /// action execution operation in the queue after the instruction fetch operation.
+        /// action execution operation in the queue after the instruction fetch operation. The free
+        /// action will be the first thing executed on the next clock cycle.
         /// </summary>
         /// <param name="action">The instruction operation to be executed.</param>
         private void ImpliedDelayedExecution(Action action)
         {
-            _operations.Enqueue((Nop.Singleton, true));
-            _operations.Enqueue((FetchInstruction.Singleton, false));
-            _operations.Enqueue((new ExecuteForFree(action), false));
+            AddOperation(Nop.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false);
+            AddFreeOperation(Nop.Singleton, false, action);
         }
 
         // Instructions

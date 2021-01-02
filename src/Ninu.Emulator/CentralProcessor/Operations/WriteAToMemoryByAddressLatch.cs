@@ -4,14 +4,14 @@
     /// Writes the A register to memory at the address defined by the address latches <see
     /// cref="NewCpu.AddressLatchLow"/> and <see cref="NewCpu.AddressLatchHigh"/>.
     /// </summary>
-    public class WriteAToAddressLatch : CpuOperation
+    public class WriteAToMemoryByAddressLatch : CpuOperation
     {
-        private WriteAToAddressLatch()
+        private WriteAToMemoryByAddressLatch()
         {
 
         }
 
-        public static WriteAToAddressLatch Singleton { get; } = new();
+        public static WriteAToMemoryByAddressLatch Singleton { get; } = new();
 
         public override void Execute(NewCpu cpu, IBus bus)
         {
