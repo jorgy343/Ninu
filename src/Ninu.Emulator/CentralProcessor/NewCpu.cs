@@ -1,6 +1,7 @@
 ﻿using Ninu.Emulator.CentralProcessor.Operations;
 using System;
 using System.Collections.Generic;
+using static Ninu.Emulator.CentralProcessor.NewOpcode;
 
 namespace Ninu.Emulator.CentralProcessor
 {
@@ -110,32 +111,47 @@ namespace Ninu.Emulator.CentralProcessor
 
         public void ExecuteInstruction(byte opcode)
         {
-            switch (opcode)
+            switch ((NewOpcode)opcode)
             {
-                // CLC implied
-                case 0x18:
+                case Clc_Implied:
                     Implied(Clc);
                     break;
 
-                // SEC implied
-                case 0x38:
-                    Implied(Sec);
+                case Cld_Implied:
+                    Implied(Cld);
                     break;
 
-                // JMP absolute
-                case 0x4c:
+                case Cli_Implied:
+                    Implied(Cli);
+                    break;
+
+                case Clv_Implied:
+                    Implied(Clv);
+                    break;
+
+                case Dex_Implied:
+                    ImpliedDelayedExecution(Dex);
+                    break;
+
+                case Dey_Implied:
+                    ImpliedDelayedExecution(Dey);
+                    break;
+
+                case Inx_Implied:
+                    ImpliedDelayedExecution(Inx);
+                    break;
+
+                case Iny_Implied:
+                    ImpliedDelayedExecution(Iny);
+                    break;
+
+                case Jmp_Absolute:
                     _operations.Enqueue((new FetchAddressLowByPC(), true));
                     _operations.Enqueue((new FetchAddressHighByPC(), true));
                     _operations.Enqueue((new FetchInstructionAndExecute(Jmp), false));
                     break;
 
-                // CLI implied
-                case 0x58:
-                    Implied(Cli);
-                    break;
-
-                // JMP indirect
-                case 0x6c:
+                case Jmp_Indirect:
                     _operations.Enqueue((new FetchAddressLowByPC(), true));
                     _operations.Enqueue((new FetchAddressHighByPC(), true));
                     _operations.Enqueue((new FetchEffectiveAddressLow(), true)); // PC increment doesn't matter, but it does happen.
@@ -143,105 +159,66 @@ namespace Ninu.Emulator.CentralProcessor
                     _operations.Enqueue((new FetchInstructionAndExecute(JmpIndirect), false));
                     break;
 
-                // SEI implied
-                case 0x78:
+                case Lda_Immediate:
+                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
+                    _operations.Enqueue((new FetchInstructionAndExecute(Lda), true));
+                    break;
+
+                case Ldx_Immediate:
+                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
+                    _operations.Enqueue((new FetchInstructionAndExecute(Ldx), true));
+                    break;
+
+                case Ldy_Immediate:
+                    _operations.Enqueue((FetchMemoryByPCIntoDataLatch.Singleton, true));
+                    _operations.Enqueue((new FetchInstructionAndExecute(Ldy), true));
+                    break;
+
+                case Nop_Implied:
+                    Implied();
+                    break;
+
+                case Sec_Implied:
+                    Implied(Sec);
+                    break;
+
+                case Sed_Implied:
+                    Implied(Sed);
+                    break;
+
+                case Sei_Implied:
                     Implied(Sei);
                     break;
 
-                // DEY implied
-                case 0x88:
-                    ImpliedDelayedExecution(Dey);
-                    break;
-
-                // TXA implied
-                case 0x8a:
-                    Implied(Txa);
-                    break;
-
-                // STA absolute
-                case 0x8d:
+                case Sta_Absolute:
                     _operations.Enqueue((new FetchAddressLowByPC(), true));
                     _operations.Enqueue((new FetchAddressHighByPC(), true));
                     _operations.Enqueue((new WriteAToAddressLatch(), true));
                     _operations.Enqueue((new FetchInstruction(), false));
                     break;
 
-                // TYA implied
-                case 0x98:
-                    Implied(Tya);
-                    break;
-
-                // TXS implied
-                case 0x9a:
-                    Implied(Txs);
-                    break;
-
-                // LDY immediate
-                case 0xa0:
-                    _operations.Enqueue((new FetchDataByPC(), true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Ldy), true));
-                    break;
-
-                // LDX immediate
-                case 0xa2:
-                    _operations.Enqueue((new FetchDataByPC(), true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Ldx), true));
-                    break;
-
-                // TAY implied
-                case 0xa8:
-                    Implied(Tay);
-                    break;
-
-                // LDA immediate
-                case 0xa9:
-                    _operations.Enqueue((new FetchDataByPC(), true));
-                    _operations.Enqueue((new FetchInstructionAndExecute(Lda), true));
-                    break;
-
-                // TAX implied
-                case 0xaa:
+                case Tax_Implied:
                     Implied(Tax);
                     break;
 
-                // CLV implied
-                case 0xb8:
-                    Implied(Clv);
+                case Tay_Implied:
+                    Implied(Tay);
                     break;
 
-                // TSX implied
-                case 0xba:
+                case Tsx_Implied:
                     Implied(Tsx);
                     break;
 
-                // INY implied
-                case 0xc8:
-                    ImpliedDelayedExecution(Iny);
+                case Txa_Implied:
+                    Implied(Txa);
                     break;
 
-                // DEX implied
-                case 0xca:
-                    ImpliedDelayedExecution(Dex);
+                case Txs_Implied:
+                    Implied(Txs);
                     break;
 
-                // CLD implied
-                case 0xd8:
-                    Implied(Cld);
-                    break;
-
-                // INX implied
-                case 0xe8:
-                    ImpliedDelayedExecution(Inx);
-                    break;
-
-                // NOP implied
-                case 0xea:
-                    Implied();
-                    break;
-
-                // SED implied
-                case 0xf8:
-                    Implied(Sed);
+                case Tya_Implied:
+                    Implied(Tya);
                     break;
 
                 default:
