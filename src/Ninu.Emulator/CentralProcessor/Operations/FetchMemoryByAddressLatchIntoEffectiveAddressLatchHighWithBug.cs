@@ -12,8 +12,15 @@
     /// address would be taken from memory at 0x3400. When pulling the second byte from memory,
     /// only the low byte of the address is incremented. The high byte (page byte) doesn't change.
     /// </summary>
-    public class FetchEffectiveAddressHigh : CpuOperation
+    public class FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug : CpuOperation
     {
+        private FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug()
+        {
+
+        }
+
+        public static FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug Singleton { get; } = new();
+
         public override void Execute(NewCpu cpu, IBus bus)
         {
             // Increment the low byte and allow it wrap if the value is 0xff.

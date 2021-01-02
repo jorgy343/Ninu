@@ -12,6 +12,7 @@
     <None Remove="NewCpu\TestFiles\flags.6502.asm" />
     <None Remove="NewCpu\TestFiles\jmp-indirect-buggy.6502.asm" />
     <None Remove="NewCpu\TestFiles\jmp-indirect.6502.asm" />
+    <None Remove="NewCpu\TestFiles\nmi.6502.asm" />
     <None Remove="NewCpu\TestFiles\transfers.6502.asm" />
   </ItemGroup>
 
@@ -20,6 +21,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Cpu\TestFiles\example.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\nmi.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="NewCpu\TestFiles\transfers.6502.asm">

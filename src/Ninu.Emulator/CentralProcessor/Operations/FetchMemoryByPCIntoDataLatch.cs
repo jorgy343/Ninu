@@ -10,7 +10,7 @@
 
         }
 
-        public static FetchMemoryByPCIntoDataLatch Singleton { get; } = new FetchMemoryByPCIntoDataLatch();
+        public static FetchMemoryByPCIntoDataLatch Singleton { get; } = new();
 
         public override void Execute(NewCpu cpu, IBus bus)
         {

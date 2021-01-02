@@ -103,10 +103,17 @@ namespace Ninu.Emulator.CentralProcessor
             _operations.Enqueue((Nop.Singleton, false)); // This should technically load the low byte of the reset vector.
 
             // Cycles 7 and 8 (or just 8 because we are lazy) loads the reset vector into PC.
-            _operations.Enqueue((new LoadResetVector(), false));
+            _operations.Enqueue((LoadResetVector.Singleton, false));
 
-            // Cycle 9 loads the instruction found at PC and gets it ready for execution.
-            _operations.Enqueue((new FetchInstruction(), false));
+            // Cycle 9 loads the instruction found at PC and gets it ready for execution. This is
+            // typically the last cycle of an instruction and here it is technically the last cycle
+            // of the modified BRK instruction that is being executed.
+            _operations.Enqueue((FetchInstruction.Singleton, false));
+        }
+
+        public void CheckForNmi()
+        {
+
         }
 
         public void ExecuteInstruction(byte opcode)
@@ -146,16 +153,16 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Jmp_Absolute:
-                    _operations.Enqueue((new FetchAddressLowByPC(), true));
-                    _operations.Enqueue((new FetchAddressHighByPC(), true));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
                     _operations.Enqueue((new FetchInstructionAndExecute(Jmp), false));
                     break;
 
                 case Jmp_Indirect:
-                    _operations.Enqueue((new FetchAddressLowByPC(), true));
-                    _operations.Enqueue((new FetchAddressHighByPC(), true));
-                    _operations.Enqueue((new FetchEffectiveAddressLow(), true)); // PC increment doesn't matter, but it does happen.
-                    _operations.Enqueue((new FetchEffectiveAddressHigh(), false));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
+                    _operations.Enqueue((FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true)); // PC increment doesn't matter, but it does happen.
+                    _operations.Enqueue((FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false));
                     _operations.Enqueue((new FetchInstructionAndExecute(JmpIndirect), false));
                     break;
 
@@ -191,10 +198,10 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sta_Absolute:
-                    _operations.Enqueue((new FetchAddressLowByPC(), true));
-                    _operations.Enqueue((new FetchAddressHighByPC(), true));
-                    _operations.Enqueue((new WriteAToAddressLatch(), true));
-                    _operations.Enqueue((new FetchInstruction(), false));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchLow.Singleton, true));
+                    _operations.Enqueue((FetchMemoryByPCIntoAddressLatchHigh.Singleton, true));
+                    _operations.Enqueue((WriteAToAddressLatch.Singleton, true));
+                    _operations.Enqueue((FetchInstruction.Singleton, false));
                     break;
 
                 case Tax_Implied:
@@ -462,7 +469,7 @@ namespace Ninu.Emulator.CentralProcessor
         private void Implied()
         {
             _operations.Enqueue((Nop.Singleton, true));
-            _operations.Enqueue((new FetchInstruction(), false));
+            _operations.Enqueue((FetchInstruction.Singleton, false));
         }
 
         private void Implied(Action action)
@@ -480,7 +487,7 @@ namespace Ninu.Emulator.CentralProcessor
         private void ImpliedDelayedExecution(Action action)
         {
             _operations.Enqueue((Nop.Singleton, true));
-            _operations.Enqueue((new FetchInstruction(), false));
+            _operations.Enqueue((FetchInstruction.Singleton, false));
             _operations.Enqueue((new ExecuteForFree(action), false));
         }
 

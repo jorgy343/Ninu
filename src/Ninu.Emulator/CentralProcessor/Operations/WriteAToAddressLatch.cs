@@ -6,6 +6,13 @@
     /// </summary>
     public class WriteAToAddressLatch : CpuOperation
     {
+        private WriteAToAddressLatch()
+        {
+
+        }
+
+        public static WriteAToAddressLatch Singleton { get; } = new();
+
         public override void Execute(NewCpu cpu, IBus bus)
         {
             var address = (ushort)(cpu.AddressLatchLow | (cpu.AddressLatchHigh << 8));

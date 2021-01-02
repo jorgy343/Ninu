@@ -7,6 +7,13 @@
     /// </summary>
     public class LoadResetVector : CpuOperation
     {
+        private LoadResetVector()
+        {
+
+        }
+
+        public static LoadResetVector Singleton { get; } = new();
+
         public override void Execute(NewCpu cpu, IBus bus)
         {
             var pcLow = bus.Read(0xfffc);

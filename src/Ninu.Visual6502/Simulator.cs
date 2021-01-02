@@ -194,9 +194,8 @@ namespace Ninu.Visual6502
             for (var i = 0; i < 8; i++)
             {
                 SetHigh("clk0");
-                cycleCallback?.Invoke();
-
                 SetLow("clk0");
+
                 cycleCallback?.Invoke();
             }
 
@@ -613,6 +612,27 @@ namespace Ninu.Visual6502
             var n = ReadBit("p7"); // Negative
 
             return $"{(n == 1 ? "N" : "n")}{(v == 1 ? "V" : "v")}--{(d == 1 ? "D" : "d")}{(i == 1 ? "I" : "i")}{(z == 1 ? "Z" : "z")}{(c == 1 ? "C" : "c")}";
+        }
+
+        public void WriteBit(string name, bool data)
+        {
+            var nodeRecalcs = new Node[1];
+
+            var node = _nodesByName[name];
+            nodeRecalcs[0] = node;
+
+            if (!data)
+            {
+                node.PullUp = false;
+                node.PullDown = true;
+            }
+            else
+            {
+                node.PullUp = true;
+                node.PullDown = false;
+            }
+
+            RecalcNodeList(nodeRecalcs);
         }
 
         public void WriteBits(string namePrefix, int size, int data)

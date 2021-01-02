@@ -14,9 +14,11 @@ manufacture.
 
 ## Naming
 
-When an operation's name ends in `ByXXXX`, it is saying that it does something by using the data
-specified in `XXXX`. For example, an operation with the name `FetchDataByPC` means that it will
-fetch data from memory using the address within PC.
+Operations that fetch data and store it somewhere will be named with the pattern
+`FetchXXXByYYYIntoZZZ`. `XXX` is where the data is being fetched from which is often `Memory`.
+`YYY` is what is being used to find that data. If data is being read from memory, this is what is
+used to reference into the memory such as `PC`. `ZZZ` is where the data is being stored such as the
+CPU's data latch.
 
 ## Incrementing of PC
 
