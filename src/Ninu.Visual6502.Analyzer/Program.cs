@@ -58,9 +58,12 @@ namespace Ninu.Visual6502.Analyzer
                 * = $0000
 
                 ldx #$f0
-                sta ($c0,x)
+                lda $10c0,x
 
                 .done
+
+                * = $11b0
+                .byte $98
 
                 ; NMI handler.
                 * = $1200

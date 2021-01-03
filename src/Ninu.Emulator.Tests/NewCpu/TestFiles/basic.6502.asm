@@ -34,6 +34,22 @@ iny ; Brings y to 0x00. Tests setting the Z flag.
 dey ; Brings y to 0xff. Tests clearing the Z flag and setting the N flag.
 iny ; Brings y to 0x00. Tests setting the Z flag and clearing the N flag.
 
+; Some random instructions.
+lda #$ff
+lda $2000
+lda $00
+
+ldx #$ff
+ldx $2000
+ldx $00
+
+ldy #$ff
+ldy $2000
+ldy $00
+
 .done
+
+* = $2000
+.byte $34
 
 .vectors

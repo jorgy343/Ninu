@@ -15,7 +15,6 @@
         public override void Execute(NewCpu cpu, IBus bus)
         {
             var data = bus.Read(cpu.CpuState.PC);
-
             cpu.DataLatch = data;
         }
     }

@@ -205,41 +205,41 @@ namespace Ninu.Emulator.CentralProcessor
             switch ((NewOpcode)opcode)
             {
                 case Clc_Implied:
-                    Implied(Clc);
+                    Addr_Implied(Op_Clc);
                     break;
 
                 case Cld_Implied:
-                    Implied(Cld);
+                    Addr_Implied(Op_Cld);
                     break;
 
                 case Cli_Implied:
-                    Implied(Cli);
+                    Addr_Implied(Op_Cli);
                     break;
 
                 case Clv_Implied:
-                    Implied(Clv);
+                    Addr_Implied(Op_Clv);
                     break;
 
                 case Dex_Implied:
-                    ImpliedDelayedExecution(Dex);
+                    Addr_ImpliedDelayedExecution(Op_Dex);
                     break;
 
                 case Dey_Implied:
-                    ImpliedDelayedExecution(Dey);
+                    Addr_ImpliedDelayedExecution(Op_Dey);
                     break;
 
                 case Inx_Implied:
-                    ImpliedDelayedExecution(Inx);
+                    Addr_ImpliedDelayedExecution(Op_Inx);
                     break;
 
                 case Iny_Implied:
-                    ImpliedDelayedExecution(Iny);
+                    Addr_ImpliedDelayedExecution(Op_Iny);
                     break;
 
                 case Jmp_Absolute:
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false, Jmp);
+                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
                     break;
 
                 case Jmp_Indirect:
@@ -247,26 +247,74 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, Jmp);
+                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
                     break;
+
+                case Lda_Absolute:
+                    Addr_Absolute(Op_Lda);
+                    break;
+
+                case Lda_AbsoluteWithXOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
+                case Lda_AbsoluteWithYOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
 
                 case Lda_Immediate:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, true, Lda);
+                    Addr_Immediate(Op_Lda);
                     break;
+
+                case Lda_IndirectZeroPageWithXOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
+                case Lda_IndirectZeroPageWithYOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
+                case Lda_ZeroPage:
+                    Addr_ZeroPage(Op_Lda);
+                    break;
+
+                case Lda_ZeroPageWithXOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
+                case Ldx_Absolute:
+                    Addr_Absolute(Op_Ldx);
+                    break;
+
+                case Ldx_AbsoluteWithYOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
 
                 case Ldx_Immediate:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, true, Ldx);
+                    Addr_Immediate(Op_Ldx);
                     break;
+
+                case Ldx_ZeroPage:
+                    Addr_ZeroPage(Op_Ldx);
+                    break;
+
+                case Ldx_ZeroPageWithYOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
+                case Ldy_Absolute:
+                    Addr_Absolute(Op_Ldy);
+                    break;
+
+                case Ldy_AbsoluteWithXOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
 
                 case Ldy_Immediate:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, true, Ldy);
+                    Addr_Immediate(Op_Ldy);
                     break;
 
+                case Ldy_ZeroPage:
+                    Addr_ZeroPage(Op_Ldy);
+                    break;
+
+                case Ldy_ZeroPageWithXOffset:
+                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+
                 case Nop_Implied:
-                    Implied();
+                    Addr_Implied();
                     break;
 
                 case Rti_Implied:
@@ -322,15 +370,15 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sec_Implied:
-                    Implied(Sec);
+                    Addr_Implied(Op_Sec);
                     break;
 
                 case Sed_Implied:
-                    Implied(Sed);
+                    Addr_Implied(Op_Sed);
                     break;
 
                 case Sei_Implied:
-                    Implied(Sei);
+                    Addr_Implied(Op_Sei);
                     break;
 
                 case Sta_Absolute:
@@ -428,27 +476,27 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Tax_Implied:
-                    Implied(Tax);
+                    Addr_Implied(Op_Tax);
                     break;
 
                 case Tay_Implied:
-                    Implied(Tay);
+                    Addr_Implied(Op_Tay);
                     break;
 
                 case Tsx_Implied:
-                    Implied(Tsx);
+                    Addr_Implied(Op_Tsx);
                     break;
 
                 case Txa_Implied:
-                    Implied(Txa);
+                    Addr_Implied(Op_Txa);
                     break;
 
                 case Txs_Implied:
-                    Implied(Txs);
+                    Addr_Implied(Op_Txs);
                     break;
 
                 case Tya_Implied:
-                    Implied(Tya);
+                    Addr_Implied(Op_Tya);
                     break;
 
                 case Adc_Absolute:
@@ -555,21 +603,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Lax_IndirectZeroPageWithYOffset_B3:
                 case Lax_ZeroPage_A7:
                 case Lax_ZeroPageWithYOffset_B7:
-                case Lda_Absolute:
-                case Lda_AbsoluteWithXOffset:
-                case Lda_AbsoluteWithYOffset:
-                case Lda_IndirectZeroPageWithXOffset:
-                case Lda_IndirectZeroPageWithYOffset:
-                case Lda_ZeroPage:
-                case Lda_ZeroPageWithXOffset:
-                case Ldx_Absolute:
-                case Ldx_AbsoluteWithYOffset:
-                case Ldx_ZeroPage:
-                case Ldx_ZeroPageWithYOffset:
-                case Ldy_Absolute:
-                case Ldy_AbsoluteWithXOffset:
-                case Ldy_ZeroPage:
-                case Ldy_ZeroPageWithXOffset:
                 case Lsr_Absolute:
                 case Lsr_AbsoluteWithXOffset:
                 case Lsr_Accumulator:
@@ -676,54 +709,75 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Addressing Modes
-        private void Implied()
+        private void Addr_Implied()
         {
             AddOperation(Nop.Singleton, true);
             AddOperation(FetchInstruction.Singleton, false);
         }
 
-        private void Implied(Action action)
+        private void Addr_Implied(Action action)
         {
             AddOperation(Nop.Singleton, true);
             AddOperation(FetchInstruction.Singleton, false, action);
         }
 
         /// <summary>
-        /// Same as <see cref="Implied"/> except that the instruction execution happens during the
+        /// Same as <see cref="Addr_Implied"/> except that the instruction execution happens during the
         /// first clock cycle of the next instruction. This is acomplished by inserting a free
         /// action execution operation in the queue after the instruction fetch operation. The free
         /// action will be the first thing executed on the next clock cycle.
         /// </summary>
         /// <param name="action">The instruction operation to be executed.</param>
-        private void ImpliedDelayedExecution(Action action)
+        private void Addr_ImpliedDelayedExecution(Action action)
         {
             AddOperation(Nop.Singleton, true);
             AddOperation(FetchInstruction.Singleton, false);
             AddFreeOperation(Nop.Singleton, false, action);
         }
 
+        private void Addr_Immediate(Action action)
+        {
+            AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, true, action);
+        }
+
+        private void Addr_Absolute(Action action)
+        {
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_ZeroPage(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
         // Instructions
-        private void Clc()
+        private void Op_Clc()
         {
             CpuState.SetFlag(CpuFlags.C, false);
         }
 
-        private void Cld()
+        private void Op_Cld()
         {
             CpuState.SetFlag(CpuFlags.D, false);
         }
 
-        private void Cli()
+        private void Op_Cli()
         {
             CpuState.SetFlag(CpuFlags.I, false);
         }
 
-        private void Clv()
+        private void Op_Clv()
         {
             CpuState.SetFlag(CpuFlags.V, false);
         }
 
-        private void Dex()
+        private void Op_Dex()
         {
             CpuState.X--;
 
@@ -731,7 +785,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.X);
         }
 
-        private void Dey()
+        private void Op_Dey()
         {
             CpuState.Y--;
 
@@ -739,7 +793,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        private void Inx()
+        private void Op_Inx()
         {
             CpuState.X++;
 
@@ -747,7 +801,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.X);
         }
 
-        private void Iny()
+        private void Op_Iny()
         {
             CpuState.Y++;
 
@@ -755,12 +809,12 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        private void Jmp()
+        private void Op_Jmp()
         {
             CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
         }
 
-        private void Lda()
+        private void Op_Lda()
         {
             CpuState.A = DataLatch;
 
@@ -768,7 +822,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.A);
         }
 
-        private void Ldx()
+        private void Op_Ldx()
         {
             CpuState.X = DataLatch;
 
@@ -776,7 +830,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.X);
         }
 
-        private void Ldy()
+        private void Op_Ldy()
         {
             CpuState.Y = DataLatch;
 
@@ -784,22 +838,22 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        private void Sec()
+        private void Op_Sec()
         {
             CpuState.SetFlag(CpuFlags.C, true);
         }
 
-        private void Sed()
+        private void Op_Sed()
         {
             CpuState.SetFlag(CpuFlags.D, true);
         }
 
-        private void Sei()
+        private void Op_Sei()
         {
             CpuState.SetFlag(CpuFlags.I, true);
         }
 
-        private void Tax()
+        private void Op_Tax()
         {
             CpuState.X = CpuState.A;
 
@@ -807,7 +861,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.X);
         }
 
-        private void Tay()
+        private void Op_Tay()
         {
             CpuState.Y = CpuState.A;
 
@@ -815,7 +869,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        private void Tsx()
+        private void Op_Tsx()
         {
             CpuState.X = CpuState.S;
 
@@ -823,7 +877,7 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.X);
         }
 
-        private void Txa()
+        private void Op_Txa()
         {
             CpuState.A = CpuState.X;
 
@@ -831,12 +885,12 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.A);
         }
 
-        private void Txs()
+        private void Op_Txs()
         {
             CpuState.S = CpuState.X;
         }
 
-        private void Tya()
+        private void Op_Tya()
         {
             CpuState.A = CpuState.Y;
 
