@@ -56,13 +56,9 @@ namespace Ninu.Visual6502.Analyzer
                 .endmacro
 
                 * = $0000
-                            ; cycles
-                inx    ; 01 - 02
-                inx    ; 03 - 04
-                inx    ; 05 - 06
-                inx    ; 07 - 08
-                inx    ; 09 - 10
-                inx    ; 11 - 12
+
+                ldx #$f0
+                sta ($c0,x)
 
                 .done
 
@@ -113,7 +109,7 @@ namespace Ninu.Visual6502.Analyzer
 
                 if (cycle == 5)
                 {
-                    simulator.WriteBit("nmi", false);
+                    //simulator.WriteBit("nmi", false);
                 }
 
                 simulator.Clock();

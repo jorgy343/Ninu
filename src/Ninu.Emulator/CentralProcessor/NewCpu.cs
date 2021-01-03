@@ -237,8 +237,8 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Jmp_Absolute:
-                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
                     AddOperation(FetchInstruction.Singleton, false, Jmp);
                     break;
 
@@ -247,7 +247,7 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, JmpIndirect);
+                    AddOperation(FetchInstruction.Singleton, false, Jmp);
                     break;
 
                 case Lda_Immediate:
@@ -294,7 +294,7 @@ namespace Ninu.Emulator.CentralProcessor
                     {
                         CpuState.P = (CpuFlags)DataLatch;
 
-                        AddressLatchLow = _bus.Read((ushort)(0x100 + CpuState.S + 2));
+                        EffectiveAddressLatchLow = _bus.Read((ushort)(0x100 + CpuState.S + 2));
                     }
 
                     AddOperation(Nop.Singleton, false, PullPCLowFromStack);
@@ -302,7 +302,7 @@ namespace Ninu.Emulator.CentralProcessor
                     // Pull PC high from the stack. Increment S by 3.
                     void PullPCHighFromStack()
                     {
-                        AddressLatchHigh = _bus.Read((ushort)(0x100 + CpuState.S + 3));
+                        EffectiveAddressLatchHigh = _bus.Read((ushort)(0x100 + CpuState.S + 3));
                         CpuState.S += 3;
                     }
 
@@ -311,7 +311,7 @@ namespace Ninu.Emulator.CentralProcessor
                     // Load PC and fetch the next instruction.
                     void SetPCAndFetchInstruction()
                     {
-                        CpuState.PC = (ushort)(AddressLatchLow | (AddressLatchHigh << 8));
+                        CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
 
                         var instruction = _bus.Read(CpuState.PC);
                         ExecuteInstruction(instruction);
@@ -334,9 +334,96 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sta_Absolute:
-                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
-                    AddOperation(WriteAToMemoryByAddressLatch.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_AbsoluteWithXOffset:
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+                    AddOperation(IncrementEffectiveAddressLatchLowByXWithoutWrapping.Singleton, true);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_AbsoluteWithYOffset:
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+                    AddOperation(IncrementEffectiveAddressLatchLowByYWithoutWrapping.Singleton, true);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_IndirectZeroPageWithXOffset:
+                    AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
+                    AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, false);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_IndirectZeroPageWithYOffset:
+                    AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(IncrementEffectiveAddressLatchLowByYWithoutWrapping.Singleton, false);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_ZeroPage:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sta_ZeroPageWithXOffset:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
+                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Stx_Absolute:
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Stx_ZeroPage:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Stx_ZeroPageWithYOffset:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(IncrementEffectiveAddressLatchLowByYWithWrapping.Singleton, true);
+                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sty_Absolute:
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sty_ZeroPage:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, true);
+                    AddOperation(FetchInstruction.Singleton, false);
+                    break;
+
+                case Sty_ZeroPageWithXOffset:
+                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+                    AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
+                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, false);
                     AddOperation(FetchInstruction.Singleton, false);
                     break;
 
@@ -365,32 +452,32 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Adc_Absolute:
-                case Adc_AbsoluteXIndexed:
-                case Adc_AbsoluteYIndexed:
+                case Adc_AbsoluteWithXOffset:
+                case Adc_AbsoluteWithYOffset:
                 case Adc_Immediate:
-                case Adc_IndirectZeroPageXIndexed:
-                case Adc_IndirectZeroPageYIndexed:
+                case Adc_IndirectZeroPageWithXOffset:
+                case Adc_IndirectZeroPageWithYOffset:
                 case Adc_ZeroPage:
-                case Adc_ZeroPageXIndexed:
-                case Ahx_AbsoluteYIndexed_9F:
-                case Ahx_IndirectZeroPageYIndexed_93:
+                case Adc_ZeroPageWithXOffset:
+                case Ahx_AbsoluteWithYOffset_9F:
+                case Ahx_IndirectZeroPageWithYOffset_93:
                 case Alr_Immediate_4B:
                 case Anc_Immediate_0B:
                 case Anc_Immediate_2B:
                 case And_Absolute:
-                case And_AbsoluteXIndexed:
-                case And_AbsoluteYIndexed:
+                case And_AbsoluteWithXOffset:
+                case And_AbsoluteWithYOffset:
                 case And_Immediate:
-                case And_IndirectZeroPageXIndexed:
-                case And_IndirectZeroPageYIndexed:
+                case And_IndirectZeroPageWithXOffset:
+                case And_IndirectZeroPageWithYOffset:
                 case And_ZeroPage:
-                case And_ZeroPageXIndexed:
+                case And_ZeroPageWithXOffset:
                 case Arr_Immediate_6B:
                 case Asl_Absolute:
-                case Asl_AbsoluteXIndexed:
+                case Asl_AbsoluteWithXOffset:
                 case Asl_Accumulator:
                 case Asl_ZeroPage:
-                case Asl_ZeroPageXIndexed:
+                case Asl_ZeroPageWithXOffset:
                 case Axs_Immediate_CB:
                 case Bcc_Relative:
                 case Bcs_Relative:
@@ -404,13 +491,13 @@ namespace Ninu.Emulator.CentralProcessor
                 case Bvc_Relative:
                 case Bvs_Relative:
                 case Cmp_Absolute:
-                case Cmp_AbsoluteXIndexed:
-                case Cmp_AbsoluteYIndexed:
+                case Cmp_AbsoluteWithXOffset:
+                case Cmp_AbsoluteWithYOffset:
                 case Cmp_Immediate:
-                case Cmp_IndirectZeroPageXIndexed:
-                case Cmp_IndirectZeroPageYIndexed:
+                case Cmp_IndirectZeroPageWithXOffset:
+                case Cmp_IndirectZeroPageWithYOffset:
                 case Cmp_ZeroPage:
-                case Cmp_ZeroPageXIndexed:
+                case Cmp_ZeroPageWithXOffset:
                 case Cpx_Absolute:
                 case Cpx_Immediate:
                 case Cpx_ZeroPage:
@@ -418,35 +505,35 @@ namespace Ninu.Emulator.CentralProcessor
                 case Cpy_Immediate:
                 case Cpy_ZeroPage:
                 case Dcp_Absolute_CF:
-                case Dcp_AbsoluteXIndexed_DF:
-                case Dcp_AbsoluteYIndexed_DB:
-                case Dcp_IndirectZeroPageXIndexed_C3:
-                case Dcp_IndirectZeroPageYIndexed_D3:
+                case Dcp_AbsoluteWithXOffset_DF:
+                case Dcp_AbsoluteWithYOffset_DB:
+                case Dcp_IndirectZeroPageWithXOffset_C3:
+                case Dcp_IndirectZeroPageWithYOffset_D3:
                 case Dcp_ZeroPage_C7:
-                case Dcp_ZeroPageXIndexed_D7:
+                case Dcp_ZeroPageWithXOffset_D7:
                 case Dec_Absolute:
-                case Dec_AbsoluteXIndexed:
+                case Dec_AbsoluteWithXOffset:
                 case Dec_ZeroPage:
-                case Dec_ZeroPageXIndexed:
+                case Dec_ZeroPageWithXOffset:
                 case Eor_Absolute:
-                case Eor_AbsoluteXIndexed:
-                case Eor_AbsoluteYIndexed:
+                case Eor_AbsoluteWithXOffset:
+                case Eor_AbsoluteWithYOffset:
                 case Eor_Immediate:
-                case Eor_IndirectZeroPageXIndexed:
-                case Eor_IndirectZeroPageYIndexed:
+                case Eor_IndirectZeroPageWithXOffset:
+                case Eor_IndirectZeroPageWithYOffset:
                 case Eor_ZeroPage:
-                case Eor_ZeroPageXIndexed:
+                case Eor_ZeroPageWithXOffset:
                 case Inc_Absolute:
-                case Inc_AbsoluteXIndexed:
+                case Inc_AbsoluteWithXOffset:
                 case Inc_ZeroPage:
-                case Inc_ZeroPageXIndexed:
+                case Inc_ZeroPageWithXOffset:
                 case Isc_Absolute_EF:
-                case Isc_AbsoluteXIndexed_FF:
-                case Isc_AbsoluteYIndexed_FB:
-                case Isc_IndirectZeroPageXIndexed_E3:
-                case Isc_IndirectZeroPageYIndexed_F3:
+                case Isc_AbsoluteWithXOffset_FF:
+                case Isc_AbsoluteWithYOffset_FB:
+                case Isc_IndirectZeroPageWithXOffset_E3:
+                case Isc_IndirectZeroPageWithYOffset_F3:
                 case Isc_ZeroPage_E7:
-                case Isc_ZeroPageXIndexed_F7:
+                case Isc_ZeroPageWithXOffset_F7:
                 case Jsr_Absolute:
                 case Kil_Implied_02:
                 case Kil_Implied_12:
@@ -460,41 +547,41 @@ namespace Ninu.Emulator.CentralProcessor
                 case Kil_Implied_B2:
                 case Kil_Implied_D2:
                 case Kil_Implied_F2:
-                case Las_AbsoluteYIndexed_BB:
+                case Las_AbsoluteWithYOffset_BB:
                 case Lax_Absolute_AF:
-                case Lax_AbsoluteYIndexed_BF:
+                case Lax_AbsoluteWithYOffset_BF:
                 case Lax_Immediate_AB:
-                case Lax_IndirectZeroPageXIndexed_A3:
-                case Lax_IndirectZeroPageYIndexed_B3:
+                case Lax_IndirectZeroPageWithXOffset_A3:
+                case Lax_IndirectZeroPageWithYOffset_B3:
                 case Lax_ZeroPage_A7:
-                case Lax_ZeroPageYIndexed_B7:
+                case Lax_ZeroPageWithYOffset_B7:
                 case Lda_Absolute:
-                case Lda_AbsoluteXIndexed:
-                case Lda_AbsoluteYIndexed:
-                case Lda_IndirectZeroPageXIndexed:
-                case Lda_IndirectZeroPageYIndexed:
+                case Lda_AbsoluteWithXOffset:
+                case Lda_AbsoluteWithYOffset:
+                case Lda_IndirectZeroPageWithXOffset:
+                case Lda_IndirectZeroPageWithYOffset:
                 case Lda_ZeroPage:
-                case Lda_ZeroPageXIndexed:
+                case Lda_ZeroPageWithXOffset:
                 case Ldx_Absolute:
-                case Ldx_AbsoluteYIndexed:
+                case Ldx_AbsoluteWithYOffset:
                 case Ldx_ZeroPage:
-                case Ldx_ZeroPageYIndexed:
+                case Ldx_ZeroPageWithYOffset:
                 case Ldy_Absolute:
-                case Ldy_AbsoluteXIndexed:
+                case Ldy_AbsoluteWithXOffset:
                 case Ldy_ZeroPage:
-                case Ldy_ZeroPageXIndexed:
+                case Ldy_ZeroPageWithXOffset:
                 case Lsr_Absolute:
-                case Lsr_AbsoluteXIndexed:
+                case Lsr_AbsoluteWithXOffset:
                 case Lsr_Accumulator:
                 case Lsr_ZeroPage:
-                case Lsr_ZeroPageXIndexed:
+                case Lsr_ZeroPageWithXOffset:
                 case Nop_Absolute_0C:
-                case Nop_AbsoluteXIndexed_1C:
-                case Nop_AbsoluteXIndexed_3C:
-                case Nop_AbsoluteXIndexed_5C:
-                case Nop_AbsoluteXIndexed_7C:
-                case Nop_AbsoluteXIndexed_DC:
-                case Nop_AbsoluteXIndexed_FC:
+                case Nop_AbsoluteWithXOffset_1C:
+                case Nop_AbsoluteWithXOffset_3C:
+                case Nop_AbsoluteWithXOffset_5C:
+                case Nop_AbsoluteWithXOffset_7C:
+                case Nop_AbsoluteWithXOffset_DC:
+                case Nop_AbsoluteWithXOffset_FC:
                 case Nop_Immediate_80:
                 case Nop_Immediate_82:
                 case Nop_Immediate_89:
@@ -509,91 +596,79 @@ namespace Ninu.Emulator.CentralProcessor
                 case Nop_ZeroPage_04:
                 case Nop_ZeroPage_44:
                 case Nop_ZeroPage_64:
-                case Nop_ZeroPageXIndexed_14:
-                case Nop_ZeroPageXIndexed_34:
-                case Nop_ZeroPageXIndexed_54:
-                case Nop_ZeroPageXIndexed_74:
-                case Nop_ZeroPageXIndexed_D4:
-                case Nop_ZeroPageXIndexed_F4:
+                case Nop_ZeroPageWithXOffset_14:
+                case Nop_ZeroPageWithXOffset_34:
+                case Nop_ZeroPageWithXOffset_54:
+                case Nop_ZeroPageWithXOffset_74:
+                case Nop_ZeroPageWithXOffset_D4:
+                case Nop_ZeroPageWithXOffset_F4:
                 case Ora_Absolute:
-                case Ora_AbsoluteXIndexed:
-                case Ora_AbsoluteYIndexed:
+                case Ora_AbsoluteWithXOffset:
+                case Ora_AbsoluteWithYOffset:
                 case Ora_Immediate:
-                case Ora_IndirectZeroPageXIndexed:
-                case Ora_IndirectZeroPageYIndexed:
+                case Ora_IndirectZeroPageWithXOffset:
+                case Ora_IndirectZeroPageWithYOffset:
                 case Ora_ZeroPage:
-                case Ora_ZeroPageXIndexed:
+                case Ora_ZeroPageWithXOffset:
                 case Pha_Implied:
                 case Php_Implied:
                 case Pla_Implied:
                 case Plp_Implied:
                 case Rla_Absolute_2F:
-                case Rla_AbsoluteXIndexed_3F:
-                case Rla_AbsoluteYIndexed_3B:
-                case Rla_IndirectZeroPageXIndexed_23:
-                case Rla_IndirectZeroPageYIndexed_33:
+                case Rla_AbsoluteWithXOffset_3F:
+                case Rla_AbsoluteWithYOffset_3B:
+                case Rla_IndirectZeroPageWithXOffset_23:
+                case Rla_IndirectZeroPageWithYOffset_33:
                 case Rla_ZeroPage_27:
-                case Rla_ZeroPageXIndexed_37:
+                case Rla_ZeroPageWithXOffset_37:
                 case Rol_Absolute:
-                case Rol_AbsoluteXIndexed:
+                case Rol_AbsoluteWithXOffset:
                 case Rol_Accumulator:
                 case Rol_ZeroPage:
-                case Rol_ZeroPageXIndexed:
+                case Rol_ZeroPageWithXOffset:
                 case Ror_Absolute:
-                case Ror_AbsoluteXIndexed:
+                case Ror_AbsoluteWithXOffset:
                 case Ror_Accumulator:
                 case Ror_ZeroPage:
-                case Ror_ZeroPageXIndexed:
+                case Ror_ZeroPageWithXOffset:
                 case Rra_Absolute_6F:
-                case Rra_AbsoluteXIndexed_7F:
-                case Rra_AbsoluteYIndexed_7B:
-                case Rra_IndirectZeroPageXIndexed_63:
-                case Rra_IndirectZeroPageYIndexed_73:
+                case Rra_AbsoluteWithXOffset_7F:
+                case Rra_AbsoluteWithYOffset_7B:
+                case Rra_IndirectZeroPageWithXOffset_63:
+                case Rra_IndirectZeroPageWithYOffset_73:
                 case Rra_ZeroPage_67:
-                case Rra_ZeroPageXIndexed_77:
+                case Rra_ZeroPageWithXOffset_77:
                 case Rts_Implied:
                 case Sax_Absolute_8F:
-                case Sax_IndirectZeroPageXIndexed_83:
+                case Sax_IndirectZeroPageWithXOffset_83:
                 case Sax_ZeroPage_87:
-                case Sax_ZeroPageYIndexed_97:
+                case Sax_ZeroPageWithYOffset_97:
                 case Sbc_Absolute:
-                case Sbc_AbsoluteXIndexed:
-                case Sbc_AbsoluteYIndexed:
+                case Sbc_AbsoluteWithXOffset:
+                case Sbc_AbsoluteWithYOffset:
                 case Sbc_Immediate:
                 case Sbc_Immediate_EB:
-                case Sbc_IndirectZeroPageXIndexed:
-                case Sbc_IndirectZeroPageYIndexed:
+                case Sbc_IndirectZeroPageWithXOffset:
+                case Sbc_IndirectZeroPageWithYOffset:
                 case Sbc_ZeroPage:
-                case Sbc_ZeroPageXIndexed:
-                case Shx_AbsoluteYIndexed_9E:
-                case Shy_AbsoluteXIndexed_9C:
+                case Sbc_ZeroPageWithXOffset:
+                case Shx_AbsoluteWithYOffset_9E:
+                case Shy_AbsoluteWithXOffset_9C:
                 case Slo_Absolute_0F:
-                case Slo_AbsoluteXIndexed_1F:
-                case Slo_AbsoluteYIndexed_1B:
-                case Slo_IndirectZeroPageXIndexed_03:
-                case Slo_IndirectZeroPageYIndexed_13:
+                case Slo_AbsoluteWithXOffset_1F:
+                case Slo_AbsoluteWithYOffset_1B:
+                case Slo_IndirectZeroPageWithXOffset_03:
+                case Slo_IndirectZeroPageWithYOffset_13:
                 case Slo_ZeroPage_07:
-                case Slo_ZeroPageXIndexed_17:
+                case Slo_ZeroPageWithXOffset_17:
                 case Sre_Absolute_4F:
-                case Sre_AbsoluteXIndexed_5F:
-                case Sre_AbsoluteYIndexed_5B:
-                case Sre_IndirectZeroPageXIndexed_43:
-                case Sre_IndirectZeroPageYIndexed_53:
+                case Sre_AbsoluteWithXOffset_5F:
+                case Sre_AbsoluteWithYOffset_5B:
+                case Sre_IndirectZeroPageWithXOffset_43:
+                case Sre_IndirectZeroPageWithYOffset_53:
                 case Sre_ZeroPage_47:
-                case Sre_ZeroPageXIndexed_57:
-                case Sta_AbsoluteXIndexed:
-                case Sta_AbsoluteYIndexed:
-                case Sta_IndirectZeroPageXIndexed:
-                case Sta_IndirectZeroPageYIndexed:
-                case Sta_ZeroPage:
-                case Sta_ZeroPageXIndexed:
-                case Stx_Absolute:
-                case Stx_ZeroPage:
-                case Stx_ZeroPageYIndexed:
-                case Sty_Absolute:
-                case Sty_ZeroPage:
-                case Sty_ZeroPageXIndexed:
-                case Tas_AbsoluteYIndexed_9B:
+                case Sre_ZeroPageWithXOffset_57:
+                case Tas_AbsoluteWithYOffset_9B:
                 case Xaa_Immediate_8B:
                 default:
                     throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
@@ -681,11 +756,6 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         private void Jmp()
-        {
-            CpuState.PC = (ushort)(AddressLatchLow | (AddressLatchHigh << 8));
-        }
-
-        private void JmpIndirect()
         {
             CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
         }

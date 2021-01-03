@@ -4,19 +4,19 @@
     /// Fetches a byte of data from memory using PC as the memory address and stores the byte into
     /// the CPU's address latch high.
     /// </summary>
-    public class FetchMemoryByPCIntoAddressLatchHigh : CpuOperation
+    public class FetchMemoryByPCIntoEffectiveAddressLatchHigh : CpuOperation
     {
-        private FetchMemoryByPCIntoAddressLatchHigh()
+        private FetchMemoryByPCIntoEffectiveAddressLatchHigh()
         {
 
         }
 
-        public static FetchMemoryByPCIntoAddressLatchHigh Singleton { get; } = new();
+        public static FetchMemoryByPCIntoEffectiveAddressLatchHigh Singleton { get; } = new();
 
         public override void Execute(NewCpu cpu, IBus bus)
         {
             var addressHigh = bus.Read(cpu.CpuState.PC);
-            cpu.AddressLatchHigh = addressHigh;
+            cpu.EffectiveAddressLatchHigh = addressHigh;
         }
     }
 }
