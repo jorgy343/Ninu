@@ -17,29 +17,29 @@ namespace Ninu.Emulator.CentralProcessor
         public CpuState CpuState { get; } = new();
 
         [Save]
-        public byte DataLatch { get; set; }
+        internal byte DataLatch { get; set; }
 
         [Save]
-        public byte AddressLatchLow { get; set; }
+        internal byte AddressLatchLow { get; set; }
 
         [Save]
-        public byte AddressLatchHigh { get; set; }
+        internal byte AddressLatchHigh { get; set; }
 
         [Save]
-        public byte EffectiveAddressLatchLow { get; set; }
+        internal byte EffectiveAddressLatchLow { get; set; }
 
         [Save]
-        public byte EffectiveAddressLatchHigh { get; set; }
+        internal byte EffectiveAddressLatchHigh { get; set; }
 
         // TODO: Saving this won't work out of the box.
         [Save("Operations")]
-        private readonly Queue<NewCpuOperationQueueState> _queue = new(24);
+        internal Queue<NewCpuOperationQueueState> Queue = new(24);
 
         [Save]
-        public bool _nmi;
+        internal bool _nmi;
 
         [Save]
-        public long _nmiCycle;
+        internal long _nmiCycle;
 
         /// <summary>
         /// When set to <c>true</c>, the CPU will enter the NMI routine as soon as the current
@@ -71,12 +71,12 @@ namespace Ninu.Emulator.CentralProcessor
 
         private void AddOperation(CpuOperation operation, bool incrementPC, Action? action = null)
         {
-            _queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, false));
+            Queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, false));
         }
 
         private void AddFreeOperation(CpuOperation operation, bool incrementPC, Action? action = null)
         {
-            _queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, true));
+            Queue.Enqueue(new NewCpuOperationQueueState(operation, action, incrementPC, true));
         }
 
         public void Clock()
@@ -88,12 +88,12 @@ namespace Ninu.Emulator.CentralProcessor
             {
                 // If there is nothing in the queue, we are probably in a jammed state. Do nothing
                 // and break out of the infinite while loop.
-                if (_queue.Count == 0)
+                if (Queue.Count == 0)
                 {
                     return;
                 }
 
-                var queueState = _queue.Dequeue();
+                var queueState = Queue.Dequeue();
 
                 // Increment the PC before it is actually used in the operation.
                 if (queueState.IncrementPC)
@@ -246,7 +246,7 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
                     AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
                     AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
                     break;
 
@@ -255,34 +255,40 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Lda_AbsoluteWithXOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_AbsoluteWithXOffset(Op_Lda);
+                    break;
 
                 case Lda_AbsoluteWithYOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_AbsoluteWithYOffset(Op_Lda);
+                    break;
 
                 case Lda_Immediate:
                     Addr_Immediate(Op_Lda);
                     break;
 
                 case Lda_IndirectZeroPageWithXOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_IndirectZeroPageWithXOffset(Op_Lda);
+                    break;
 
                 case Lda_IndirectZeroPageWithYOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_IndirectZeroPageWithYOffset(Op_Lda);
+                    break;
 
                 case Lda_ZeroPage:
                     Addr_ZeroPage(Op_Lda);
                     break;
 
                 case Lda_ZeroPageWithXOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_ZeroPageWithXOffset(Op_Lda);
+                    break;
 
                 case Ldx_Absolute:
                     Addr_Absolute(Op_Ldx);
                     break;
 
                 case Ldx_AbsoluteWithYOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_AbsoluteWithYOffset(Op_Ldx);
+                    break;
 
                 case Ldx_Immediate:
                     Addr_Immediate(Op_Ldx);
@@ -293,14 +299,16 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Ldx_ZeroPageWithYOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_ZeroPageWithYOffset(Op_Ldx);
+                    break;
 
                 case Ldy_Absolute:
                     Addr_Absolute(Op_Ldy);
                     break;
 
                 case Ldy_AbsoluteWithXOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_AbsoluteWithXOffset(Op_Ldy);
+                    break;
 
                 case Ldy_Immediate:
                     Addr_Immediate(Op_Ldy);
@@ -311,10 +319,11 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Ldy_ZeroPageWithXOffset:
-                    throw new NotImplementedException($"The instruction 0x{opcode:x2} is not implemented.");
+                    Addr_ZeroPageWithXOffset(Op_Ldy);
+                    break;
 
                 case Nop_Implied:
-                    Addr_Implied();
+                    Addr_Implied(null);
                     break;
 
                 case Rti_Implied:
@@ -408,7 +417,7 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
                     AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, false);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
                     AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
                     AddOperation(FetchInstruction.Singleton, false);
                     break;
@@ -416,7 +425,7 @@ namespace Ninu.Emulator.CentralProcessor
                 case Sta_IndirectZeroPageWithYOffset:
                     AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug.Singleton, false);
+                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
                     AddOperation(IncrementEffectiveAddressLatchLowByYWithoutWrapping.Singleton, false);
                     AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
                     AddOperation(FetchInstruction.Singleton, false);
@@ -709,13 +718,7 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Addressing Modes
-        private void Addr_Implied()
-        {
-            AddOperation(Nop.Singleton, true);
-            AddOperation(FetchInstruction.Singleton, false);
-        }
-
-        private void Addr_Implied(Action action)
+        private void Addr_Implied(Action? action)
         {
             AddOperation(Nop.Singleton, true);
             AddOperation(FetchInstruction.Singleton, false, action);
@@ -741,6 +744,29 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, true, action);
         }
 
+        private void Addr_ZeroPage(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_ZeroPageWithXOffset(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_ZeroPageWithYOffset(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchLowByYWithWrapping.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
         private void Addr_Absolute(Action action)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
@@ -749,10 +775,41 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, false, action);
         }
 
-        private void Addr_ZeroPage(Action action)
+        private void Addr_AbsoluteWithXOffset(Action action)
         {
-            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+            AddOperation(FetchForAbsoluteWithXOffsetTry1.Singleton, true);
+            AddOperation(FetchForAbsoluteWithXOffsetTry2.Singleton, false);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_AbsoluteWithYOffset(Action action)
+        {
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+            AddOperation(FetchForAbsoluteWithYOffsetTry1.Singleton, true);
+            AddOperation(FetchForAbsoluteWithYOffsetTry2.Singleton, false);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_IndirectZeroPageWithXOffset(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
+            AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
+            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, false);
+            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
+            AddOperation(FetchInstruction.Singleton, false, action);
+        }
+
+        private void Addr_IndirectZeroPageWithYOffset(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
+            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
+            AddOperation(FetchForAbsoluteWithYOffsetTry1.Singleton, false);
+            AddOperation(FetchForAbsoluteWithYOffsetTry2.Singleton, false);
             AddOperation(FetchInstruction.Singleton, false, action);
         }
 

@@ -12,14 +12,14 @@
     /// address would be taken from memory at 0x3400. When pulling the second byte from memory,
     /// only the low byte of the address is incremented. The high byte (page byte) doesn't change.
     /// </summary>
-    public class FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug : CpuOperation
+    public class FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping : CpuOperation
     {
-        private FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug()
+        private FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping()
         {
 
         }
 
-        public static FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithBug Singleton { get; } = new();
+        public static FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping Singleton { get; } = new();
 
         public override void Execute(NewCpu cpu, IBus bus)
         {

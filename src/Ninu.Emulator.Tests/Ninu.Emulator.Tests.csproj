@@ -38,6 +38,9 @@
     <Content Include="NewCpu\TestFiles\std.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="NewCpu\TestFiles\loads.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

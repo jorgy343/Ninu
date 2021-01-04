@@ -17,6 +17,7 @@ namespace Ninu.Emulator.Tests.NewCpu
         [AsmData("NewCpu/TestFiles/basic.6502.asm")]
         [AsmData("NewCpu/TestFiles/flags.6502.asm")]
         [AsmData("NewCpu/TestFiles/transfers.6502.asm")]
+        [AsmData("NewCpu/TestFiles/loads.6502.asm")]
         [AsmData("NewCpu/TestFiles/stores.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect-buggy.6502.asm")]
