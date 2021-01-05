@@ -103,10 +103,10 @@ lda ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 a
 ; indirect zero page with y offset
 ; NOTE: Flags and the wrapping behavior are not fully tested. However, 5 cycles vs 6 cycles are tested.
 ldy #$02
-lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 4 cycles.
+lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
 
 ldy #$e0
-lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $ to get the data at address $1100 which will cost 5 cycles instead of 4.
+lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
 
 ; ***************
 ; ***** LDX *****

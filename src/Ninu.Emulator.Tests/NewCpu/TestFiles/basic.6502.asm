@@ -3,7 +3,7 @@
 * = $0000
 .init
 
-; Random simple instructions
+; Random instructions.
 nop
 nop
 

@@ -13,12 +13,14 @@ namespace Ninu.Emulator.CentralProcessor
     {
         public NewCpuOperationQueueState(
             CpuOperation operation,
-            Action? action,
+            Action? preAction,
+            Action? postAction,
             bool incrementPC,
             bool free)
         {
             Operation = operation ?? throw new ArgumentNullException(nameof(operation));
-            Action = action;
+            PreAction = preAction;
+            PostAction = postAction;
             IncrementPC = incrementPC;
             Free = free;
         }
@@ -32,11 +34,16 @@ namespace Ninu.Emulator.CentralProcessor
         /// Optionally, an action that will be executed prior to the <see cref="Operation"/>
         /// execution.
         /// </summary>
-        public Action? Action { get; }
+        public Action? PreAction { get; }
+
+        /// <summary>
+        /// Optionally, an action that will be executed after <see cref="Operation"/> execution.
+        /// </summary>
+        public Action? PostAction { get; }
 
         /// <summary>
         /// Indicates if the CPU should increment the PC register during the clock cycle. If this
-        /// property is <c>true</c>, PC will be incremented prior to <see cref="Action"/> execution
+        /// property is <c>true</c>, PC will be incremented prior to <see cref="PreAction"/> execution
         /// and prior to <see cref="Operation"/> execution. This is the first thing that is done
         /// during a CPU clock cycle.
         /// </summary>

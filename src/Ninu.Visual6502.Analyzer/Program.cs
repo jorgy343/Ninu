@@ -84,183 +84,111 @@ namespace Ninu.Visual6502.Analyzer
 
 ; Beginning of tests.
 * = $c000
+
+lda #$01
+adc #$ff
+
 .init
 
+; ADC and some other instructions appear to be double pipelined. This is just a simple test to
+; ensure that the value in the A register is available for the next instruction in time. Probably a
+; pointless test that does nothing.
+;lda #$01
+;adc #$02
+;and #$01
+
 ; ***************
-; ***** LDA *****
+; ***** ADC *****
 ; ***************
 ;
 ; immediate
-lda #$33
-lda #$00
-lda #$ff
+lda #$a0
+adc #$22
 
 ; zero page
-lda $20
-lda $21
-lda $22
+lda #$f0
+adc $20
 
 ; zero page with x offset
+lda #$a0
 ldx #$10
-lda $10,x
-
-ldx #$11
-lda $10,x
-
-ldx #$12
-lda $10,x
-
-ldx #$01
-lda $ff,x ; This should wrap around to address $0000 instead of accessing $0100.
+lda #$a0
+adc $10,x
 
 ; absolute
-lda $1020
-lda $1021
-lda $1022
+lda #$a0
+adc $1020
 
 ; absolute with x offset
+lda #$a0
 ldx #$10
-lda $1010,x
-
-ldx #$11
-lda $1010,x
-
-ldx #$12
-lda $1010,x
-
-ldx #$01
-lda $10ff,x ; This will cause the read to cross page boundaries thus causing an additional cycle.
-
-ldx #$55
-lda $ffff,x ; This will cause the read to wrap around the entire address space back to $0050.
+adc $1010,x
 
 ; absolute with y offset
+lda #$a0
 ldy #$10
-lda $1010,y
-
-ldy #$11
-lda $1010,y
-
-ldy #$12
-lda $1010,y
-
-ldy #$01
-lda $10ff,y ; This will cause the read to cross page boundaries thus causing an additional cycle.
-
-ldy #$55
-lda $ffff,y ; This will cause the read to wrap around the entire address space back to $0050.
+adc $1010,y
 
 ; indirect zero page with x offset
-; NOTE: Flags and the wrapping behavior are not fully tested.
+lda #$a0
 ldx $20
-lda ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
+adc ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
 
 ; indirect zero page with y offset
-; NOTE: Flags and the wrapping behavior are not fully tested. However, 5 cycles vs 6 cycles are tested.
-; val = PEEK((PEEK(arg) | PEEK(((arg + 1) & 0xff) << 8)) + Y)
+lda #$a0
 ldy #$02
-lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 4 cycles.
+adc ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
 
+lda #$a0
 ldy #$e0
-lda ($80),y ; This will pull the address from $0080 which is $1020 and then add $ to get the data at address $1100 which will cost 5 cycles instead of 4.
+adc ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
 
 ; ***************
-; ***** LDX *****
-; ***************
-;
-; immediate
-ldx #$33
-ldx #$00
-ldx #$ff
-
-; zero page
-ldx $20
-ldx $21
-ldx $22
-
-; zero page with y offset
-ldy #$10
-ldx $10,y
-
-ldy #$11
-ldx $10,y
-
-ldy #$12
-ldx $10,y
-
-ldy #$01
-ldx $ff,y ; This should wrap around to address $0000 instead of accessing $0100.
-
-; absolute
-ldx $1020
-ldx $1021
-ldx $1022
-
-; absolute with y offset
-ldy #$10
-ldx $1010,y
-
-ldy #$11
-ldx $1010,y
-
-ldy #$12
-ldx $1010,y
-
-ldy #$01
-ldx $10ff,y ; This will cause the read to cross page boundaries thus causing an additional cycle.
-
-ldy #$55
-ldx $ffff,y ; This will cause the read to wrap around the entire address space back to $0050.
-
-; ***************
-; ***** LDY *****
+; ***** AND *****
 ; ***************
 ;
 ; immediate
-ldy #$33
-ldy #$00
-ldy #$ff
+lda #$a0
+and #$22
 
 ; zero page
-ldy $20
-ldy $21
-ldy $22
+lda #$f0
+and $20
 
 ; zero page with x offset
+lda #$a0
 ldx #$10
-ldy $10,x
-
-ldx #$11
-ldy $10,x
-
-ldx #$12
-ldy $10,x
-
-ldx #$01
-ldy $ff,x ; This should wrap around to address $0000 instead of accessing $0100.
+lda #$a0
+and $10,x
 
 ; absolute
-ldy $1020
-ldy $1021
-ldy $1022
+lda #$a0
+and $1020
 
 ; absolute with x offset
+lda #$a0
 ldx #$10
-ldy $1010,x
+and $1010,x
 
-ldx #$11
-ldy $1010,x
+; absolute with y offset
+lda #$a0
+ldy #$10
+and $1010,y
 
-ldx #$12
-ldy $1010,x
+; indirect zero page with x offset
+lda #$a0
+ldx $20
+and ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
 
-ldx #$01
-ldy $10ff,x ; This will cause the read to cross page boundaries thus causing an additional cycle.
+; indirect zero page with y offset
+lda #$a0
+ldy #$02
+and ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
 
-ldx #$55
-ldy $ffff,x ; This will cause the read to wrap around the entire address space back to $0050.
+lda #$a0
+ldy #$e0
+and ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
 
-; Done.
 .done
 
 * = $fff0
@@ -303,7 +231,7 @@ irqVector   .addr $fff0
 
             cycle = 0;
 
-            for (var i = 0; i < 500; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 cycle++;
 
