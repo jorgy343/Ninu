@@ -92,43 +92,89 @@ adc ($80),y ; This will pull the address from $0080 which is $1020 and then add 
 lda #$a0
 and #$22
 
+; zero page
+lda #$f0
+and $20
+
+; zero page with x offset
+lda #$a0
+ldx #$10
+lda #$a0
+and $10,x
+
+; absolute
+lda #$a0
+and $1020
+
+; absolute with x offset
+lda #$a0
+ldx #$10
+and $1010,x
+
+; absolute with y offset
+lda #$a0
+ldy #$10
+and $1010,y
+
+; indirect zero page with x offset
+lda #$a0
+ldx $20
+and ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
+
+; indirect zero page with y offset
+lda #$a0
+ldy #$02
+and ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
+
+lda #$a0
+ldy #$e0
+and ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
+
+; ***************
+; ***** ORA *****
+; ***************
+;
+; immediate
+;lda #$a0
+;eor #$22
+;
 ;; zero page
 ;lda #$f0
-;and $20
+;eor $20
 ;
 ;; zero page with x offset
 ;lda #$a0
 ;ldx #$10
 ;lda #$a0
-;and $10,x
+;eor $10,x
 ;
 ;; absolute
 ;lda #$a0
-;and $1020
+;eor $1020
 ;
 ;; absolute with x offset
 ;lda #$a0
 ;ldx #$10
-;and $1010,x
+;eor $1010,x
 ;
 ;; absolute with y offset
 ;lda #$a0
 ;ldy #$10
-;and $1010,y
+;eor $1010,y
 ;
 ;; indirect zero page with x offset
 ;lda #$a0
 ;ldx $20
-;and ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
+;eor ($30,x) ; This will pull the address from $0050 ($20 + $30) which is $1020 and then pull the data from that location.
 ;
 ;; indirect zero page with y offset
 ;lda #$a0
 ;ldy #$02
-;and ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
+;eor ($80),y ; This will pull the address from $0080 which is $1020 and then add $02 to get the data at address $1022 which will cost 5 cycles.
 ;
 ;lda #$a0
 ;ldy #$e0
-;and ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
+;eor ($80),y ; This will pull the address from $0080 which is $1020 and then add $e0 to get the data at address $1100 which will cost 6 cycles instead of 5.
 
 .done
 

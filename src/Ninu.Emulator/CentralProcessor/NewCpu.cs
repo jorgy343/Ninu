@@ -6,7 +6,7 @@ using static Ninu.Emulator.CentralProcessor.NewOpcode;
 
 namespace Ninu.Emulator.CentralProcessor
 {
-    public class NewCpu
+    public partial class NewCpu
     {
         private readonly IBus _bus;
 
@@ -248,37 +248,35 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case And_Absolute:
-                    Addr_Absolute(Op_And, delayedExecution: true);
+                    Addr_Absolute_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_And, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_And, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_Immediate:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, true, Op_And_SetFlags);
-                    AddFreeOperation(Nop.Singleton, false, Op_And);
+                    Addr_Immediate_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_And, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_And, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_ZeroPage:
-                    Addr_ZeroPage(Op_And, delayedExecution: true);
+                    Addr_ZeroPage_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case And_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_And, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
                     break;
 
                 case Bcc_Relative:
@@ -338,35 +336,35 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Eor_Absolute:
-                    Addr_Absolute(Op_Eor);
+                    Addr_Absolute_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Eor);
+                    Addr_AbsoluteWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Eor);
+                    Addr_AbsoluteWithYOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_Immediate:
-                    Addr_Immediate(Op_Eor);
+                    Addr_Immediate_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Eor);
+                    Addr_IndirectZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Eor);
+                    Addr_IndirectZeroPageWithYOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_ZeroPage:
-                    Addr_ZeroPage(Op_Eor);
+                    Addr_ZeroPage_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Eor_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Eor);
+                    Addr_ZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
                     break;
 
                 case Inx_Implied:
@@ -850,186 +848,6 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        // Addressing Modes
-        private void Addr_Implied(Action? action, bool delayedExecution = false)
-        {
-            AddOperation(Nop.Singleton, true);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_Immediate(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, true);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, true, action);
-            }
-        }
-
-        private void Addr_ZeroPage(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_ZeroPageWithXOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-            AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_ZeroPageWithYOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-            AddOperation(IncrementEffectiveAddressLatchLowByYWithWrapping.Singleton, true);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_Absolute(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_AbsoluteWithXOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-            AddOperation(FetchForAbsoluteWithXOffsetTry1.Singleton, true);
-            AddOperation(FetchForAbsoluteWithXOffsetTry2.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_AbsoluteWithYOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-            AddOperation(FetchForAbsoluteWithYOffsetTry1.Singleton, true);
-            AddOperation(FetchForAbsoluteWithYOffsetTry2.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_IndirectZeroPageWithXOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
-            AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
-            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, false);
-            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_IndirectZeroPageWithYOffset(Action action, bool delayedExecution = false)
-        {
-            AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
-            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
-            AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-            AddOperation(FetchForAbsoluteWithYOffsetTry1.Singleton, false);
-            AddOperation(FetchForAbsoluteWithYOffsetTry2.Singleton, false);
-
-            if (delayedExecution)
-            {
-                AddOperation(FetchInstruction.Singleton, false);
-                AddFreeOperation(Nop.Singleton, false, action);
-            }
-            else
-            {
-                AddOperation(FetchInstruction.Singleton, false, action);
-            }
-        }
-
-        private void Addr_Relative(Action action)
-        {
-            AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true, postAction: action);
-            AddOperation(BranchNoPageCrossing.Singleton, true);
-            AddOperation(BranchPageCrossed.Singleton, false, HandleJump);
-            AddOperation(FetchInstruction.Singleton, false, HandleJump);
-        }
-
         // Instructions
         private void Op_Adc()
         {
@@ -1044,6 +862,12 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.A = resultByte;
         }
 
+        /// <summary>
+        /// The <c>AND</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, the calculations for the instruction have to be separated
+        /// out from setting the flags. The operation and setting the flags will be done in two
+        /// separate cycles.
+        /// </summary>
         private void Op_And()
         {
             CpuState.A = (byte)(CpuState.A & DataLatch);
@@ -1052,22 +876,34 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.A);
         }
 
+        /// <summary>
+        /// The <c>AND</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, setting the flags has to be separated out from the actual
+        /// operation. The operation and setting the flags will be done in two separate cycles.
+        /// </summary>
         private void Op_And_SetFlags()
         {
-            var result = (byte)(CpuState.A & DataLatch);
 
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
         }
 
-        private void HandleJump()
+        private void SetPCToEffectiveAddressLatch()
         {
             CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
         }
 
-        private void Op_Bcc()
+        /// <summary>
+        /// All of the conditional jump instructions call this method. When a conditional jump is
+        /// decoded onto the queue, four operations are queued (see <see cref="Addr_Relative"/>).
+        /// If the condition fails and the jump is not being taken, this method will dequeue the
+        /// next three operations and queue a new operation that simply increments <c>PC</c> and
+        /// fetches the next instruction. If the jump is being taken, then this method sets the
+        /// address latch to <c>PC + 1</c>. This way, to find the destination of the jump, just add
+        /// the offset from the instruction's operand and add it to the address latch.
+        /// </summary>
+        /// <param name="takingJump">A boolean that says whether the jump is being taken. Pass <c>true</c> if the branch condition succeeds and the jump is being taken. Otherwise, pass <c>false</c>.</param>
+        private void PerformConditionalJumpOperation(bool takingJump)
         {
-            if (CpuState.GetFlag(CpuFlags.C))
+            if (!takingJump)
             {
                 Queue.Dequeue();
                 Queue.Dequeue();
@@ -1079,118 +915,46 @@ namespace Ninu.Emulator.CentralProcessor
             // Save PC + 1 into address latch because it will get clobbered.
             AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
             AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+        }
+
+        private void Op_Bcc()
+        {
+            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.C));
         }
 
         private void Op_Bcs()
         {
-            if (!CpuState.GetFlag(CpuFlags.C))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.C));
         }
 
         private void Op_Beq()
         {
-            if (!CpuState.GetFlag(CpuFlags.Z))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.Z));
         }
 
         private void Op_Bmi()
         {
-            if (!CpuState.GetFlag(CpuFlags.N))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.N));
         }
 
         private void Op_Bne()
         {
-            if (CpuState.GetFlag(CpuFlags.Z))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.Z));
         }
 
         private void Op_Bpl()
         {
-            if (CpuState.GetFlag(CpuFlags.N))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.N));
         }
 
         private void Op_Bvc()
         {
-            if (CpuState.GetFlag(CpuFlags.V))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.V));
         }
 
         private void Op_Bvs()
         {
-            if (!CpuState.GetFlag(CpuFlags.V))
-            {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
-
-                AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.V));
         }
 
         private void Op_Clc()
@@ -1229,12 +993,28 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
+        /// <summary>
+        /// The <c>EOR</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, the calculations for the instruction have to be separated
+        /// out from setting the flags. The operation and setting the flags will be done in two
+        /// separate cycles.
+        /// </summary>
         private void Op_Eor()
         {
             CpuState.A = (byte)(CpuState.A ^ DataLatch);
+        }
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+        /// <summary>
+        /// The <c>EOR</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, setting the flags has to be separated out from the actual
+        /// operation. The operation and setting the flags will be done in two separate cycles.
+        /// </summary>
+        private void Op_Eor_SetFlags()
+        {
+            var result = (byte)(CpuState.A ^ DataLatch);
+
+            CpuState.SetZeroFlag(result);
+            CpuState.SetNegativeFlag(result);
         }
 
         private void Op_Inx()
@@ -1282,12 +1062,28 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
+        /// <summary>
+        /// The <c>ORA</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, the calculations for the instruction have to be separated
+        /// out from setting the flags. The operation and setting the flags will be done in two
+        /// separate cycles.
+        /// </summary>
         private void Op_Ora()
         {
             CpuState.A = (byte)(CpuState.A | DataLatch);
+        }
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+        /// <summary>
+        /// The <c>ORA</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
+        /// register. For this reason, setting the flags has to be separated out from the actual
+        /// operation. The operation and setting the flags will be done in two separate cycles.
+        /// </summary>
+        private void Op_Ora_SetFlags()
+        {
+            var result = (byte)(CpuState.A | DataLatch);
+
+            CpuState.SetZeroFlag(result);
+            CpuState.SetNegativeFlag(result);
         }
 
         private void Op_Sec()
