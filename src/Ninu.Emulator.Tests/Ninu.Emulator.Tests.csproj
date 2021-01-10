@@ -9,10 +9,14 @@
 
   <ItemGroup>
     <None Remove="NewCpu\TestFiles\branches.6502.asm" />
+    <None Remove="NewCpu\TestFiles\stack.6502.asm" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="NewCpu\TestFiles\arithmetic.6502.asm">
+    <Content Include="NewCpu\TestFiles\stack.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\arithmetic-and-comparison.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Cpu\TestFiles\and.6502.asm">
@@ -52,6 +56,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="NewCpu\TestFiles\branches.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\stack.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

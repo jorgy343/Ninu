@@ -248,35 +248,35 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case And_Absolute:
-                    Addr_Absolute_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_Absolute(Op_And, delayedExecution: true);
                     break;
 
                 case And_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_AbsoluteWithXOffset(Op_And, delayedExecution: true);
                     break;
 
                 case And_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_AbsoluteWithYOffset(Op_And, delayedExecution: true);
                     break;
 
                 case And_Immediate:
-                    Addr_Immediate_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_Immediate(Op_And, delayedExecution: true);
                     break;
 
                 case And_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_IndirectZeroPageWithXOffset(Op_And, delayedExecution: true);
                     break;
 
                 case And_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_IndirectZeroPageWithYOffset(Op_And, delayedExecution: true);
                     break;
 
                 case And_ZeroPage:
-                    Addr_ZeroPage_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_ZeroPage(Op_And, delayedExecution: true);
                     break;
 
                 case And_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_And, Op_And_SetFlags);
+                    Addr_ZeroPageWithXOffset(Op_And, delayedExecution: true);
                     break;
 
                 case Bcc_Relative:
@@ -289,6 +289,14 @@ namespace Ninu.Emulator.CentralProcessor
 
                 case Beq_Relative:
                     Addr_Relative(Op_Beq);
+                    break;
+
+                case Bit_Absolute:
+                    Addr_Absolute(Op_Bit);
+                    break;
+
+                case Bit_ZeroPage:
+                    Addr_ZeroPage(Op_Bit);
                     break;
 
                 case Bmi_Relative:
@@ -327,6 +335,62 @@ namespace Ninu.Emulator.CentralProcessor
                     Addr_Implied(Op_Clv);
                     break;
 
+                case Cmp_Absolute:
+                    Addr_Absolute(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_AbsoluteWithYOffset:
+                    Addr_AbsoluteWithYOffset(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_Immediate:
+                    Addr_Immediate(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_IndirectZeroPageWithXOffset:
+                    Addr_IndirectZeroPageWithXOffset(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_IndirectZeroPageWithYOffset:
+                    Addr_IndirectZeroPageWithYOffset(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_ZeroPage:
+                    Addr_ZeroPage(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cmp_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset(Op_Cmp, delayedExecution: true);
+                    break;
+
+                case Cpx_Absolute:
+                    Addr_Absolute(Op_Cpx, delayedExecution: true);
+                    break;
+
+                case Cpx_Immediate:
+                    Addr_Immediate(Op_Cpx, delayedExecution: true);
+                    break;
+
+                case Cpx_ZeroPage:
+                    Addr_ZeroPage(Op_Cpx, delayedExecution: true);
+                    break;
+
+                case Cpy_Absolute:
+                    Addr_Absolute(Op_Cpy, delayedExecution: true);
+                    break;
+
+                case Cpy_Immediate:
+                    Addr_Immediate(Op_Cpy, delayedExecution: true);
+                    break;
+
+                case Cpy_ZeroPage:
+                    Addr_ZeroPage(Op_Cpy, delayedExecution: true);
+                    break;
+
                 case Dex_Implied:
                     Addr_Implied(Op_Dex, delayedExecution: true);
                     break;
@@ -336,35 +400,35 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Eor_Absolute:
-                    Addr_Absolute_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_Absolute(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_AbsoluteWithXOffset(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_AbsoluteWithYOffset(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_Immediate:
-                    Addr_Immediate_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_Immediate(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_IndirectZeroPageWithXOffset(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_IndirectZeroPageWithYOffset(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_ZeroPage:
-                    Addr_ZeroPage_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_ZeroPage(Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_DelayedExecutionAndWonkyFlags(Op_Eor, Op_Eor_SetFlags);
+                    Addr_ZeroPageWithXOffset(Op_Eor, delayedExecution: true);
                     break;
 
                 case Inx_Implied:
@@ -466,35 +530,61 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Ora_Absolute:
-                    Addr_Absolute(Op_Ora);
+                    Addr_Absolute(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Ora);
+                    Addr_AbsoluteWithXOffset(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Ora);
+                    Addr_AbsoluteWithYOffset(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_Immediate:
-                    Addr_Immediate(Op_Ora);
+                    Addr_Immediate(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Ora);
+                    Addr_IndirectZeroPageWithXOffset(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Ora);
+                    Addr_IndirectZeroPageWithYOffset(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_ZeroPage:
-                    Addr_ZeroPage(Op_Ora);
+                    Addr_ZeroPage(Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Ora);
+                    Addr_ZeroPageWithXOffset(Op_Ora, delayedExecution: true);
+                    break;
+
+                case Pha_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(Nop.Singleton, false, WriteAToStack);
+                    AddOperation(FetchInstruction.Singleton, false, DecrementS);
+                    break;
+
+                case Php_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(Nop.Singleton, false, WritePToStack);
+                    AddOperation(FetchInstruction.Singleton, false, DecrementS);
+                    break;
+
+                case Pla_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, IncrementS);
+                    AddOperation(FetchInstruction.Singleton, false, TransferDataLatchToA);
+                    break;
+
+                case Plp_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, IncrementS);
+                    AddOperation(FetchInstruction.Singleton, false, TransferDataLatchToP);
                     break;
 
                 case Rti_Implied:
@@ -547,6 +637,38 @@ namespace Ninu.Emulator.CentralProcessor
 
                     AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
 
+                    break;
+
+                case Sbc_Absolute:
+                    Addr_Absolute(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_AbsoluteWithYOffset:
+                    Addr_AbsoluteWithYOffset(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_Immediate:
+                    Addr_Immediate(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_IndirectZeroPageWithXOffset:
+                    Addr_IndirectZeroPageWithXOffset(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_IndirectZeroPageWithYOffset:
+                    Addr_IndirectZeroPageWithYOffset(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_ZeroPage:
+                    Addr_ZeroPage(Op_Sbc, delayedExecution: true);
+                    break;
+
+                case Sbc_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset(Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sec_Implied:
@@ -691,23 +813,7 @@ namespace Ninu.Emulator.CentralProcessor
                 case Asl_ZeroPage:
                 case Asl_ZeroPageWithXOffset:
                 case Axs_Immediate_CB:
-                case Bit_Absolute:
-                case Bit_ZeroPage:
                 case Brk_Implied:
-                case Cmp_Absolute:
-                case Cmp_AbsoluteWithXOffset:
-                case Cmp_AbsoluteWithYOffset:
-                case Cmp_Immediate:
-                case Cmp_IndirectZeroPageWithXOffset:
-                case Cmp_IndirectZeroPageWithYOffset:
-                case Cmp_ZeroPage:
-                case Cmp_ZeroPageWithXOffset:
-                case Cpx_Absolute:
-                case Cpx_Immediate:
-                case Cpx_ZeroPage:
-                case Cpy_Absolute:
-                case Cpy_Immediate:
-                case Cpy_ZeroPage:
                 case Dcp_Absolute_CF:
                 case Dcp_AbsoluteWithXOffset_DF:
                 case Dcp_AbsoluteWithYOffset_DB:
@@ -783,10 +889,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Nop_ZeroPageWithXOffset_74:
                 case Nop_ZeroPageWithXOffset_D4:
                 case Nop_ZeroPageWithXOffset_F4:
-                case Pha_Implied:
-                case Php_Implied:
-                case Pla_Implied:
-                case Plp_Implied:
                 case Rla_Absolute_2F:
                 case Rla_AbsoluteWithXOffset_3F:
                 case Rla_AbsoluteWithYOffset_3B:
@@ -816,15 +918,7 @@ namespace Ninu.Emulator.CentralProcessor
                 case Sax_IndirectZeroPageWithXOffset_83:
                 case Sax_ZeroPage_87:
                 case Sax_ZeroPageWithYOffset_97:
-                case Sbc_Absolute:
-                case Sbc_AbsoluteWithXOffset:
-                case Sbc_AbsoluteWithYOffset:
-                case Sbc_Immediate:
                 case Sbc_Immediate_EB:
-                case Sbc_IndirectZeroPageWithXOffset:
-                case Sbc_IndirectZeroPageWithYOffset:
-                case Sbc_ZeroPage:
-                case Sbc_ZeroPageWithXOffset:
                 case Shx_AbsoluteWithYOffset_9E:
                 case Shy_AbsoluteWithXOffset_9C:
                 case Slo_Absolute_0F:
@@ -862,28 +956,12 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.A = resultByte;
         }
 
-        /// <summary>
-        /// The <c>AND</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, the calculations for the instruction have to be separated
-        /// out from setting the flags. The operation and setting the flags will be done in two
-        /// separate cycles.
-        /// </summary>
         private void Op_And()
         {
             CpuState.A = (byte)(CpuState.A & DataLatch);
 
             CpuState.SetZeroFlag(CpuState.A);
             CpuState.SetNegativeFlag(CpuState.A);
-        }
-
-        /// <summary>
-        /// The <c>AND</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, setting the flags has to be separated out from the actual
-        /// operation. The operation and setting the flags will be done in two separate cycles.
-        /// </summary>
-        private void Op_And_SetFlags()
-        {
-
         }
 
         private void SetPCToEffectiveAddressLatch()
@@ -932,6 +1010,13 @@ namespace Ninu.Emulator.CentralProcessor
             PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.Z));
         }
 
+        private void Op_Bit()
+        {
+            CpuState.SetZeroFlag((byte)(DataLatch & CpuState.A));
+            CpuState.SetFlag(CpuFlags.V, (DataLatch & 0x40) != 0); // Set overflow flag to bit 6 of data.
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
         private void Op_Bmi()
         {
             PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.N));
@@ -977,6 +1062,33 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetFlag(CpuFlags.V, false);
         }
 
+        private void Op_Cmp()
+        {
+            var result = (ushort)(CpuState.A - DataLatch);
+
+            CpuState.SetFlag(CpuFlags.C, CpuState.A >= DataLatch);
+            CpuState.SetZeroFlag(result);
+            CpuState.SetNegativeFlag(result);
+        }
+
+        private void Op_Cpx()
+        {
+            var result = (ushort)(CpuState.X - DataLatch);
+
+            CpuState.SetFlag(CpuFlags.C, CpuState.X >= DataLatch);
+            CpuState.SetZeroFlag(result);
+            CpuState.SetNegativeFlag(result);
+        }
+
+        private void Op_Cpy()
+        {
+            var result = (ushort)(CpuState.Y - DataLatch);
+
+            CpuState.SetFlag(CpuFlags.C, CpuState.Y >= DataLatch);
+            CpuState.SetZeroFlag(result);
+            CpuState.SetNegativeFlag(result);
+        }
+
         private void Op_Dex()
         {
             CpuState.X--;
@@ -993,28 +1105,12 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        /// <summary>
-        /// The <c>EOR</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, the calculations for the instruction have to be separated
-        /// out from setting the flags. The operation and setting the flags will be done in two
-        /// separate cycles.
-        /// </summary>
         private void Op_Eor()
         {
             CpuState.A = (byte)(CpuState.A ^ DataLatch);
-        }
 
-        /// <summary>
-        /// The <c>EOR</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, setting the flags has to be separated out from the actual
-        /// operation. The operation and setting the flags will be done in two separate cycles.
-        /// </summary>
-        private void Op_Eor_SetFlags()
-        {
-            var result = (byte)(CpuState.A ^ DataLatch);
-
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
+            CpuState.SetZeroFlag(CpuState.A);
+            CpuState.SetNegativeFlag(CpuState.A);
         }
 
         private void Op_Inx()
@@ -1062,28 +1158,61 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(CpuState.Y);
         }
 
-        /// <summary>
-        /// The <c>ORA</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, the calculations for the instruction have to be separated
-        /// out from setting the flags. The operation and setting the flags will be done in two
-        /// separate cycles.
-        /// </summary>
         private void Op_Ora()
         {
             CpuState.A = (byte)(CpuState.A | DataLatch);
+
+            CpuState.SetZeroFlag(CpuState.A);
+            CpuState.SetNegativeFlag(CpuState.A);
         }
 
-        /// <summary>
-        /// The <c>ORA</c> instruction sets the <c>P</c> register before it sets the <c>A</c>
-        /// register. For this reason, setting the flags has to be separated out from the actual
-        /// operation. The operation and setting the flags will be done in two separate cycles.
-        /// </summary>
-        private void Op_Ora_SetFlags()
+        private void IncrementS()
         {
-            var result = (byte)(CpuState.A | DataLatch);
+            CpuState.S++;
+        }
 
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
+        private void DecrementS()
+        {
+            CpuState.S--;
+        }
+
+        private void WriteAToStack()
+        {
+            _bus.Write((ushort)(CpuState.S + 0x100), CpuState.A);
+        }
+
+        private void WritePToStack()
+        {
+            var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
+            _bus.Write((ushort)(CpuState.S + 0x100), data);
+        }
+
+        private void TransferDataLatchToA()
+        {
+            CpuState.A = DataLatch;
+
+            CpuState.SetZeroFlag(CpuState.A);
+            CpuState.SetNegativeFlag(CpuState.A);
+        }
+
+        private void TransferDataLatchToP()
+        {
+            // During PHP, bits 4 and 5 of the status register are set in the stack. Make sure to
+            // clear these when pulling P from the stack as these two bits don't actually exist.
+            CpuState.P = (CpuFlags)(DataLatch & ~0x30);
+        }
+
+        private void Op_Sbc()
+        {
+            var result = CpuState.A - DataLatch - (CpuState.GetFlag(CpuFlags.C) ? 0 : 1);
+            var resultByte = (byte)(result & 0xff);
+
+            CpuState.SetFlag(CpuFlags.C, (ushort)result < 0x100);
+            CpuState.SetZeroFlag(resultByte);
+            CpuState.SetFlag(CpuFlags.V, ((CpuState.A ^ DataLatch) & 0x80) != 0 && ((CpuState.A ^ result) & 0x80) != 0);
+            CpuState.SetNegativeFlag(resultByte);
+
+            CpuState.A = resultByte;
         }
 
         private void Op_Sec()

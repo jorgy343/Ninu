@@ -55,39 +55,18 @@ namespace Ninu.Visual6502.Analyzer
 
                 .endmacro
 
-; Zero page data.
 * = $0000
-.byte $17   ; Used to test wrapping of zero page addressing modes.
-
-* = $0020
-.byte $30   ; Basic zero page data.
 .byte $00
-.byte $ff
-
-* = $0050
-.byte $77   ; Used to test wrapping around the entire address space for absolute with x/y offset.
-
-* = $0080
-.addr $1020 ; Used for indirect zero page with x/y offset addressing mode.
-
-; Absolute address data (above zero page).
-* = $1000
-.byte $00   ; Not used for anything right now.
-
-* = $1020
-.byte $40
-.byte $00
-.byte $ff
-
-* = $1100   ; Used to test crossing page boundary in absolute with x/y offset addressing modes (causes an aditional cycle for reads).
-.byte $27
 
 ; Beginning of tests.
 * = $c000
-lda #$f1
-ldx #$00
-;nop
-and #$f1
+.init
+
+lda #$37
+pha
+
+lda #$00
+pla
 
 .done
 

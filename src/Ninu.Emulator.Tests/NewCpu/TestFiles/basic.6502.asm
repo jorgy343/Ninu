@@ -34,6 +34,10 @@ iny ; Brings y to 0x00. Tests setting the Z flag.
 dey ; Brings y to 0xff. Tests clearing the Z flag and setting the N flag.
 iny ; Brings y to 0x00. Tests setting the Z flag and clearing the N flag.
 
+; BIT
+bit $00
+bit $1000
+
 .done
 
 * = $2000
