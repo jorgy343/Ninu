@@ -44,11 +44,15 @@ jmp jsrSubroutine
 
 subroutine:
     dex
-    beq finish
+    beq continue
 
     rts
 
-finish:
+continue:
+
+brk
+nop ; BRK pushes PC + 1 to the stack so RTI will actually return the instruction just after this NOP.
+
 .done
 
 * = $2000

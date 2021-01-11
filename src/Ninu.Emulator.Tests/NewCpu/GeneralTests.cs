@@ -122,7 +122,7 @@ namespace Ninu.Emulator.Tests.NewCpu
         [InlineData(9)]
         [InlineData(10)]
         [InlineData(11)]
-        [InlineData(12)]
+        //[InlineData(12)]
         public void TestNmi(int cycleToSetNmiLow)
         {
             var asm = File.ReadAllText("NewCpu/TestFiles/nmi.6502.asm");

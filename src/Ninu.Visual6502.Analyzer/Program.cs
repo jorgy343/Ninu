@@ -62,17 +62,9 @@ namespace Ninu.Visual6502.Analyzer
 * = $c000
 .init
 
-ldx #$02
-jsrSubroutine: jsr subroutine
-jmp jsrSubroutine
+brk
+nop
 
-subroutine:
-    dex
-    beq finish
-
-    rts
-
-finish:
 .done
 
 * = $fff0

@@ -311,6 +311,16 @@ namespace Ninu.Emulator.CentralProcessor
                     Addr_Relative(Op_Bpl);
                     break;
 
+                case Brk_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read.
+                    AddOperation(Nop.Singleton, true, WritePCHighToStack);
+                    AddOperation(Nop.Singleton, false, WritePCLowToStackMinus1);
+                    AddOperation(Nop.Singleton, false, WritePToStackMinus2);
+                    AddOperation(FetchIrqVectorLowIntoEffectiveAddressLatchLow.Singleton, false, DecrementSByThree);
+                    AddOperation(FetchIrqVectorHighIntoEffectiveAddressLatchHigh.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
+                    break;
+
                 case Bvc_Relative:
                     Addr_Relative(Op_Bvc);
                     break;
@@ -831,7 +841,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Asl_ZeroPage:
                 case Asl_ZeroPageWithXOffset:
                 case Axs_Immediate_CB:
-                case Brk_Implied:
                 case Dcp_Absolute_CF:
                 case Dcp_AbsoluteWithXOffset_DF:
                 case Dcp_AbsoluteWithYOffset_DB:
@@ -1197,6 +1206,11 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.S--;
         }
 
+        private void DecrementSByThree()
+        {
+            CpuState.S -= 3;
+        }
+
         private void WriteAToStack()
         {
             _bus.Write((ushort)(CpuState.S + 0x100), CpuState.A);
@@ -1206,6 +1220,12 @@ namespace Ninu.Emulator.CentralProcessor
         {
             var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
             _bus.Write((ushort)(CpuState.S + 0x100), data);
+        }
+
+        private void WritePToStackMinus2()
+        {
+            var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
+            _bus.Write((ushort)(((CpuState.S - 2) & 0xff) + 0x100), data);
         }
 
         private void WritePCHighToStack()
@@ -1220,14 +1240,20 @@ namespace Ninu.Emulator.CentralProcessor
             _bus.Write((ushort)(CpuState.S + 0x100), data);
         }
 
+        private void WritePCLowToStackMinus1()
+        {
+            var data = (byte)(CpuState.PC & 0xff);
+            _bus.Write((ushort)(((CpuState.S - 1) & 0xff) + 0x100), data);
+        }
+
         private void ReadSPlus1IntoEffectiveAddressLatchLow()
         {
-            EffectiveAddressLatchLow = _bus.Read((ushort)(CpuState.S + 1 + 0x100));
+            EffectiveAddressLatchLow = _bus.Read((ushort)(((CpuState.S + 1) & 0xff) + 0x100));
         }
 
         private void ReadSPlus2IntoEffectiveAddressLatchHigh()
         {
-            EffectiveAddressLatchHigh = _bus.Read((ushort)(CpuState.S + 2 + 0x100));
+            EffectiveAddressLatchHigh = _bus.Read((ushort)(((CpuState.S + 2) & 0xff) + 0x100));
         }
 
         private void TransferDataLatchToA()
