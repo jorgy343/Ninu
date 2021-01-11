@@ -1,4 +1,5 @@
 ﻿using Ninu.Base;
+using Ninu.Emulator.CentralProcessor;
 using Ninu.Emulator.Tests.Cpu;
 using Ninu.Emulator.Tests.TestHeaders;
 using Ninu.Visual6502;
@@ -71,7 +72,13 @@ namespace Ninu.Emulator.Tests.NewCpu
                 Assert.Equal(simulator.ReadA(), cpu.CpuState.A);
                 Assert.Equal(simulator.ReadX(), cpu.CpuState.X);
                 Assert.Equal(simulator.ReadY(), cpu.CpuState.Y);
-                Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
+
+                // The S register reads funny during most of the execution of the JSR instruction.
+                // Don't check S during execution of this operation.
+                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                {
+                    Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
+                }
 
                 // Because flags are set on very weird cycles for reasons I don't yet understand,
                 // we will only check flags once we know for sure they will be set.
@@ -179,7 +186,13 @@ namespace Ninu.Emulator.Tests.NewCpu
                 Assert.Equal(simulator.ReadA(), cpu.CpuState.A);
                 Assert.Equal(simulator.ReadX(), cpu.CpuState.X);
                 Assert.Equal(simulator.ReadY(), cpu.CpuState.Y);
-                Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
+
+                // The S register reads funny during most of the execution of the JSR instruction.
+                // Don't check S during execution of this operation.
+                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                {
+                    Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
+                }
 
                 // Because flags are set on very weird cycles for reasons I don't yet understand,
                 // we will only check flags once we know for sure they will be set.

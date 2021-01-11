@@ -453,6 +453,15 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
                     break;
 
+                case Jsr_Absolute:
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Discarded read.
+                    AddOperation(Nop.Singleton, false, WritePCHighToStack, DecrementS);
+                    AddOperation(Nop.Singleton, false, WritePCLowToStack, DecrementS);
+                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, false);
+                    AddOperation(FetchInstruction.Singleton, true, Op_Jmp);
+                    break;
+
                 case Lda_Absolute:
                     Addr_Absolute(Op_Lda);
                     break;
@@ -637,6 +646,15 @@ namespace Ninu.Emulator.CentralProcessor
 
                     AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
 
+                    break;
+
+                case Rts_Implied:
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read by PC.
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Dummy read by stack.
+                    AddOperation(Nop.Singleton, false, ReadSPlus1IntoEffectiveAddressLatchLow);
+                    AddOperation(Nop.Singleton, false, ReadSPlus2IntoEffectiveAddressLatchHigh, IncrementSByTwo);
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, false, Op_Jmp); // Dummy read by PC after jump.
+                    AddOperation(FetchInstruction.Singleton, true);
                     break;
 
                 case Sbc_Absolute:
@@ -836,7 +854,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Isc_IndirectZeroPageWithYOffset_F3:
                 case Isc_ZeroPage_E7:
                 case Isc_ZeroPageWithXOffset_F7:
-                case Jsr_Absolute:
                 case Kil_Implied_02:
                 case Kil_Implied_12:
                 case Kil_Implied_22:
@@ -913,7 +930,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Rra_IndirectZeroPageWithYOffset_73:
                 case Rra_ZeroPage_67:
                 case Rra_ZeroPageWithXOffset_77:
-                case Rts_Implied:
                 case Sax_Absolute_8F:
                 case Sax_IndirectZeroPageWithXOffset_83:
                 case Sax_ZeroPage_87:
@@ -1171,6 +1187,11 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.S++;
         }
 
+        private void IncrementSByTwo()
+        {
+            CpuState.S += 2;
+        }
+
         private void DecrementS()
         {
             CpuState.S--;
@@ -1185,6 +1206,28 @@ namespace Ninu.Emulator.CentralProcessor
         {
             var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
             _bus.Write((ushort)(CpuState.S + 0x100), data);
+        }
+
+        private void WritePCHighToStack()
+        {
+            var data = (byte)(CpuState.PC >> 8);
+            _bus.Write((ushort)(CpuState.S + 0x100), data);
+        }
+
+        private void WritePCLowToStack()
+        {
+            var data = (byte)(CpuState.PC & 0xff);
+            _bus.Write((ushort)(CpuState.S + 0x100), data);
+        }
+
+        private void ReadSPlus1IntoEffectiveAddressLatchLow()
+        {
+            EffectiveAddressLatchLow = _bus.Read((ushort)(CpuState.S + 1 + 0x100));
+        }
+
+        private void ReadSPlus2IntoEffectiveAddressLatchHigh()
+        {
+            EffectiveAddressLatchHigh = _bus.Read((ushort)(CpuState.S + 2 + 0x100));
         }
 
         private void TransferDataLatchToA()

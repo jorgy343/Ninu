@@ -38,6 +38,17 @@ iny ; Brings y to 0x00. Tests setting the Z flag and clearing the N flag.
 bit $00
 bit $1000
 
+ldx #$02
+jsrSubroutine: jsr subroutine
+jmp jsrSubroutine
+
+subroutine:
+    dex
+    beq finish
+
+    rts
+
+finish:
 .done
 
 * = $2000
