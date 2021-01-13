@@ -2,6 +2,7 @@
 using Ninu.Emulator.CentralProcessor.Operations.Interrupts;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using static Ninu.Emulator.CentralProcessor.NewOpcode;
 
 namespace Ninu.Emulator.CentralProcessor
@@ -279,6 +280,26 @@ namespace Ninu.Emulator.CentralProcessor
                     Addr_ZeroPageWithXOffset(Op_And, delayedExecution: true);
                     break;
 
+                case Asl_Absolute:
+                    Addr_Absolute_WriteBack(Op_Asl_DataLatch);
+                    break;
+
+                case Asl_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Asl_DataLatch);
+                    break;
+
+                case Asl_Accumulator:
+                    Addr_Implied(Op_Asl_Accumulator, delayedExecution: true);
+                    break;
+
+                case Asl_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Asl_DataLatch);
+                    break;
+
+                case Asl_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Asl_DataLatch);
+                    break;
+
                 case Bcc_Relative:
                     Addr_Relative(Op_Bcc);
                     break;
@@ -401,6 +422,22 @@ namespace Ninu.Emulator.CentralProcessor
                     Addr_ZeroPage(Op_Cpy, delayedExecution: true);
                     break;
 
+                case Dec_Absolute:
+                    Addr_Absolute_WriteBack(Op_Dec);
+                    break;
+
+                case Dec_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Dec);
+                    break;
+
+                case Dec_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Dec);
+                    break;
+
+                case Dec_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Dec);
+                    break;
+
                 case Dex_Implied:
                     Addr_Implied(Op_Dex, delayedExecution: true);
                     break;
@@ -439,6 +476,22 @@ namespace Ninu.Emulator.CentralProcessor
 
                 case Eor_ZeroPageWithXOffset:
                     Addr_ZeroPageWithXOffset(Op_Eor, delayedExecution: true);
+                    break;
+
+                case Inc_Absolute:
+                    Addr_Absolute_WriteBack(Op_Inc);
+                    break;
+
+                case Inc_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Inc);
+                    break;
+
+                case Inc_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Inc);
+                    break;
+
+                case Inc_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Inc);
                     break;
 
                 case Inx_Implied:
@@ -542,6 +595,26 @@ namespace Ninu.Emulator.CentralProcessor
 
                 case Ldy_ZeroPageWithXOffset:
                     Addr_ZeroPageWithXOffset(Op_Ldy);
+                    break;
+
+                case Lsr_Absolute:
+                    Addr_Absolute_WriteBack(Op_Lsr_DataLatch);
+                    break;
+
+                case Lsr_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Lsr_DataLatch);
+                    break;
+
+                case Lsr_Accumulator:
+                    Addr_Implied(Op_Lsr_Accumulator, delayedExecution: true);
+                    break;
+
+                case Lsr_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Lsr_DataLatch);
+                    break;
+
+                case Lsr_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Lsr_DataLatch);
                     break;
 
                 case Nop_Implied:
@@ -835,11 +908,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Anc_Immediate_0B:
                 case Anc_Immediate_2B:
                 case Arr_Immediate_6B:
-                case Asl_Absolute:
-                case Asl_AbsoluteWithXOffset:
-                case Asl_Accumulator:
-                case Asl_ZeroPage:
-                case Asl_ZeroPageWithXOffset:
                 case Axs_Immediate_CB:
                 case Dcp_Absolute_CF:
                 case Dcp_AbsoluteWithXOffset_DF:
@@ -848,14 +916,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Dcp_IndirectZeroPageWithYOffset_D3:
                 case Dcp_ZeroPage_C7:
                 case Dcp_ZeroPageWithXOffset_D7:
-                case Dec_Absolute:
-                case Dec_AbsoluteWithXOffset:
-                case Dec_ZeroPage:
-                case Dec_ZeroPageWithXOffset:
-                case Inc_Absolute:
-                case Inc_AbsoluteWithXOffset:
-                case Inc_ZeroPage:
-                case Inc_ZeroPageWithXOffset:
                 case Isc_Absolute_EF:
                 case Isc_AbsoluteWithXOffset_FF:
                 case Isc_AbsoluteWithYOffset_FB:
@@ -883,11 +943,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Lax_IndirectZeroPageWithYOffset_B3:
                 case Lax_ZeroPage_A7:
                 case Lax_ZeroPageWithYOffset_B7:
-                case Lsr_Absolute:
-                case Lsr_AbsoluteWithXOffset:
-                case Lsr_Accumulator:
-                case Lsr_ZeroPage:
-                case Lsr_ZeroPageWithXOffset:
                 case Nop_Absolute_0C:
                 case Nop_AbsoluteWithXOffset_1C:
                 case Nop_AbsoluteWithXOffset_3C:
@@ -987,6 +1042,22 @@ namespace Ninu.Emulator.CentralProcessor
 
             CpuState.SetZeroFlag(CpuState.A);
             CpuState.SetNegativeFlag(CpuState.A);
+        }
+
+        private void Op_Asl_DataLatch()
+        {
+            CpuState.SetFlag(CpuFlags.C, (DataLatch & 0x80) != 0); // Carry flag is set to the bit that is being shifted out.
+
+            DataLatch = (byte)(DataLatch << 1);
+
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
+        private void Op_Asl_Accumulator()
+        {
+            Op_Asl_DataLatch(); // Performs the operation directly to the data latch.
+            CpuState.A = DataLatch;
         }
 
         private void SetPCToEffectiveAddressLatch()
@@ -1114,6 +1185,14 @@ namespace Ninu.Emulator.CentralProcessor
             CpuState.SetNegativeFlag(result);
         }
 
+        private void Op_Dec()
+        {
+            DataLatch--;
+
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
         private void Op_Dex()
         {
             CpuState.X--;
@@ -1136,6 +1215,14 @@ namespace Ninu.Emulator.CentralProcessor
 
             CpuState.SetZeroFlag(CpuState.A);
             CpuState.SetNegativeFlag(CpuState.A);
+        }
+
+        private void Op_Inc()
+        {
+            DataLatch++;
+
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
         }
 
         private void Op_Inx()
@@ -1181,6 +1268,22 @@ namespace Ninu.Emulator.CentralProcessor
 
             CpuState.SetZeroFlag(CpuState.Y);
             CpuState.SetNegativeFlag(CpuState.Y);
+        }
+
+        private void Op_Lsr_DataLatch()
+        {
+            CpuState.SetFlag(CpuFlags.C, (DataLatch & 0x01) != 0); // Carry flag is set to the bit that is being shifted out.
+
+            DataLatch = (byte)(DataLatch >> 1);
+
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
+        private void Op_Lsr_Accumulator()
+        {
+            Op_Lsr_DataLatch(); // Performs the operation directly to the data latch.
+            CpuState.A = DataLatch;
         }
 
         private void Op_Ora()

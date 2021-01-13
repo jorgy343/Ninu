@@ -57,6 +57,15 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
+        private void Addr_ZeroPage_WriteBack(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
+            AddOperation(FetchInstruction.Singleton, false);
+        }
+
         private void Addr_ZeroPageWithXOffset(Action action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
@@ -72,6 +81,16 @@ namespace Ninu.Emulator.CentralProcessor
             {
                 AddOperation(FetchInstruction.Singleton, false, action);
             }
+        }
+
+        private void Addr_ZeroPageWithXOffset_WriteBack(Action action)
+        {
+            AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
+            AddOperation(FetchInstruction.Singleton, false);
         }
 
         private void Addr_ZeroPageWithYOffset(Action action, bool delayedExecution = false)
@@ -108,6 +127,16 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
+        private void Addr_Absolute_WriteBack(Action action)
+        {
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+            AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
+            AddOperation(FetchInstruction.Singleton, false);
+        }
+
         private void Addr_AbsoluteWithXOffset(Action action, bool delayedExecution = false)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
@@ -124,6 +153,17 @@ namespace Ninu.Emulator.CentralProcessor
             {
                 AddOperation(FetchInstruction.Singleton, false, action);
             }
+        }
+
+        private void Addr_AbsoluteWithXOffset_WriteBack(Action action)
+        {
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
+            AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchLowByXWithoutWrapping.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchHighByXOnlyWithCarry.Singleton, false);
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
+            AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
+            AddOperation(FetchInstruction.Singleton, false);
         }
 
         private void Addr_AbsoluteWithYOffset(Action action, bool delayedExecution = false)
