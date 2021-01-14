@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
+using Ninu.Base;
 using Ninu.Emulator;
 using Ninu.Emulator.CentralProcessor;
 using Ninu.Emulator.CentralProcessor.Profilers;
 using Ninu.Emulator.GraphicsProcessor;
 using Ninu.Models;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -72,8 +74,6 @@ namespace Ninu.ViewModels
             });
 
             Console = new Console(loggerFactory, loggerFactory.CreateLogger<Console>());
-
-            Console.Cpu.AddProfiler(new NmiProfiler());
 
             LoadRom = new RelayCommand(x =>
             {
@@ -213,11 +213,24 @@ namespace Ninu.ViewModels
             }
         }
 
-        private void UpdateInstructions(Cpu cpu)
+        private void UpdateInstructions(NewCpu cpu)
         {
+            IEnumerable<string> DecodeInstructions(ushort address, int count)
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    var opCode = Console.Read(address);
+                    var instruction = Instruction.GetByOpCode(opCode);
+
+                    yield return instruction.Name;
+
+                    address += (ushort)instruction.Size;
+                }
+            }
+
             CpuState.Instructions.Clear();
 
-            foreach (var decodedInstruction in cpu.DecodeInstructions(cpu.CpuState.PC, 16))
+            foreach (var decodedInstruction in DecodeInstructions(cpu.CpuState.PC, 16))
             {
                 CpuState.Instructions.Add(decodedInstruction);
             }

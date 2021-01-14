@@ -224,6 +224,89 @@ namespace Ninu.Emulator.Tests.NewCpu
             }
         }
 
+        [Fact]
+        public void KlausTest()
+        {
+            var data = File.ReadAllBytes(@"C:\Users\Jorgy\Downloads\6502_functional_test.bin");
+
+            var simulatorMemory = new TrackedMemory(data);
+            var emulatorMemory = new TrackedMemory(data);
+
+            var simulator = new Simulator(simulatorMemory);
+            simulator.Init();
+
+            var bus = new EmulatorBus(emulatorMemory);
+            var cpu = new CentralProcessor.NewCpu(bus);
+
+            //var simulatorLog = new StringBuilder();
+            //var emulatorLog = new StringBuilder();
+
+            using var simulatorLog = new StreamWriter(@"C:\Users\Jorgy\Desktop\simulatorLog.txt");
+            using var emulatorLog = new StreamWriter(@"C:\Users\Jorgy\Desktop\emulatorLog.txt");
+
+            cpu.Init();
+
+            // Run the init programs.
+            for (var i = 0; i < 9; i++)
+            {
+                cpu.Clock();
+                simulator.Clock();
+            }
+
+            simulator.HalfClock(); // See notes in the simulation's start program code.
+
+            // We only check the flags register the cycle after sync goes high. This variable
+            // tracks the state of sync on the previous cycle.
+            var previousSync = false;
+
+            // Run the actual user code.
+            for (var i = 0; i < 500_000; i++)
+            {
+                if (i == 109346)
+                {
+
+                }
+
+                cpu.Clock();
+                simulator.Clock();
+
+                WriteDataLine(simulatorLog, i + 1, simulator);
+                WriteDataLine(emulatorLog, i + 1, cpu);
+
+                Assert.True(TrackedMemory.AreChangesEqual(simulatorMemory, emulatorMemory));
+
+                Assert.Equal(simulator.ReadPC(), cpu.CpuState.PC);
+                Assert.Equal(simulator.ReadA(), cpu.CpuState.A);
+                Assert.Equal(simulator.ReadX(), cpu.CpuState.X);
+                Assert.Equal(simulator.ReadY(), cpu.CpuState.Y);
+
+                // The S register reads funny during most of the execution of the JSR instruction.
+                // Don't check S during execution of this operation.
+                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                {
+                    Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
+                }
+
+                // Because flags are set on very weird cycles for reasons I don't yet understand,
+                // we will only check flags once we know for sure they will be set.
+                if (previousSync)
+                {
+                    Assert.Equal(simulator.ReadP(), (int)cpu.CpuState.P);
+                }
+
+                previousSync = simulator.ReadBit("sync") == 0 ? false : true;
+
+                if (i % 100 == 0)
+                {
+                    simulatorMemory.CommitChanges();
+                    emulatorMemory.CommitChanges();
+                }
+            }
+
+            //var simulatorLogString = simulatorLog.ToString();
+            //var emulatorLogString = emulatorLog.ToString();
+        }
+
         private void WriteDataLine(StringBuilder stringBuilder, int cycle, Simulator simulator)
         {
             stringBuilder.Append($"{cycle:00000} {simulator.ReadAddressBus():x4} {simulator.ReadBits8("db"):x2} {simulator.ReadPC():x4} ");
@@ -234,6 +317,16 @@ namespace Ninu.Emulator.Tests.NewCpu
             stringBuilder.AppendLine();
         }
 
+        private void WriteDataLine(StreamWriter stream, int cycle, Simulator simulator)
+        {
+            stream.Write($"{cycle:00000} {simulator.ReadAddressBus():x4} {simulator.ReadBits8("db"):x2} {simulator.ReadPC():x4} ");
+            stream.Write($"{simulator.ReadA():x2} {simulator.ReadX():x2} {simulator.ReadY():x2} {simulator.ReadS():x2} ");
+            stream.Write($"{simulator.ReadBits8("ir"):x2}  {simulator.ReadBit("sync")}   {simulator.ReadBit("rw")}   ");
+            stream.Write($"{simulator.ReadBit("nmi")}  {simulator.ReadPString()} ");
+
+            stream.WriteLine();
+        }
+
         private void WriteDataLine(StringBuilder stringBuilder, int cycle, CentralProcessor.NewCpu cpu)
         {
             stringBuilder.Append($"{cycle:00000} ---- -- {cpu.CpuState.PC:x4} ");
@@ -242,6 +335,16 @@ namespace Ninu.Emulator.Tests.NewCpu
             stringBuilder.Append($"{(cpu.Nmi ? "1" : "0")}  -------- ");
 
             stringBuilder.AppendLine();
+        }
+
+        private void WriteDataLine(StreamWriter stream, int cycle, CentralProcessor.NewCpu cpu)
+        {
+            stream.Write($"{cycle:00000} ---- -- {cpu.CpuState.PC:x4} ");
+            stream.Write($"{cpu.CpuState.A:x2} {cpu.CpuState.X:x2} {cpu.CpuState.Y:x2} {cpu.CpuState.S:x2} ");
+            stream.Write($"--  -   -   ");
+            stream.Write($"{(cpu.Nmi ? "1" : "0")}  -------- ");
+
+            stream.WriteLine();
         }
     }
 }

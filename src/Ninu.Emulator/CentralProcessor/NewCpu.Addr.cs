@@ -61,6 +61,7 @@ namespace Ninu.Emulator.CentralProcessor
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddFreeOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
             AddOperation(FetchInstruction.Singleton, false);
@@ -88,6 +89,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
             AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
+            AddFreeOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
             AddOperation(FetchInstruction.Singleton, false);
@@ -132,6 +134,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
             AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
+            AddFreeOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
             AddOperation(FetchInstruction.Singleton, false);
@@ -161,6 +164,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchLowByXWithoutWrapping.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchHighByXOnlyWithCarry.Singleton, false);
+            AddFreeOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false, action);
             AddOperation(FetchInstruction.Singleton, false);

@@ -11,7 +11,7 @@ namespace Ninu.Emulator
         private readonly ILogger _logger;
 
         [SaveChildren]
-        public Cpu Cpu { get; }
+        public NewCpu Cpu { get; }
 
         [SaveChildren]
         public Ppu Ppu { get; }
@@ -36,20 +36,22 @@ namespace Ninu.Emulator
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-            Cpu = new Cpu(this);
+            Cpu = new NewCpu(this);
             Ppu = new Ppu(loggerFactory, loggerFactory.CreateLogger<Ppu>());
         }
 
         public void PowerOn()
         {
             Ppu.PowerOn();
-            Cpu.PowerOn();
+            Cpu.Init();
+            //Cpu.PowerOn();
         }
 
         public void Reset()
         {
             Ppu.Reset();
-            Cpu.Reset();
+            Cpu.Init();
+            //Cpu.Reset();
         }
 
         public void LoadCartridge(Cartridge cartridge)

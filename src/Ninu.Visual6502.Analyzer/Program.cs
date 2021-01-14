@@ -62,8 +62,12 @@ namespace Ninu.Visual6502.Analyzer
 * = $c000
 .init
 
-lda #$91
-lsr a
+ldx #$01
+lda #$95
+sta $5000,x
+lda #$00
+
+asl $5000,x
 
 .done
 

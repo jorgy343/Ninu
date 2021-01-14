@@ -55,6 +55,7 @@ lda $5000
 ldx #$01
 lda #$95
 sta $5000,x
+lda #$00
 
 asl $5000,x
 lda $5000,x
@@ -103,6 +104,78 @@ lsr $fe
 lda $fe
 
 ; LSR zero page with x offset
+ldx #$01
+lda #$97
+sta $fe,x
+
+lsr $fe,x
+lda $fe,x
+
+
+
+; ROL A
+lda #$91
+lsr a
+
+; ROL absolute
+lda #$93
+sta $5000
+
+lsr $5000
+lda $5000
+
+; ROL absolute with x offset
+ldx #$01
+lda #$95
+sta $5000,x
+
+lsr $5000,x
+lda $5000,x
+
+; ROL zero page
+lda #$97
+sta $fe
+
+lsr $fe
+lda $fe
+
+; ROL zero page with x offset
+ldx #$01
+lda #$97
+sta $fe,x
+
+lsr $fe,x
+lda $fe,x
+
+
+
+; ROR A
+lda #$91
+lsr a
+
+; ROR absolute
+lda #$93
+sta $5000
+
+lsr $5000
+lda $5000
+
+; ROR absolute with x offset
+ldx #$01
+lda #$95
+sta $5000,x
+
+lsr $5000,x
+lda $5000,x
+
+; ROR zero page
+lda #$97
+sta $fe
+
+lsr $fe
+lda $fe
+
+; ROR zero page with x offset
 ldx #$01
 lda #$97
 sta $fe,x

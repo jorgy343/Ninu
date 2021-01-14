@@ -336,7 +336,7 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read.
                     AddOperation(Nop.Singleton, true, WritePCHighToStack);
                     AddOperation(Nop.Singleton, false, WritePCLowToStackMinus1);
-                    AddOperation(Nop.Singleton, false, WritePToStackMinus2);
+                    AddOperation(Nop.Singleton, false, WritePToStackMinus2, SetInterruptFlag); // Set I after pushing P to the stack.
                     AddOperation(FetchIrqVectorLowIntoEffectiveAddressLatchLow.Singleton, false, DecrementSByThree);
                     AddOperation(FetchIrqVectorHighIntoEffectiveAddressLatchHigh.Singleton, false);
                     AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
@@ -679,6 +679,46 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchInstruction.Singleton, false, TransferDataLatchToP);
                     break;
 
+                case Rol_Absolute:
+                    Addr_Absolute_WriteBack(Op_Rol_DataLatch);
+                    break;
+
+                case Rol_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Rol_DataLatch);
+                    break;
+
+                case Rol_Accumulator:
+                    Addr_Implied(Op_Rol_Accumulator, delayedExecution: true);
+                    break;
+
+                case Rol_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Rol_DataLatch);
+                    break;
+
+                case Rol_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Rol_DataLatch);
+                    break;
+
+                case Ror_Absolute:
+                    Addr_Absolute_WriteBack(Op_Ror_DataLatch);
+                    break;
+
+                case Ror_AbsoluteWithXOffset:
+                    Addr_AbsoluteWithXOffset_WriteBack(Op_Ror_DataLatch);
+                    break;
+
+                case Ror_Accumulator:
+                    Addr_Implied(Op_Ror_Accumulator, delayedExecution: true);
+                    break;
+
+                case Ror_ZeroPage:
+                    Addr_ZeroPage_WriteBack(Op_Ror_DataLatch);
+                    break;
+
+                case Ror_ZeroPageWithXOffset:
+                    Addr_ZeroPageWithXOffset_WriteBack(Op_Ror_DataLatch);
+                    break;
+
                 case Rti_Implied:
                     // TODO: Implement better?
 
@@ -977,16 +1017,6 @@ namespace Ninu.Emulator.CentralProcessor
                 case Rla_IndirectZeroPageWithYOffset_33:
                 case Rla_ZeroPage_27:
                 case Rla_ZeroPageWithXOffset_37:
-                case Rol_Absolute:
-                case Rol_AbsoluteWithXOffset:
-                case Rol_Accumulator:
-                case Rol_ZeroPage:
-                case Rol_ZeroPageWithXOffset:
-                case Ror_Absolute:
-                case Ror_AbsoluteWithXOffset:
-                case Ror_Accumulator:
-                case Ror_ZeroPage:
-                case Ror_ZeroPageWithXOffset:
                 case Rra_Absolute_6F:
                 case Rra_AbsoluteWithXOffset_7F:
                 case Rra_AbsoluteWithYOffset_7B:
@@ -1056,6 +1086,7 @@ namespace Ninu.Emulator.CentralProcessor
 
         private void Op_Asl_Accumulator()
         {
+            DataLatch = CpuState.A;
             Op_Asl_DataLatch(); // Performs the operation directly to the data latch.
             CpuState.A = DataLatch;
         }
@@ -1282,6 +1313,7 @@ namespace Ninu.Emulator.CentralProcessor
 
         private void Op_Lsr_Accumulator()
         {
+            DataLatch = CpuState.A;
             Op_Lsr_DataLatch(); // Performs the operation directly to the data latch.
             CpuState.A = DataLatch;
         }
@@ -1292,6 +1324,52 @@ namespace Ninu.Emulator.CentralProcessor
 
             CpuState.SetZeroFlag(CpuState.A);
             CpuState.SetNegativeFlag(CpuState.A);
+        }
+
+        private void Op_Rol_DataLatch()
+        {
+            var newCarry = (DataLatch & 0x80) != 0;
+
+            DataLatch = (byte)(DataLatch << 1);
+
+            if (CpuState.GetFlag(CpuFlags.C))
+            {
+                DataLatch |= 0x01;
+            }
+
+            CpuState.SetFlag(CpuFlags.C, newCarry);
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
+        private void Op_Rol_Accumulator()
+        {
+            DataLatch = CpuState.A;
+            Op_Rol_DataLatch(); // Performs the operation directly to the data latch.
+            CpuState.A = DataLatch;
+        }
+
+        private void Op_Ror_DataLatch()
+        {
+            var newCarry = (DataLatch & 0x01) != 0;
+
+            DataLatch = (byte)(DataLatch >> 1);
+
+            if (CpuState.GetFlag(CpuFlags.C))
+            {
+                DataLatch |= 0x80;
+            }
+
+            CpuState.SetFlag(CpuFlags.C, newCarry);
+            CpuState.SetZeroFlag(DataLatch);
+            CpuState.SetNegativeFlag(DataLatch);
+        }
+
+        private void Op_Ror_Accumulator()
+        {
+            DataLatch = CpuState.A;
+            Op_Ror_DataLatch(); // Performs the operation directly to the data latch.
+            CpuState.A = DataLatch;
         }
 
         private void IncrementS()
@@ -1357,6 +1435,11 @@ namespace Ninu.Emulator.CentralProcessor
         private void ReadSPlus2IntoEffectiveAddressLatchHigh()
         {
             EffectiveAddressLatchHigh = _bus.Read((ushort)(((CpuState.S + 2) & 0xff) + 0x100));
+        }
+
+        private void SetInterruptFlag()
+        {
+            CpuState.SetFlag(CpuFlags.I, true);
         }
 
         private void TransferDataLatchToA()
