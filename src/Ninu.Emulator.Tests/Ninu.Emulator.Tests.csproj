@@ -8,15 +8,52 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Cpu\TestFiles\example.6502.asm" />
+    <None Remove="NewCpu\TestFiles\branches.6502.asm" />
+    <None Remove="NewCpu\TestFiles\stack.6502.asm" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Cpu\TestFiles\and.6502.asm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="NewCpu\TestFiles\stack.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Cpu\TestFiles\example.6502.asm">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <Content Include="NewCpu\TestFiles\arithmetic-and-comparison.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\branches.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\nmi.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\stores.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\transfers.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\flags.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\jmp-indirect-buggy.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\jmp-indirect.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\basic.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\std.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\loads.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\branches.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="NewCpu\TestFiles\stack.6502.asm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 

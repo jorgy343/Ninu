@@ -1,5 +1,4 @@
-﻿using Ninu.Emulator.Tests.TestHeaders;
-using Patcher6502;
+﻿using Patcher6502;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +8,7 @@ using Xunit.Sdk;
 
 namespace Ninu.Emulator.Tests
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
     public class AsmDataAttribute : DataAttribute
     {
         private readonly string _filename;
@@ -34,7 +33,7 @@ namespace Ninu.Emulator.Tests
             var assembler = new PatchAssembler();
             var simulationMemory = assembler.Assemble(0, null, asm);
 
-            yield return new object[] { simulationMemory, AssemblyHeaderParser.ParseHeaders(asm), };
+            yield return new object[] { simulationMemory, };
         }
     }
 }
