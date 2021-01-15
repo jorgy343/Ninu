@@ -1,6 +1,6 @@
 ﻿namespace Ninu.Emulator.CentralProcessor
 {
-    public enum NewOpcode : byte
+    public enum Opcode : byte
     {
         Brk_Implied = 0x00,
         Ora_IndirectZeroPageWithXOffset = 0x01,

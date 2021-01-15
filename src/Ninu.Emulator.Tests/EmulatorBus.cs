@@ -1,7 +1,7 @@
 ﻿using Ninu.Base;
 using System;
 
-namespace Ninu.Emulator.Tests.Cpu
+namespace Ninu.Emulator.Tests
 {
     public class EmulatorBus : IBus
     {

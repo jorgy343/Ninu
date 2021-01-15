@@ -9,7 +9,7 @@
 
         public static IncrementEffectiveAddressLatchHighByXOnlyWithCarry Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var result = cpu.EffectiveAddressLatchLow + cpu.CpuState.X;
             var increment = result >> 8; // This will shift the carry bit to the LSB.

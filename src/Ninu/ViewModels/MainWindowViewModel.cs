@@ -3,7 +3,6 @@ using Microsoft.Win32;
 using Ninu.Base;
 using Ninu.Emulator;
 using Ninu.Emulator.CentralProcessor;
-using Ninu.Emulator.CentralProcessor.Profilers;
 using Ninu.Emulator.GraphicsProcessor;
 using Ninu.Models;
 using System;
@@ -213,7 +212,7 @@ namespace Ninu.ViewModels
             }
         }
 
-        private void UpdateInstructions(NewCpu cpu)
+        private void UpdateInstructions(Cpu cpu)
         {
             IEnumerable<string> DecodeInstructions(ushort address, int count)
             {

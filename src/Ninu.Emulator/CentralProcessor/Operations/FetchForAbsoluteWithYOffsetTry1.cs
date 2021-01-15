@@ -16,7 +16,7 @@
 
         public static FetchForAbsoluteWithYOffsetTry1 Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var baseAddress = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
             var finalAddress = (ushort)((baseAddress + cpu.CpuState.Y) & 0xffff); // The & prevents overflow.

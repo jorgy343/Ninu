@@ -9,7 +9,7 @@
 
         public static IncrementEffectiveAddressLatchLowByXWithoutWrapping Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var address = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
             address = (ushort)((address + cpu.CpuState.X) & 0xffff); // Wrap addresses around 64KiB.

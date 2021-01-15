@@ -9,7 +9,7 @@
 
         public static BranchNoPageCrossing Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var baseAddress = (ushort)(cpu.AddressLatchLow | (cpu.AddressLatchHigh << 8));
             var finalAddressNotWrapped = (ushort)((cpu.AddressLatchLow + (sbyte)cpu.DataLatch + (cpu.AddressLatchHigh << 8)) & 0xffff);

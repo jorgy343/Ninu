@@ -14,7 +14,7 @@
 
         public static FetchZeroPageAddressByPCIntoAddressLatch Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             cpu.AddressLatchLow = bus.Read(cpu.CpuState.PC);
             cpu.AddressLatchHigh = 0x00;

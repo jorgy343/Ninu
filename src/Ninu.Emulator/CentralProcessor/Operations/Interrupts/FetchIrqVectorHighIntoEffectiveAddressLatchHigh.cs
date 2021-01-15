@@ -9,7 +9,7 @@
 
         public static FetchIrqVectorHighIntoEffectiveAddressLatchHigh Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             cpu.EffectiveAddressLatchHigh = bus.Read(0xffff);
         }

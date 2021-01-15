@@ -12,7 +12,7 @@
 
         public static FetchMemoryByStackIntoDataLatch Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var data = bus.Read((ushort)(cpu.CpuState.S + 0x100));
             cpu.DataLatch = data;

@@ -12,7 +12,7 @@
 
         public static FetchInstruction Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             if (cpu._nmi && cpu._nmiCycle != cpu._totalCycles - 1)
             {

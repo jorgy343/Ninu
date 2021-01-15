@@ -19,12 +19,6 @@
     <Content Include="NewCpu\TestFiles\arithmetic-and-comparison.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Cpu\TestFiles\and.6502.asm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Cpu\TestFiles\example.6502.asm">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="NewCpu\TestFiles\branches.6502.asm">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

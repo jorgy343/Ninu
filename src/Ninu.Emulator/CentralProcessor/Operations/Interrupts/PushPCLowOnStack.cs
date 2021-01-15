@@ -13,7 +13,7 @@
 
         public static PushPCLowOnStack Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var pcLow = (byte)(cpu.CpuState.PC & 0x00ff);
             bus.Write((ushort)(0x100 + cpu.CpuState.S - 1), pcLow);

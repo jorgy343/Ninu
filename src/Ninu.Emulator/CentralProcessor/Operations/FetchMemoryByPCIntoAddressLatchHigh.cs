@@ -13,7 +13,7 @@
 
         public static FetchMemoryByPCIntoAddressLatchHigh Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var addressHigh = bus.Read(cpu.CpuState.PC);
             cpu.AddressLatchHigh = addressHigh;

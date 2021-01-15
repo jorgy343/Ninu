@@ -9,7 +9,7 @@
 
         public static SetPCToAddressLatchAndFetchInstruction Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             cpu.CpuState.PC = (ushort)(cpu.AddressLatchLow | (cpu.AddressLatchHigh << 8));
 

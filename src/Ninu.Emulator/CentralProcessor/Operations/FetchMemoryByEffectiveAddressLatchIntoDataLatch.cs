@@ -9,7 +9,7 @@
 
         public static FetchMemoryByEffectiveAddressLatchIntoDataLatch Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var address = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
 

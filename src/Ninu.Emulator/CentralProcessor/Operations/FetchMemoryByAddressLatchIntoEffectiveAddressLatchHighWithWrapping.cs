@@ -21,7 +21,7 @@
 
         public static FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             // Increment the low byte and allow it wrap if the value is 0xff.
             var addressLow = (byte)((cpu.AddressLatchLow + 1) & 0xff);

@@ -5,6 +5,6 @@
     /// </summary>
     public abstract class CpuOperation
     {
-        public abstract void Execute(NewCpu cpu, IBus bus);
+        public abstract void Execute(Cpu cpu, IBus bus);
     }
 }

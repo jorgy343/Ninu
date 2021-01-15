@@ -9,12 +9,12 @@ namespace Ninu.Emulator.CentralProcessor
     /// cycle. However, there are many other flags on this struct that dictate how the CPU will
     /// handle the cycle. See the documentation on each flag for more details.
     /// </summary>
-    public unsafe struct NewCpuOperationQueueState
+    public unsafe struct CpuOperationQueueState
     {
-        public NewCpuOperationQueueState(
+        public CpuOperationQueueState(
             CpuOperation operation,
-            delegate*<NewCpu, IBus, void> preAction,
-            delegate*<NewCpu, IBus, void> postAction,
+            delegate*<Cpu, IBus, void> preAction,
+            delegate*<Cpu, IBus, void> postAction,
             bool incrementPC,
             bool free)
         {
@@ -34,12 +34,12 @@ namespace Ninu.Emulator.CentralProcessor
         /// Optionally, an action that will be executed prior to the <see cref="Operation"/>
         /// execution.
         /// </summary>
-        public delegate*<NewCpu, IBus, void> PreAction { get; }
+        public delegate*<Cpu, IBus, void> PreAction { get; }
 
         /// <summary>
         /// Optionally, an action that will be executed after <see cref="Operation"/> execution.
         /// </summary>
-        public delegate*<NewCpu, IBus, void> PostAction { get; }
+        public delegate*<Cpu, IBus, void> PostAction { get; }
 
         /// <summary>
         /// Indicates if the CPU should increment the PC register during the clock cycle. If this

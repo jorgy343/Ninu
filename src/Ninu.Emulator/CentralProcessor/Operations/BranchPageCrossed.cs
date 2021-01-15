@@ -9,7 +9,7 @@
 
         public static BranchPageCrossed Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var baseAddress = (ushort)(cpu.AddressLatchLow | (cpu.AddressLatchHigh << 8));
             var finalAddress = (ushort)((baseAddress + (sbyte)cpu.DataLatch) & 0xffff);

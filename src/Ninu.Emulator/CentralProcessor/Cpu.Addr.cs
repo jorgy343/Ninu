@@ -8,9 +8,9 @@ namespace Ninu.Emulator.CentralProcessor
     // The "WonkFlags" methods are for a few specific instructions that set the flags register P
     // one cycle before setting the A register with the result of the operation.
 
-    public unsafe partial class NewCpu
+    public unsafe partial class Cpu
     {
-        private void Addr_Implied(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_Implied(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(Nop.Singleton, true);
 
@@ -25,7 +25,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_Immediate(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_Immediate(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
 
@@ -40,7 +40,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_ZeroPage(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_ZeroPage(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
@@ -56,7 +56,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_ZeroPage_WriteBack(delegate*<NewCpu, IBus, void> action)
+        private void Addr_ZeroPage_WriteBack(delegate*<Cpu, IBus, void> action)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, true);
@@ -66,7 +66,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, false);
         }
 
-        private void Addr_ZeroPageWithXOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_ZeroPageWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
@@ -83,7 +83,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_ZeroPageWithXOffset_WriteBack(delegate*<NewCpu, IBus, void> action)
+        private void Addr_ZeroPageWithXOffset_WriteBack(delegate*<Cpu, IBus, void> action)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
@@ -94,7 +94,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, false);
         }
 
-        private void Addr_ZeroPageWithYOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_ZeroPageWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchLowByYWithWrapping.Singleton, true);
@@ -111,7 +111,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_Absolute(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_Absolute(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
@@ -128,7 +128,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_Absolute_WriteBack(delegate*<NewCpu, IBus, void> action)
+        private void Addr_Absolute_WriteBack(delegate*<Cpu, IBus, void> action)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
@@ -139,7 +139,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, false);
         }
 
-        private void Addr_AbsoluteWithXOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_AbsoluteWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
@@ -157,7 +157,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_AbsoluteWithXOffset_WriteBack(delegate*<NewCpu, IBus, void> action)
+        private void Addr_AbsoluteWithXOffset_WriteBack(delegate*<Cpu, IBus, void> action)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
@@ -169,7 +169,7 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(FetchInstruction.Singleton, false);
         }
 
-        private void Addr_AbsoluteWithYOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_AbsoluteWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
@@ -187,7 +187,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_IndirectZeroPageWithXOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_IndirectZeroPageWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
             AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
@@ -206,7 +206,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_IndirectZeroPageWithYOffset(delegate*<NewCpu, IBus, void> action, bool delayedExecution = false)
+        private void Addr_IndirectZeroPageWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
             AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
             AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
@@ -225,7 +225,7 @@ namespace Ninu.Emulator.CentralProcessor
             }
         }
 
-        private void Addr_Relative(delegate*<NewCpu, IBus, void> action)
+        private void Addr_Relative(delegate*<Cpu, IBus, void> action)
         {
             AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true, postAction: action);
             AddOperation(BranchNoPageCrossing.Singleton, true);

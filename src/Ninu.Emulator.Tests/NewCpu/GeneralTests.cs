@@ -1,11 +1,8 @@
 ﻿using Ninu.Base;
 using Ninu.Emulator.CentralProcessor;
-using Ninu.Emulator.Tests.Cpu;
-using Ninu.Emulator.Tests.TestHeaders;
 using Ninu.Visual6502;
 using Patcher6502;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -25,10 +22,9 @@ namespace Ninu.Emulator.Tests.NewCpu
         [AsmData("NewCpu/TestFiles/branches.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect.6502.asm")]
         [AsmData("NewCpu/TestFiles/jmp-indirect-buggy.6502.asm")]
-        public void TestInstructions(byte[] memory, IEnumerable<Checkpoint> checkpoints)
+        public void TestInstructions(byte[] memory)
         {
             if (memory is null) throw new ArgumentNullException(nameof(memory));
-            if (checkpoints is null) throw new ArgumentNullException(nameof(checkpoints));
 
             var simulatorMemory = new TrackedMemory(memory);
             var emulatorMemory = new TrackedMemory(memory);
@@ -37,7 +33,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             simulator.Init();
 
             var bus = new EmulatorBus(emulatorMemory);
-            var cpu = new CentralProcessor.NewCpu(bus);
+            var cpu = new CentralProcessor.Cpu(bus);
 
             var simulatorLog = new StringBuilder();
             var emulatorLog = new StringBuilder();
@@ -75,7 +71,7 @@ namespace Ninu.Emulator.Tests.NewCpu
 
                 // The S register reads funny during most of the execution of the JSR instruction.
                 // Don't check S during execution of this operation.
-                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                if (simulator.ReadBits8("ir") != (byte)Opcode.Jsr_Absolute)
                 {
                     Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
                 }
@@ -137,7 +133,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             simulator.Init();
 
             var bus = new EmulatorBus(emulatorMemory);
-            var cpu = new CentralProcessor.NewCpu(bus);
+            var cpu = new CentralProcessor.Cpu(bus);
 
             var simulatorLog = new StringBuilder();
             var emulatorLog = new StringBuilder();
@@ -189,7 +185,7 @@ namespace Ninu.Emulator.Tests.NewCpu
 
                 // The S register reads funny during most of the execution of the JSR instruction.
                 // Don't check S during execution of this operation.
-                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                if (simulator.ReadBits8("ir") != (byte)Opcode.Jsr_Absolute)
                 {
                     Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
                 }
@@ -236,7 +232,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             simulator.Init();
 
             var bus = new EmulatorBus(emulatorMemory);
-            var cpu = new CentralProcessor.NewCpu(bus);
+            var cpu = new CentralProcessor.Cpu(bus);
 
             //var simulatorLog = new StringBuilder();
             //var emulatorLog = new StringBuilder();
@@ -282,7 +278,7 @@ namespace Ninu.Emulator.Tests.NewCpu
 
                 // The S register reads funny during most of the execution of the JSR instruction.
                 // Don't check S during execution of this operation.
-                if (simulator.ReadBits8("ir") != (byte)NewOpcode.Jsr_Absolute)
+                if (simulator.ReadBits8("ir") != (byte)Opcode.Jsr_Absolute)
                 {
                     Assert.Equal(simulator.ReadS(), cpu.CpuState.S);
                 }
@@ -327,7 +323,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             stream.WriteLine();
         }
 
-        private void WriteDataLine(StringBuilder stringBuilder, int cycle, CentralProcessor.NewCpu cpu)
+        private void WriteDataLine(StringBuilder stringBuilder, int cycle, CentralProcessor.Cpu cpu)
         {
             stringBuilder.Append($"{cycle:00000} ---- -- {cpu.CpuState.PC:x4} ");
             stringBuilder.Append($"{cpu.CpuState.A:x2} {cpu.CpuState.X:x2} {cpu.CpuState.Y:x2} {cpu.CpuState.S:x2} ");
@@ -337,7 +333,7 @@ namespace Ninu.Emulator.Tests.NewCpu
             stringBuilder.AppendLine();
         }
 
-        private void WriteDataLine(StreamWriter stream, int cycle, CentralProcessor.NewCpu cpu)
+        private void WriteDataLine(StreamWriter stream, int cycle, CentralProcessor.Cpu cpu)
         {
             stream.Write($"{cycle:00000} ---- -- {cpu.CpuState.PC:x4} ");
             stream.Write($"{cpu.CpuState.A:x2} {cpu.CpuState.X:x2} {cpu.CpuState.Y:x2} {cpu.CpuState.S:x2} ");

@@ -13,7 +13,7 @@
 
         public static FetchMemoryByPCIntoEffectiveAddressLatchLow Singleton { get; } = new();
 
-        public override void Execute(NewCpu cpu, IBus bus)
+        public override void Execute(Cpu cpu, IBus bus)
         {
             var addressLow = bus.Read(cpu.CpuState.PC);
             cpu.EffectiveAddressLatchLow = addressLow;
