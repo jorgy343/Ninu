@@ -135,8 +135,7 @@ namespace Ninu.Visual6502
 
             for (var i = 0; i < cycleCount; i++)
             {
-                HalfClock();
-                HalfClock();
+                Clock();
             }
         }
 
@@ -164,10 +163,11 @@ namespace Ninu.Visual6502
         }
 
         /// <summary>
-        /// This method must be called before the simulator can run cycles. This method sets up the simulator to the
-        /// point where the start program can run.
+        /// This method must be called before the simulator can run cycles. This method sets up the
+        /// simulator to the point where the start program can run.
         /// </summary>
-        public void Init()
+        /// <param name="cycleCallback">Optionally, a callback that is called every time after the simulator is clocked during the init routine.</param>
+        public void Init(Action? cycleCallback = null)
         {
             SetupNodes();
             SetupTransistors();
@@ -186,13 +186,17 @@ namespace Ninu.Visual6502
             SetHigh("nmi");
 
             RecalcNodeList(_nodes
-                .Where(x => x != _groundNode && x != _powerNode)
-                .ToArray());
+                .Where(x => x != _groundNode && x != _powerNode));
 
+            // These clocks are just to stablize the CPU and get it into a valid configuration. You
+            // can actually increase the number of cycles and it won't have any affect because the
+            // reset pin is held high right after causing teh CPU to begin it's reset routine.
             for (var i = 0; i < 8; i++)
             {
                 SetHigh("clk0");
                 SetLow("clk0");
+
+                cycleCallback?.Invoke();
             }
 
             SetHigh("res");
@@ -202,12 +206,24 @@ namespace Ninu.Visual6502
         /// This method must be called after <see cref="Init"/> and before the simulator can run cycles. This method
         /// runs the start program which primes the first instruction that the reset vector points to.
         /// </summary>
-        public void RunStartProgram()
+        /// <param name="cycleCallback">Optionally, a callback that is called every time after the simulator is clocked during the start routine.</param>
+        public void RunStartProgram(Action? cycleCallback = null)
         {
-            for (var i = 0; i < 18; i++)
+            for (var i = 0; i < 9; i++)
             {
-                HalfClock();
+                Clock();
+
+                cycleCallback?.Invoke();
             }
+
+            // We have to do an additional half clock here in order to get everything synced up.
+            // I'm not really sure why but doing this matches how the JS version of Visual 6502
+            // works. When the JS version loads, it presents you with a row of the current state of
+            // the CPU which is indicated as cycle 0. This is really the status of the CPU after
+            // the last half cycle of the start program. The next step that you take in the
+            // simulation then does another half cycle and it shows up as cycle 0 which is what
+            // this half clock below is doing.
+            HalfClock();
         }
 
         private void SetupNodes()
@@ -275,7 +291,7 @@ namespace Ninu.Visual6502
             }
         }
 
-        private void RecalcNodeList(Node[] nodeList)
+        private void RecalcNodeList(IEnumerable<Node> nodeList)
         {
             if (nodeList is null)
             {
@@ -505,6 +521,11 @@ namespace Ninu.Visual6502
             return hash;
         }
 
+        public int ReadBit(string name)
+        {
+            return _nodesByName[name].State ? 1 : 0;
+        }
+
         public int ReadBits(string namePrefix, int size)
         {
             var value = 0;
@@ -568,6 +589,51 @@ namespace Ninu.Visual6502
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public int ReadPC() => ReadPCLow() | (ReadPCHigh() << 8);
+
+        public int ReadP()
+        {
+            var c = ReadBit("p0") << 0; // Carry
+            var z = ReadBit("p1") << 1; // Zero
+            var i = ReadBit("p2") << 2; // Disable Interrupts
+            var d = ReadBit("p3") << 3; // Decimal Mode
+            var v = ReadBit("p6") << 6; // Zero
+            var n = ReadBit("p7") << 7; // Negative
+
+            return c | z | i | d | v | n;
+        }
+
+        public string ReadPString()
+        {
+            var c = ReadBit("p0"); // Carry
+            var z = ReadBit("p1"); // Zero
+            var i = ReadBit("p2"); // Disable Interrupts
+            var d = ReadBit("p3"); // Decimal Mode
+            var v = ReadBit("p6"); // Zero
+            var n = ReadBit("p7"); // Negative
+
+            return $"{(n == 1 ? "N" : "n")}{(v == 1 ? "V" : "v")}--{(d == 1 ? "D" : "d")}{(i == 1 ? "I" : "i")}{(z == 1 ? "Z" : "z")}{(c == 1 ? "C" : "c")}";
+        }
+
+        public void WriteBit(string name, bool data)
+        {
+            var nodeRecalcs = new Node[1];
+
+            var node = _nodesByName[name];
+            nodeRecalcs[0] = node;
+
+            if (!data)
+            {
+                node.PullUp = false;
+                node.PullDown = true;
+            }
+            else
+            {
+                node.PullUp = true;
+                node.PullDown = false;
+            }
+
+            RecalcNodeList(nodeRecalcs);
+        }
 
         public void WriteBits(string namePrefix, int size, int data)
         {

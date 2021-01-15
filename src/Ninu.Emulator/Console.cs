@@ -43,13 +43,13 @@ namespace Ninu.Emulator
         public void PowerOn()
         {
             Ppu.PowerOn();
-            Cpu.PowerOn();
+            Cpu.Init();
         }
 
         public void Reset()
         {
             Ppu.Reset();
-            Cpu.Reset();
+            Cpu.Init(); // TODO: Implement reset.
         }
 
         public void LoadCartridge(Cartridge cartridge)

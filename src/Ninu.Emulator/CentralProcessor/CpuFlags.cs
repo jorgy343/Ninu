@@ -12,4 +12,12 @@ namespace Ninu.Emulator.CentralProcessor
         V = 1 << 6, // Overflow
         N = 1 << 7, // Negative
     }
+
+    public static class CpuFlagsExtensions
+    {
+        public static string ToPrettyString(this CpuFlags cpuFlags)
+        {
+            return $"{(cpuFlags.HasFlag(CpuFlags.N) ? "N" : "n")}{(cpuFlags.HasFlag(CpuFlags.V) ? "V" : "v")}--{(cpuFlags.HasFlag(CpuFlags.D) ? "D" : "d")}{(cpuFlags.HasFlag(CpuFlags.I) ? "I" : "i")}{(cpuFlags.HasFlag(CpuFlags.Z) ? "Z" : "z")}{(cpuFlags.HasFlag(CpuFlags.C) ? "C" : "c")}";
+        }
+    }
 }
