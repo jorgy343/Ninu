@@ -2,12 +2,11 @@
 using Ninu.Emulator.CentralProcessor.Operations.Interrupts;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using static Ninu.Emulator.CentralProcessor.NewOpcode;
 
 namespace Ninu.Emulator.CentralProcessor
 {
-    public partial class NewCpu
+    public unsafe partial class NewCpu
     {
         private readonly IBus _bus;
 
@@ -70,12 +69,12 @@ namespace Ninu.Emulator.CentralProcessor
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
 
-        private void AddOperation(CpuOperation operation, bool incrementPC, Action? preAction = null, Action? postAction = null)
+        private void AddOperation(CpuOperation operation, bool incrementPC, delegate*<NewCpu, IBus, void> preAction = null, delegate*<NewCpu, IBus, void> postAction = null)
         {
             Queue.Enqueue(new NewCpuOperationQueueState(operation, preAction, postAction, incrementPC, false));
         }
 
-        private void AddFreeOperation(CpuOperation operation, bool incrementPC, Action? preAction = null, Action? postAction = null)
+        private void AddFreeOperation(CpuOperation operation, bool incrementPC, delegate*<NewCpu, IBus, void> preAction = null, delegate*<NewCpu, IBus, void> postAction = null)
         {
             Queue.Enqueue(new NewCpuOperationQueueState(operation, preAction, postAction, incrementPC, true));
         }
@@ -102,11 +101,17 @@ namespace Ninu.Emulator.CentralProcessor
                     CpuState.PC++;
                 }
 
-                queueState.PreAction?.Invoke();
+                if (queueState.PreAction != null)
+                {
+                    queueState.PreAction(this, _bus);
+                }
 
                 queueState.Operation.Execute(this, _bus);
 
-                queueState.PostAction?.Invoke();
+                if (queueState.PostAction != null)
+                {
+                    queueState.PostAction(this, _bus);
+                }
 
                 // If the operation is not free, we are done processing for this clock cycle. If
                 // the operation is free, we need to execute the next operation in the queue. If
@@ -173,33 +178,33 @@ namespace Ninu.Emulator.CentralProcessor
                 AddOperation(PushPCLowOnStack.Singleton, false);
 
                 // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
-                void PushPOnStack()
+                static void PushPOnStack(NewCpu cpu, IBus bus)
                 {
-                    var p = (byte)((byte)CpuState.P | 0x20); // Push the program status flags with B = 0 and U = 1.
-                    _bus.Write((ushort)(0x100 + CpuState.S - 2), p);
+                    var p = (byte)((byte)cpu.CpuState.P | 0x20); // Push the program status flags with B = 0 and U = 1.
+                    bus.Write((ushort)(0x100 + cpu.CpuState.S - 2), p);
                 }
 
-                AddOperation(Nop.Singleton, false, PushPOnStack);
+                AddOperation(Nop.Singleton, false, &PushPOnStack);
 
                 // Fetch the low byte of the interrupt vector address and decrement the stack by 3.
-                void DecrementStackBy3()
+                static void DecrementStackBy3(NewCpu cpu, IBus bus)
                 {
-                    CpuState.S -= 3;
+                    cpu.CpuState.S -= 3;
                 }
 
-                AddOperation(FetchNmiVectorLowIntoAddressLatchLow.Singleton, false, DecrementStackBy3);
+                AddOperation(FetchNmiVectorLowIntoAddressLatchLow.Singleton, false, &DecrementStackBy3);
 
                 // Fetch the high byte of the interrupt vector address.
                 AddOperation(FetchNmiVectorHighIntoAddressLatchHigh.Singleton, false);
 
                 // Set PC to the address latch and fetch the instruction found at PC.
-                void SetNmiToFalse()
+                static void SetNmiToFalse(NewCpu cpu, IBus bus)
                 {
                     // Set NMI to false to allow an NMI to occur again.
-                    Nmi = false;
+                    cpu.Nmi = false;
                 }
 
-                AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false, SetNmiToFalse);
+                AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false, &SetNmiToFalse);
             }
         }
 
@@ -217,295 +222,295 @@ namespace Ninu.Emulator.CentralProcessor
             switch ((NewOpcode)opcode)
             {
                 case Adc_Absolute:
-                    Addr_Absolute(Op_Adc, delayedExecution: true);
+                    Addr_Absolute(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Adc, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Adc, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_Immediate:
-                    Addr_Immediate(Op_Adc, delayedExecution: true);
+                    Addr_Immediate(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Adc, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Adc, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_ZeroPage:
-                    Addr_ZeroPage(Op_Adc, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Adc, delayedExecution: true);
                     break;
 
                 case Adc_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Adc, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_Adc, delayedExecution: true);
                     break;
 
                 case And_Absolute:
-                    Addr_Absolute(Op_And, delayedExecution: true);
+                    Addr_Absolute(&Op_And, delayedExecution: true);
                     break;
 
                 case And_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_And, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_And, delayedExecution: true);
                     break;
 
                 case And_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_And, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_And, delayedExecution: true);
                     break;
 
                 case And_Immediate:
-                    Addr_Immediate(Op_And, delayedExecution: true);
+                    Addr_Immediate(&Op_And, delayedExecution: true);
                     break;
 
                 case And_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_And, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_And, delayedExecution: true);
                     break;
 
                 case And_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_And, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_And, delayedExecution: true);
                     break;
 
                 case And_ZeroPage:
-                    Addr_ZeroPage(Op_And, delayedExecution: true);
+                    Addr_ZeroPage(&Op_And, delayedExecution: true);
                     break;
 
                 case And_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_And, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_And, delayedExecution: true);
                     break;
 
                 case Asl_Absolute:
-                    Addr_Absolute_WriteBack(Op_Asl_DataLatch);
+                    Addr_Absolute_WriteBack(&Op_Asl_DataLatch);
                     break;
 
                 case Asl_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Asl_DataLatch);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Asl_DataLatch);
                     break;
 
                 case Asl_Accumulator:
-                    Addr_Implied(Op_Asl_Accumulator, delayedExecution: true);
+                    Addr_Implied(&Op_Asl_Accumulator, delayedExecution: true);
                     break;
 
                 case Asl_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Asl_DataLatch);
+                    Addr_ZeroPage_WriteBack(&Op_Asl_DataLatch);
                     break;
 
                 case Asl_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Asl_DataLatch);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Asl_DataLatch);
                     break;
 
                 case Bcc_Relative:
-                    Addr_Relative(Op_Bcc);
+                    Addr_Relative(&Op_Bcc);
                     break;
 
                 case Bcs_Relative:
-                    Addr_Relative(Op_Bcs);
+                    Addr_Relative(&Op_Bcs);
                     break;
 
                 case Beq_Relative:
-                    Addr_Relative(Op_Beq);
+                    Addr_Relative(&Op_Beq);
                     break;
 
                 case Bit_Absolute:
-                    Addr_Absolute(Op_Bit);
+                    Addr_Absolute(&Op_Bit);
                     break;
 
                 case Bit_ZeroPage:
-                    Addr_ZeroPage(Op_Bit);
+                    Addr_ZeroPage(&Op_Bit);
                     break;
 
                 case Bmi_Relative:
-                    Addr_Relative(Op_Bmi);
+                    Addr_Relative(&Op_Bmi);
                     break;
 
                 case Bne_Relative:
-                    Addr_Relative(Op_Bne);
+                    Addr_Relative(&Op_Bne);
                     break;
 
                 case Bpl_Relative:
-                    Addr_Relative(Op_Bpl);
+                    Addr_Relative(&Op_Bpl);
                     break;
 
                 case Brk_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read.
-                    AddOperation(Nop.Singleton, true, WritePCHighToStack);
-                    AddOperation(Nop.Singleton, false, WritePCLowToStackMinus1);
-                    AddOperation(Nop.Singleton, false, WritePToStackMinus2, SetInterruptFlag); // Set I after pushing P to the stack.
-                    AddOperation(FetchIrqVectorLowIntoEffectiveAddressLatchLow.Singleton, false, DecrementSByThree);
+                    AddOperation(Nop.Singleton, true, &WritePCHighToStack);
+                    AddOperation(Nop.Singleton, false, &WritePCLowToStackMinus1);
+                    AddOperation(Nop.Singleton, false, &WritePToStackMinus2, &SetInterruptFlag); // Set I after pushing P to the stack.
+                    AddOperation(FetchIrqVectorLowIntoEffectiveAddressLatchLow.Singleton, false, &DecrementSByThree);
                     AddOperation(FetchIrqVectorHighIntoEffectiveAddressLatchHigh.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
+                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
                     break;
 
                 case Bvc_Relative:
-                    Addr_Relative(Op_Bvc);
+                    Addr_Relative(&Op_Bvc);
                     break;
 
                 case Bvs_Relative:
-                    Addr_Relative(Op_Bvs);
+                    Addr_Relative(&Op_Bvs);
                     break;
 
                 case Clc_Implied:
-                    Addr_Implied(Op_Clc);
+                    Addr_Implied(&Op_Clc);
                     break;
 
                 case Cld_Implied:
-                    Addr_Implied(Op_Cld);
+                    Addr_Implied(&Op_Cld);
                     break;
 
                 case Cli_Implied:
-                    Addr_Implied(Op_Cli);
+                    Addr_Implied(&Op_Cli);
                     break;
 
                 case Clv_Implied:
-                    Addr_Implied(Op_Clv);
+                    Addr_Implied(&Op_Clv);
                     break;
 
                 case Cmp_Absolute:
-                    Addr_Absolute(Op_Cmp, delayedExecution: true);
+                    Addr_Absolute(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Cmp, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Cmp, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_Immediate:
-                    Addr_Immediate(Op_Cmp, delayedExecution: true);
+                    Addr_Immediate(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Cmp, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Cmp, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_ZeroPage:
-                    Addr_ZeroPage(Op_Cmp, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cmp_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Cmp, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_Cmp, delayedExecution: true);
                     break;
 
                 case Cpx_Absolute:
-                    Addr_Absolute(Op_Cpx, delayedExecution: true);
+                    Addr_Absolute(&Op_Cpx, delayedExecution: true);
                     break;
 
                 case Cpx_Immediate:
-                    Addr_Immediate(Op_Cpx, delayedExecution: true);
+                    Addr_Immediate(&Op_Cpx, delayedExecution: true);
                     break;
 
                 case Cpx_ZeroPage:
-                    Addr_ZeroPage(Op_Cpx, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Cpx, delayedExecution: true);
                     break;
 
                 case Cpy_Absolute:
-                    Addr_Absolute(Op_Cpy, delayedExecution: true);
+                    Addr_Absolute(&Op_Cpy, delayedExecution: true);
                     break;
 
                 case Cpy_Immediate:
-                    Addr_Immediate(Op_Cpy, delayedExecution: true);
+                    Addr_Immediate(&Op_Cpy, delayedExecution: true);
                     break;
 
                 case Cpy_ZeroPage:
-                    Addr_ZeroPage(Op_Cpy, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Cpy, delayedExecution: true);
                     break;
 
                 case Dec_Absolute:
-                    Addr_Absolute_WriteBack(Op_Dec);
+                    Addr_Absolute_WriteBack(&Op_Dec);
                     break;
 
                 case Dec_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Dec);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Dec);
                     break;
 
                 case Dec_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Dec);
+                    Addr_ZeroPage_WriteBack(&Op_Dec);
                     break;
 
                 case Dec_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Dec);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Dec);
                     break;
 
                 case Dex_Implied:
-                    Addr_Implied(Op_Dex, delayedExecution: true);
+                    Addr_Implied(&Op_Dex, delayedExecution: true);
                     break;
 
                 case Dey_Implied:
-                    Addr_Implied(Op_Dey, delayedExecution: true);
+                    Addr_Implied(&Op_Dey, delayedExecution: true);
                     break;
 
                 case Eor_Absolute:
-                    Addr_Absolute(Op_Eor, delayedExecution: true);
+                    Addr_Absolute(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Eor, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Eor, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_Immediate:
-                    Addr_Immediate(Op_Eor, delayedExecution: true);
+                    Addr_Immediate(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Eor, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Eor, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_ZeroPage:
-                    Addr_ZeroPage(Op_Eor, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Eor_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Eor, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_Eor, delayedExecution: true);
                     break;
 
                 case Inc_Absolute:
-                    Addr_Absolute_WriteBack(Op_Inc);
+                    Addr_Absolute_WriteBack(&Op_Inc);
                     break;
 
                 case Inc_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Inc);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Inc);
                     break;
 
                 case Inc_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Inc);
+                    Addr_ZeroPage_WriteBack(&Op_Inc);
                     break;
 
                 case Inc_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Inc);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Inc);
                     break;
 
                 case Inx_Implied:
-                    Addr_Implied(Op_Inx, delayedExecution: true);
+                    Addr_Implied(&Op_Inx, delayedExecution: true);
                     break;
 
                 case Iny_Implied:
-                    Addr_Implied(Op_Iny, delayedExecution: true);
+                    Addr_Implied(&Op_Iny, delayedExecution: true);
                     break;
 
                 case Jmp_Absolute:
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
+                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
                     break;
 
                 case Jmp_Indirect:
@@ -513,108 +518,108 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
                     AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, Op_Jmp);
+                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
                     break;
 
                 case Jsr_Absolute:
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
                     AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Discarded read.
-                    AddOperation(Nop.Singleton, false, WritePCHighToStack, DecrementS);
-                    AddOperation(Nop.Singleton, false, WritePCLowToStack, DecrementS);
+                    AddOperation(Nop.Singleton, false, &WritePCHighToStack, &DecrementS);
+                    AddOperation(Nop.Singleton, false, &WritePCLowToStack, &DecrementS);
                     AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, true, Op_Jmp);
+                    AddOperation(FetchInstruction.Singleton, true, &Op_Jmp);
                     break;
 
                 case Lda_Absolute:
-                    Addr_Absolute(Op_Lda);
+                    Addr_Absolute(&Op_Lda);
                     break;
 
                 case Lda_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Lda);
+                    Addr_AbsoluteWithXOffset(&Op_Lda);
                     break;
 
                 case Lda_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Lda);
+                    Addr_AbsoluteWithYOffset(&Op_Lda);
                     break;
 
                 case Lda_Immediate:
-                    Addr_Immediate(Op_Lda);
+                    Addr_Immediate(&Op_Lda);
                     break;
 
                 case Lda_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Lda);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Lda);
                     break;
 
                 case Lda_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Lda);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Lda);
                     break;
 
                 case Lda_ZeroPage:
-                    Addr_ZeroPage(Op_Lda);
+                    Addr_ZeroPage(&Op_Lda);
                     break;
 
                 case Lda_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Lda);
+                    Addr_ZeroPageWithXOffset(&Op_Lda);
                     break;
 
                 case Ldx_Absolute:
-                    Addr_Absolute(Op_Ldx);
+                    Addr_Absolute(&Op_Ldx);
                     break;
 
                 case Ldx_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Ldx);
+                    Addr_AbsoluteWithYOffset(&Op_Ldx);
                     break;
 
                 case Ldx_Immediate:
-                    Addr_Immediate(Op_Ldx);
+                    Addr_Immediate(&Op_Ldx);
                     break;
 
                 case Ldx_ZeroPage:
-                    Addr_ZeroPage(Op_Ldx);
+                    Addr_ZeroPage(&Op_Ldx);
                     break;
 
                 case Ldx_ZeroPageWithYOffset:
-                    Addr_ZeroPageWithYOffset(Op_Ldx);
+                    Addr_ZeroPageWithYOffset(&Op_Ldx);
                     break;
 
                 case Ldy_Absolute:
-                    Addr_Absolute(Op_Ldy);
+                    Addr_Absolute(&Op_Ldy);
                     break;
 
                 case Ldy_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Ldy);
+                    Addr_AbsoluteWithXOffset(&Op_Ldy);
                     break;
 
                 case Ldy_Immediate:
-                    Addr_Immediate(Op_Ldy);
+                    Addr_Immediate(&Op_Ldy);
                     break;
 
                 case Ldy_ZeroPage:
-                    Addr_ZeroPage(Op_Ldy);
+                    Addr_ZeroPage(&Op_Ldy);
                     break;
 
                 case Ldy_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Ldy);
+                    Addr_ZeroPageWithXOffset(&Op_Ldy);
                     break;
 
                 case Lsr_Absolute:
-                    Addr_Absolute_WriteBack(Op_Lsr_DataLatch);
+                    Addr_Absolute_WriteBack(&Op_Lsr_DataLatch);
                     break;
 
                 case Lsr_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Lsr_DataLatch);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Lsr_DataLatch);
                     break;
 
                 case Lsr_Accumulator:
-                    Addr_Implied(Op_Lsr_Accumulator, delayedExecution: true);
+                    Addr_Implied(&Op_Lsr_Accumulator, delayedExecution: true);
                     break;
 
                 case Lsr_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Lsr_DataLatch);
+                    Addr_ZeroPage_WriteBack(&Op_Lsr_DataLatch);
                     break;
 
                 case Lsr_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Lsr_DataLatch);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Lsr_DataLatch);
                     break;
 
                 case Nop_Implied:
@@ -622,101 +627,101 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Ora_Absolute:
-                    Addr_Absolute(Op_Ora, delayedExecution: true);
+                    Addr_Absolute(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Ora, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Ora, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_Immediate:
-                    Addr_Immediate(Op_Ora, delayedExecution: true);
+                    Addr_Immediate(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Ora, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Ora, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_ZeroPage:
-                    Addr_ZeroPage(Op_Ora, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Ora_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Ora, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_Ora, delayedExecution: true);
                     break;
 
                 case Pha_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(Nop.Singleton, false, WriteAToStack);
-                    AddOperation(FetchInstruction.Singleton, false, DecrementS);
+                    AddOperation(Nop.Singleton, false, &WriteAToStack);
+                    AddOperation(FetchInstruction.Singleton, false, &DecrementS);
                     break;
 
                 case Php_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(Nop.Singleton, false, WritePToStack);
-                    AddOperation(FetchInstruction.Singleton, false, DecrementS);
+                    AddOperation(Nop.Singleton, false, &WritePToStack);
+                    AddOperation(FetchInstruction.Singleton, false, &DecrementS);
                     break;
 
                 case Pla_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
                     AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, IncrementS);
-                    AddOperation(FetchInstruction.Singleton, false, TransferDataLatchToA);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, &IncrementS);
+                    AddOperation(FetchInstruction.Singleton, false, &TransferDataLatchToA);
                     break;
 
                 case Plp_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
                     AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, IncrementS);
-                    AddOperation(FetchInstruction.Singleton, false, TransferDataLatchToP);
+                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, &IncrementS);
+                    AddOperation(FetchInstruction.Singleton, false, &TransferDataLatchToP);
                     break;
 
                 case Rol_Absolute:
-                    Addr_Absolute_WriteBack(Op_Rol_DataLatch);
+                    Addr_Absolute_WriteBack(&Op_Rol_DataLatch);
                     break;
 
                 case Rol_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Rol_DataLatch);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Rol_DataLatch);
                     break;
 
                 case Rol_Accumulator:
-                    Addr_Implied(Op_Rol_Accumulator, delayedExecution: true);
+                    Addr_Implied(&Op_Rol_Accumulator, delayedExecution: true);
                     break;
 
                 case Rol_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Rol_DataLatch);
+                    Addr_ZeroPage_WriteBack(&Op_Rol_DataLatch);
                     break;
 
                 case Rol_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Rol_DataLatch);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Rol_DataLatch);
                     break;
 
                 case Ror_Absolute:
-                    Addr_Absolute_WriteBack(Op_Ror_DataLatch);
+                    Addr_Absolute_WriteBack(&Op_Ror_DataLatch);
                     break;
 
                 case Ror_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset_WriteBack(Op_Ror_DataLatch);
+                    Addr_AbsoluteWithXOffset_WriteBack(&Op_Ror_DataLatch);
                     break;
 
                 case Ror_Accumulator:
-                    Addr_Implied(Op_Ror_Accumulator, delayedExecution: true);
+                    Addr_Implied(&Op_Ror_Accumulator, delayedExecution: true);
                     break;
 
                 case Ror_ZeroPage:
-                    Addr_ZeroPage_WriteBack(Op_Ror_DataLatch);
+                    Addr_ZeroPage_WriteBack(&Op_Ror_DataLatch);
                     break;
 
                 case Ror_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset_WriteBack(Op_Ror_DataLatch);
+                    Addr_ZeroPageWithXOffset_WriteBack(&Op_Ror_DataLatch);
                     break;
 
                 case Rti_Implied:
@@ -727,101 +732,101 @@ namespace Ninu.Emulator.CentralProcessor
                     AddOperation(Nop.Singleton, true);
 
                     // Pull P from stack and store it in the data latch but don't set P yet.
-                    void PullPFromStack()
+                    static void PullPFromStack(NewCpu cpu, IBus bus)
                     {
-                        DataLatch = _bus.Read((ushort)(0x100 + CpuState.S + 1));
+                        cpu.DataLatch = bus.Read((ushort)(0x100 + cpu.CpuState.S + 1));
 
                         // During interrupts, bits 4 and 5 of the status register may be set in the
                         // stack. Make sure to clear these when pulling P from the stack as these
                         // two bits don't actually exist.
-                        DataLatch = (byte)(DataLatch & ~0x30);
+                        cpu.DataLatch = (byte)(cpu.DataLatch & ~0x30);
                     }
 
-                    AddOperation(Nop.Singleton, false, PullPFromStack);
+                    AddOperation(Nop.Singleton, false, &PullPFromStack);
 
                     // Pull PC low from the stack. Set P to the data latch.
-                    void PullPCLowFromStack()
+                    static void PullPCLowFromStack(NewCpu cpu, IBus bus)
                     {
-                        CpuState.P = (CpuFlags)DataLatch;
+                        cpu.CpuState.P = (CpuFlags)cpu.DataLatch;
 
-                        EffectiveAddressLatchLow = _bus.Read((ushort)(0x100 + CpuState.S + 2));
+                        cpu.EffectiveAddressLatchLow = bus.Read((ushort)(0x100 + cpu.CpuState.S + 2));
                     }
 
-                    AddOperation(Nop.Singleton, false, PullPCLowFromStack);
+                    AddOperation(Nop.Singleton, false, &PullPCLowFromStack);
 
                     // Pull PC high from the stack. Increment S by 3.
-                    void PullPCHighFromStack()
+                    static void PullPCHighFromStack(NewCpu cpu, IBus bus)
                     {
-                        EffectiveAddressLatchHigh = _bus.Read((ushort)(0x100 + CpuState.S + 3));
-                        CpuState.S += 3;
+                        cpu.EffectiveAddressLatchHigh = bus.Read((ushort)(0x100 + cpu.CpuState.S + 3));
+                        cpu.CpuState.S += 3;
                     }
 
-                    AddOperation(Nop.Singleton, false, PullPCHighFromStack);
+                    AddOperation(Nop.Singleton, false, &PullPCHighFromStack);
 
                     // Load PC and fetch the next instruction.
-                    void SetPCAndFetchInstruction()
+                    static void SetPCAndFetchInstruction(NewCpu cpu, IBus bus)
                     {
-                        CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
+                        cpu.CpuState.PC = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
 
-                        var instruction = _bus.Read(CpuState.PC);
-                        ExecuteInstruction(instruction);
+                        var instruction = bus.Read(cpu.CpuState.PC);
+                        cpu.ExecuteInstruction(instruction);
                     }
 
-                    AddOperation(Nop.Singleton, false, SetPCAndFetchInstruction);
+                    AddOperation(Nop.Singleton, false, &SetPCAndFetchInstruction);
 
                     break;
 
                 case Rts_Implied:
                     AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read by PC.
                     AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Dummy read by stack.
-                    AddOperation(Nop.Singleton, false, ReadSPlus1IntoEffectiveAddressLatchLow);
-                    AddOperation(Nop.Singleton, false, ReadSPlus2IntoEffectiveAddressLatchHigh, IncrementSByTwo);
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, false, Op_Jmp); // Dummy read by PC after jump.
+                    AddOperation(Nop.Singleton, false, &ReadSPlus1IntoEffectiveAddressLatchLow);
+                    AddOperation(Nop.Singleton, false, &ReadSPlus2IntoEffectiveAddressLatchHigh, &IncrementSByTwo);
+                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, false, &Op_Jmp); // Dummy read by PC after jump.
                     AddOperation(FetchInstruction.Singleton, true);
                     break;
 
                 case Sbc_Absolute:
-                    Addr_Absolute(Op_Sbc, delayedExecution: true);
+                    Addr_Absolute(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_AbsoluteWithXOffset:
-                    Addr_AbsoluteWithXOffset(Op_Sbc, delayedExecution: true);
+                    Addr_AbsoluteWithXOffset(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_AbsoluteWithYOffset:
-                    Addr_AbsoluteWithYOffset(Op_Sbc, delayedExecution: true);
+                    Addr_AbsoluteWithYOffset(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_Immediate:
-                    Addr_Immediate(Op_Sbc, delayedExecution: true);
+                    Addr_Immediate(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_IndirectZeroPageWithXOffset:
-                    Addr_IndirectZeroPageWithXOffset(Op_Sbc, delayedExecution: true);
+                    Addr_IndirectZeroPageWithXOffset(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_IndirectZeroPageWithYOffset:
-                    Addr_IndirectZeroPageWithYOffset(Op_Sbc, delayedExecution: true);
+                    Addr_IndirectZeroPageWithYOffset(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_ZeroPage:
-                    Addr_ZeroPage(Op_Sbc, delayedExecution: true);
+                    Addr_ZeroPage(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sbc_ZeroPageWithXOffset:
-                    Addr_ZeroPageWithXOffset(Op_Sbc, delayedExecution: true);
+                    Addr_ZeroPageWithXOffset(&Op_Sbc, delayedExecution: true);
                     break;
 
                 case Sec_Implied:
-                    Addr_Implied(Op_Sec);
+                    Addr_Implied(&Op_Sec);
                     break;
 
                 case Sed_Implied:
-                    Addr_Implied(Op_Sed);
+                    Addr_Implied(&Op_Sed);
                     break;
 
                 case Sei_Implied:
-                    Addr_Implied(Op_Sei);
+                    Addr_Implied(&Op_Sei);
                     break;
 
                 case Sta_Absolute:
@@ -919,27 +924,27 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Tax_Implied:
-                    Addr_Implied(Op_Tax);
+                    Addr_Implied(&Op_Tax);
                     break;
 
                 case Tay_Implied:
-                    Addr_Implied(Op_Tay);
+                    Addr_Implied(&Op_Tay);
                     break;
 
                 case Tsx_Implied:
-                    Addr_Implied(Op_Tsx);
+                    Addr_Implied(&Op_Tsx);
                     break;
 
                 case Txa_Implied:
-                    Addr_Implied(Op_Txa);
+                    Addr_Implied(&Op_Txa);
                     break;
 
                 case Txs_Implied:
-                    Addr_Implied(Op_Txs);
+                    Addr_Implied(&Op_Txs);
                     break;
 
                 case Tya_Implied:
-                    Addr_Implied(Op_Tya);
+                    Addr_Implied(&Op_Tya);
                     break;
 
                 case Ahx_AbsoluteWithYOffset_9F:
@@ -1053,47 +1058,47 @@ namespace Ninu.Emulator.CentralProcessor
         }
 
         // Instructions
-        private void Op_Adc()
+        private static void Op_Adc(NewCpu cpu, IBus bus)
         {
-            var resultTemp = CpuState.A + DataLatch + (CpuState.GetFlag(CpuFlags.C) ? 1 : 0);
+            var resultTemp = cpu.CpuState.A + cpu.DataLatch + (cpu.CpuState.GetFlag(CpuFlags.C) ? 1 : 0);
             var resultByte = (byte)(resultTemp & 0xff);
 
-            CpuState.SetFlag(CpuFlags.C, resultTemp > 0xff);
-            CpuState.SetZeroFlag(resultByte);
-            CpuState.SetFlag(CpuFlags.V, ((CpuState.A ^ DataLatch) & 0x80) == 0 && ((CpuState.A ^ resultTemp) & 0x80) != 0);
-            CpuState.SetNegativeFlag(resultByte);
+            cpu.CpuState.SetFlag(CpuFlags.C, resultTemp > 0xff);
+            cpu.CpuState.SetZeroFlag(resultByte);
+            cpu.CpuState.SetFlag(CpuFlags.V, ((cpu.CpuState.A ^ cpu.DataLatch) & 0x80) == 0 && ((cpu.CpuState.A ^ resultTemp) & 0x80) != 0);
+            cpu.CpuState.SetNegativeFlag(resultByte);
 
-            CpuState.A = resultByte;
+            cpu.CpuState.A = resultByte;
         }
 
-        private void Op_And()
+        private static void Op_And(NewCpu cpu, IBus bus)
         {
-            CpuState.A = (byte)(CpuState.A & DataLatch);
+            cpu.CpuState.A = (byte)(cpu.CpuState.A & cpu.DataLatch);
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void Op_Asl_DataLatch()
+        private static void Op_Asl_DataLatch(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.C, (DataLatch & 0x80) != 0); // Carry flag is set to the bit that is being shifted out.
+            cpu.CpuState.SetFlag(CpuFlags.C, (cpu.DataLatch & 0x80) != 0); // Carry flag is set to the bit that is being shifted out.
 
-            DataLatch = (byte)(DataLatch << 1);
+            cpu.DataLatch = (byte)(cpu.DataLatch << 1);
 
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Asl_Accumulator()
+        private static void Op_Asl_Accumulator(NewCpu cpu, IBus bus)
         {
-            DataLatch = CpuState.A;
-            Op_Asl_DataLatch(); // Performs the operation directly to the data latch.
-            CpuState.A = DataLatch;
+            cpu.DataLatch = cpu.CpuState.A;
+            Op_Asl_DataLatch(cpu, bus); // Performs the operation directly to the data latch.
+            cpu.CpuState.A = cpu.DataLatch;
         }
 
-        private void SetPCToEffectiveAddressLatch()
+        private static void SetPCToEffectiveAddressLatch(NewCpu cpu, IBus bus)
         {
-            CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
+            cpu.CpuState.PC = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
         }
 
         /// <summary>
@@ -1106,428 +1111,428 @@ namespace Ninu.Emulator.CentralProcessor
         /// the offset from the instruction's operand and add it to the address latch.
         /// </summary>
         /// <param name="takingJump">A boolean that says whether the jump is being taken. Pass <c>true</c> if the branch condition succeeds and the jump is being taken. Otherwise, pass <c>false</c>.</param>
-        private void PerformConditionalJumpOperation(bool takingJump)
+        private static void PerformConditionalJumpOperation(NewCpu cpu, bool takingJump)
         {
             if (!takingJump)
             {
-                Queue.Dequeue();
-                Queue.Dequeue();
-                Queue.Dequeue();
+                cpu.Queue.Dequeue();
+                cpu.Queue.Dequeue();
+                cpu.Queue.Dequeue();
 
-                AddOperation(FetchInstruction.Singleton, true);
+                cpu.AddOperation(FetchInstruction.Singleton, true);
             }
 
             // Save PC + 1 into address latch because it will get clobbered.
-            AddressLatchLow = (byte)((CpuState.PC + 1) & 0xff);
-            AddressLatchHigh = (byte)((CpuState.PC + 1) >> 8);
+            cpu.AddressLatchLow = (byte)((cpu.CpuState.PC + 1) & 0xff);
+            cpu.AddressLatchHigh = (byte)((cpu.CpuState.PC + 1) >> 8);
         }
 
-        private void Op_Bcc()
+        private static void Op_Bcc(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.C));
+            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.C));
         }
 
-        private void Op_Bcs()
+        private static void Op_Bcs(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.C));
+            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.C));
         }
 
-        private void Op_Beq()
+        private static void Op_Beq(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.Z));
+            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.Z));
         }
 
-        private void Op_Bit()
+        private static void Op_Bit(NewCpu cpu, IBus bus)
         {
-            CpuState.SetZeroFlag((byte)(DataLatch & CpuState.A));
-            CpuState.SetFlag(CpuFlags.V, (DataLatch & 0x40) != 0); // Set overflow flag to bit 6 of data.
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetZeroFlag((byte)(cpu.DataLatch & cpu.CpuState.A));
+            cpu.CpuState.SetFlag(CpuFlags.V, (cpu.DataLatch & 0x40) != 0); // Set overflow flag to bit 6 of data.
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Bmi()
+        private static void Op_Bmi(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.N));
+            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.N));
         }
 
-        private void Op_Bne()
+        private static void Op_Bne(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.Z));
+            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.Z));
         }
 
-        private void Op_Bpl()
+        private static void Op_Bpl(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.N));
+            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.N));
         }
 
-        private void Op_Bvc()
+        private static void Op_Bvc(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(!CpuState.GetFlag(CpuFlags.V));
+            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.V));
         }
 
-        private void Op_Bvs()
+        private static void Op_Bvs(NewCpu cpu, IBus bus)
         {
-            PerformConditionalJumpOperation(CpuState.GetFlag(CpuFlags.V));
+            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.V));
         }
 
-        private void Op_Clc()
+        private static void Op_Clc(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.C, false);
+            cpu.CpuState.SetFlag(CpuFlags.C, false);
         }
 
-        private void Op_Cld()
+        private static void Op_Cld(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.D, false);
+            cpu.CpuState.SetFlag(CpuFlags.D, false);
         }
 
-        private void Op_Cli()
+        private static void Op_Cli(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.I, false);
+            cpu.CpuState.SetFlag(CpuFlags.I, false);
         }
 
-        private void Op_Clv()
+        private static void Op_Clv(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.V, false);
+            cpu.CpuState.SetFlag(CpuFlags.V, false);
         }
 
-        private void Op_Cmp()
+        private static void Op_Cmp(NewCpu cpu, IBus bus)
         {
-            var result = (ushort)(CpuState.A - DataLatch);
+            var result = (ushort)(cpu.CpuState.A - cpu.DataLatch);
 
-            CpuState.SetFlag(CpuFlags.C, CpuState.A >= DataLatch);
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
+            cpu.CpuState.SetFlag(CpuFlags.C, cpu.CpuState.A >= cpu.DataLatch);
+            cpu.CpuState.SetZeroFlag(result);
+            cpu.CpuState.SetNegativeFlag(result);
         }
 
-        private void Op_Cpx()
+        private static void Op_Cpx(NewCpu cpu, IBus bus)
         {
-            var result = (ushort)(CpuState.X - DataLatch);
+            var result = (ushort)(cpu.CpuState.X - cpu.DataLatch);
 
-            CpuState.SetFlag(CpuFlags.C, CpuState.X >= DataLatch);
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
+            cpu.CpuState.SetFlag(CpuFlags.C, cpu.CpuState.X >= cpu.DataLatch);
+            cpu.CpuState.SetZeroFlag(result);
+            cpu.CpuState.SetNegativeFlag(result);
         }
 
-        private void Op_Cpy()
+        private static void Op_Cpy(NewCpu cpu, IBus bus)
         {
-            var result = (ushort)(CpuState.Y - DataLatch);
+            var result = (ushort)(cpu.CpuState.Y - cpu.DataLatch);
 
-            CpuState.SetFlag(CpuFlags.C, CpuState.Y >= DataLatch);
-            CpuState.SetZeroFlag(result);
-            CpuState.SetNegativeFlag(result);
+            cpu.CpuState.SetFlag(CpuFlags.C, cpu.CpuState.Y >= cpu.DataLatch);
+            cpu.CpuState.SetZeroFlag(result);
+            cpu.CpuState.SetNegativeFlag(result);
         }
 
-        private void Op_Dec()
+        private static void Op_Dec(NewCpu cpu, IBus bus)
         {
-            DataLatch--;
+            cpu.DataLatch--;
 
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Dex()
+        private static void Op_Dex(NewCpu cpu, IBus bus)
         {
-            CpuState.X--;
+            cpu.CpuState.X--;
 
-            CpuState.SetZeroFlag(CpuState.X);
-            CpuState.SetNegativeFlag(CpuState.X);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.X);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.X);
         }
 
-        private void Op_Dey()
+        private static void Op_Dey(NewCpu cpu, IBus bus)
         {
-            CpuState.Y--;
+            cpu.CpuState.Y--;
 
-            CpuState.SetZeroFlag(CpuState.Y);
-            CpuState.SetNegativeFlag(CpuState.Y);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.Y);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.Y);
         }
 
-        private void Op_Eor()
+        private static void Op_Eor(NewCpu cpu, IBus bus)
         {
-            CpuState.A = (byte)(CpuState.A ^ DataLatch);
+            cpu.CpuState.A = (byte)(cpu.CpuState.A ^ cpu.DataLatch);
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void Op_Inc()
+        private static void Op_Inc(NewCpu cpu, IBus bus)
         {
-            DataLatch++;
+            cpu.DataLatch++;
 
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Inx()
+        private static void Op_Inx(NewCpu cpu, IBus bus)
         {
-            CpuState.X++;
+            cpu.CpuState.X++;
 
-            CpuState.SetZeroFlag(CpuState.X);
-            CpuState.SetNegativeFlag(CpuState.X);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.X);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.X);
         }
 
-        private void Op_Iny()
+        private static void Op_Iny(NewCpu cpu, IBus bus)
         {
-            CpuState.Y++;
+            cpu.CpuState.Y++;
 
-            CpuState.SetZeroFlag(CpuState.Y);
-            CpuState.SetNegativeFlag(CpuState.Y);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.Y);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.Y);
         }
 
-        private void Op_Jmp()
+        private static void Op_Jmp(NewCpu cpu, IBus bus)
         {
-            CpuState.PC = (ushort)(EffectiveAddressLatchLow | (EffectiveAddressLatchHigh << 8));
+            cpu.CpuState.PC = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
         }
 
-        private void Op_Lda()
+        private static void Op_Lda(NewCpu cpu, IBus bus)
         {
-            CpuState.A = DataLatch;
+            cpu.CpuState.A = cpu.DataLatch;
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void Op_Ldx()
+        private static void Op_Ldx(NewCpu cpu, IBus bus)
         {
-            CpuState.X = DataLatch;
+            cpu.CpuState.X = cpu.DataLatch;
 
-            CpuState.SetZeroFlag(CpuState.X);
-            CpuState.SetNegativeFlag(CpuState.X);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.X);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.X);
         }
 
-        private void Op_Ldy()
+        private static void Op_Ldy(NewCpu cpu, IBus bus)
         {
-            CpuState.Y = DataLatch;
+            cpu.CpuState.Y = cpu.DataLatch;
 
-            CpuState.SetZeroFlag(CpuState.Y);
-            CpuState.SetNegativeFlag(CpuState.Y);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.Y);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.Y);
         }
 
-        private void Op_Lsr_DataLatch()
+        private static void Op_Lsr_DataLatch(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.C, (DataLatch & 0x01) != 0); // Carry flag is set to the bit that is being shifted out.
+            cpu.CpuState.SetFlag(CpuFlags.C, (cpu.DataLatch & 0x01) != 0); // Carry flag is set to the bit that is being shifted out.
 
-            DataLatch = (byte)(DataLatch >> 1);
+            cpu.DataLatch = (byte)(cpu.DataLatch >> 1);
 
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Lsr_Accumulator()
+        private static void Op_Lsr_Accumulator(NewCpu cpu, IBus bus)
         {
-            DataLatch = CpuState.A;
-            Op_Lsr_DataLatch(); // Performs the operation directly to the data latch.
-            CpuState.A = DataLatch;
+            cpu.DataLatch = cpu.CpuState.A;
+            Op_Lsr_DataLatch(cpu, bus); // Performs the operation directly to the data latch.
+            cpu.CpuState.A = cpu.DataLatch;
         }
 
-        private void Op_Ora()
+        private static void Op_Ora(NewCpu cpu, IBus bus)
         {
-            CpuState.A = (byte)(CpuState.A | DataLatch);
+            cpu.CpuState.A = (byte)(cpu.CpuState.A | cpu.DataLatch);
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void Op_Rol_DataLatch()
+        private static void Op_Rol_DataLatch(NewCpu cpu, IBus bus)
         {
-            var newCarry = (DataLatch & 0x80) != 0;
+            var newCarry = (cpu.DataLatch & 0x80) != 0;
 
-            DataLatch = (byte)(DataLatch << 1);
+            cpu.DataLatch = (byte)(cpu.DataLatch << 1);
 
-            if (CpuState.GetFlag(CpuFlags.C))
+            if (cpu.CpuState.GetFlag(CpuFlags.C))
             {
-                DataLatch |= 0x01;
+                cpu.DataLatch |= 0x01;
             }
 
-            CpuState.SetFlag(CpuFlags.C, newCarry);
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetFlag(CpuFlags.C, newCarry);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Rol_Accumulator()
+        private static void Op_Rol_Accumulator(NewCpu cpu, IBus bus)
         {
-            DataLatch = CpuState.A;
-            Op_Rol_DataLatch(); // Performs the operation directly to the data latch.
-            CpuState.A = DataLatch;
+            cpu.DataLatch = cpu.CpuState.A;
+            Op_Rol_DataLatch(cpu, bus); // Performs the operation directly to the data latch.
+            cpu.CpuState.A = cpu.DataLatch;
         }
 
-        private void Op_Ror_DataLatch()
+        private static void Op_Ror_DataLatch(NewCpu cpu, IBus bus)
         {
-            var newCarry = (DataLatch & 0x01) != 0;
+            var newCarry = (cpu.DataLatch & 0x01) != 0;
 
-            DataLatch = (byte)(DataLatch >> 1);
+            cpu.DataLatch = (byte)(cpu.DataLatch >> 1);
 
-            if (CpuState.GetFlag(CpuFlags.C))
+            if (cpu.CpuState.GetFlag(CpuFlags.C))
             {
-                DataLatch |= 0x80;
+                cpu.DataLatch |= 0x80;
             }
 
-            CpuState.SetFlag(CpuFlags.C, newCarry);
-            CpuState.SetZeroFlag(DataLatch);
-            CpuState.SetNegativeFlag(DataLatch);
+            cpu.CpuState.SetFlag(CpuFlags.C, newCarry);
+            cpu.CpuState.SetZeroFlag(cpu.DataLatch);
+            cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
         }
 
-        private void Op_Ror_Accumulator()
+        private static void Op_Ror_Accumulator(NewCpu cpu, IBus bus)
         {
-            DataLatch = CpuState.A;
-            Op_Ror_DataLatch(); // Performs the operation directly to the data latch.
-            CpuState.A = DataLatch;
+            cpu.DataLatch = cpu.CpuState.A;
+            Op_Ror_DataLatch(cpu, bus); // Performs the operation directly to the data latch.
+            cpu.CpuState.A = cpu.DataLatch;
         }
 
-        private void IncrementS()
+        private static void IncrementS(NewCpu cpu, IBus bus)
         {
-            CpuState.S++;
+            cpu.CpuState.S++;
         }
 
-        private void IncrementSByTwo()
+        private static void IncrementSByTwo(NewCpu cpu, IBus bus)
         {
-            CpuState.S += 2;
+            cpu.CpuState.S += 2;
         }
 
-        private void DecrementS()
+        private static void DecrementS(NewCpu cpu, IBus bus)
         {
-            CpuState.S--;
+            cpu.CpuState.S--;
         }
 
-        private void DecrementSByThree()
+        private static void DecrementSByThree(NewCpu cpu, IBus bus)
         {
-            CpuState.S -= 3;
+            cpu.CpuState.S -= 3;
         }
 
-        private void WriteAToStack()
+        private static void WriteAToStack(NewCpu cpu, IBus bus)
         {
-            _bus.Write((ushort)(CpuState.S + 0x100), CpuState.A);
+            bus.Write((ushort)(cpu.CpuState.S + 0x100), cpu.CpuState.A);
         }
 
-        private void WritePToStack()
+        private static void WritePToStack(NewCpu cpu, IBus bus)
         {
-            var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
-            _bus.Write((ushort)(CpuState.S + 0x100), data);
+            var data = (byte)((byte)cpu.CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
+            bus.Write((ushort)(cpu.CpuState.S + 0x100), data);
         }
 
-        private void WritePToStackMinus2()
+        private static void WritePToStackMinus2(NewCpu cpu, IBus bus)
         {
-            var data = (byte)((byte)CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
-            _bus.Write((ushort)(((CpuState.S - 2) & 0xff) + 0x100), data);
+            var data = (byte)((byte)cpu.CpuState.P | 0x30); // Push the program state with B = 1 and U = 1.
+            bus.Write((ushort)(((cpu.CpuState.S - 2) & 0xff) + 0x100), data);
         }
 
-        private void WritePCHighToStack()
+        private static void WritePCHighToStack(NewCpu cpu, IBus bus)
         {
-            var data = (byte)(CpuState.PC >> 8);
-            _bus.Write((ushort)(CpuState.S + 0x100), data);
+            var data = (byte)(cpu.CpuState.PC >> 8);
+            bus.Write((ushort)(cpu.CpuState.S + 0x100), data);
         }
 
-        private void WritePCLowToStack()
+        private static void WritePCLowToStack(NewCpu cpu, IBus bus)
         {
-            var data = (byte)(CpuState.PC & 0xff);
-            _bus.Write((ushort)(CpuState.S + 0x100), data);
+            var data = (byte)(cpu.CpuState.PC & 0xff);
+            bus.Write((ushort)(cpu.CpuState.S + 0x100), data);
         }
 
-        private void WritePCLowToStackMinus1()
+        private static void WritePCLowToStackMinus1(NewCpu cpu, IBus bus)
         {
-            var data = (byte)(CpuState.PC & 0xff);
-            _bus.Write((ushort)(((CpuState.S - 1) & 0xff) + 0x100), data);
+            var data = (byte)(cpu.CpuState.PC & 0xff);
+            bus.Write((ushort)(((cpu.CpuState.S - 1) & 0xff) + 0x100), data);
         }
 
-        private void ReadSPlus1IntoEffectiveAddressLatchLow()
+        private static void ReadSPlus1IntoEffectiveAddressLatchLow(NewCpu cpu, IBus bus)
         {
-            EffectiveAddressLatchLow = _bus.Read((ushort)(((CpuState.S + 1) & 0xff) + 0x100));
+            cpu.EffectiveAddressLatchLow = bus.Read((ushort)(((cpu.CpuState.S + 1) & 0xff) + 0x100));
         }
 
-        private void ReadSPlus2IntoEffectiveAddressLatchHigh()
+        private static void ReadSPlus2IntoEffectiveAddressLatchHigh(NewCpu cpu, IBus bus)
         {
-            EffectiveAddressLatchHigh = _bus.Read((ushort)(((CpuState.S + 2) & 0xff) + 0x100));
+            cpu.EffectiveAddressLatchHigh = bus.Read((ushort)(((cpu.CpuState.S + 2) & 0xff) + 0x100));
         }
 
-        private void SetInterruptFlag()
+        private static void SetInterruptFlag(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.I, true);
+            cpu.CpuState.SetFlag(CpuFlags.I, true);
         }
 
-        private void TransferDataLatchToA()
+        private static void TransferDataLatchToA(NewCpu cpu, IBus bus)
         {
-            CpuState.A = DataLatch;
+            cpu.CpuState.A = cpu.DataLatch;
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void TransferDataLatchToP()
+        private static void TransferDataLatchToP(NewCpu cpu, IBus bus)
         {
             // During PHP, bits 4 and 5 of the status register are set in the stack. Make sure to
             // clear these when pulling P from the stack as these two bits don't actually exist.
-            CpuState.P = (CpuFlags)(DataLatch & ~0x30);
+            cpu.CpuState.P = (CpuFlags)(cpu.DataLatch & ~0x30);
         }
 
-        private void Op_Sbc()
+        private static void Op_Sbc(NewCpu cpu, IBus bus)
         {
-            var result = CpuState.A - DataLatch - (CpuState.GetFlag(CpuFlags.C) ? 0 : 1);
+            var result = cpu.CpuState.A - cpu.DataLatch - (cpu.CpuState.GetFlag(CpuFlags.C) ? 0 : 1);
             var resultByte = (byte)(result & 0xff);
 
-            CpuState.SetFlag(CpuFlags.C, (ushort)result < 0x100);
-            CpuState.SetZeroFlag(resultByte);
-            CpuState.SetFlag(CpuFlags.V, ((CpuState.A ^ DataLatch) & 0x80) != 0 && ((CpuState.A ^ result) & 0x80) != 0);
-            CpuState.SetNegativeFlag(resultByte);
+            cpu.CpuState.SetFlag(CpuFlags.C, (ushort)result < 0x100);
+            cpu.CpuState.SetZeroFlag(resultByte);
+            cpu.CpuState.SetFlag(CpuFlags.V, ((cpu.CpuState.A ^ cpu.DataLatch) & 0x80) != 0 && ((cpu.CpuState.A ^ result) & 0x80) != 0);
+            cpu.CpuState.SetNegativeFlag(resultByte);
 
-            CpuState.A = resultByte;
+            cpu.CpuState.A = resultByte;
         }
 
-        private void Op_Sec()
+        private static void Op_Sec(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.C, true);
+            cpu.CpuState.SetFlag(CpuFlags.C, true);
         }
 
-        private void Op_Sed()
+        private static void Op_Sed(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.D, true);
+            cpu.CpuState.SetFlag(CpuFlags.D, true);
         }
 
-        private void Op_Sei()
+        private static void Op_Sei(NewCpu cpu, IBus bus)
         {
-            CpuState.SetFlag(CpuFlags.I, true);
+            cpu.CpuState.SetFlag(CpuFlags.I, true);
         }
 
-        private void Op_Tax()
+        private static void Op_Tax(NewCpu cpu, IBus bus)
         {
-            CpuState.X = CpuState.A;
+            cpu.CpuState.X = cpu.CpuState.A;
 
-            CpuState.SetZeroFlag(CpuState.X);
-            CpuState.SetNegativeFlag(CpuState.X);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.X);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.X);
         }
 
-        private void Op_Tay()
+        private static void Op_Tay(NewCpu cpu, IBus bus)
         {
-            CpuState.Y = CpuState.A;
+            cpu.CpuState.Y = cpu.CpuState.A;
 
-            CpuState.SetZeroFlag(CpuState.Y);
-            CpuState.SetNegativeFlag(CpuState.Y);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.Y);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.Y);
         }
 
-        private void Op_Tsx()
+        private static void Op_Tsx(NewCpu cpu, IBus bus)
         {
-            CpuState.X = CpuState.S;
+            cpu.CpuState.X = cpu.CpuState.S;
 
-            CpuState.SetZeroFlag(CpuState.X);
-            CpuState.SetNegativeFlag(CpuState.X);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.X);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.X);
         }
 
-        private void Op_Txa()
+        private static void Op_Txa(NewCpu cpu, IBus bus)
         {
-            CpuState.A = CpuState.X;
+            cpu.CpuState.A = cpu.CpuState.X;
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
 
-        private void Op_Txs()
+        private static void Op_Txs(NewCpu cpu, IBus bus)
         {
-            CpuState.S = CpuState.X;
+            cpu.CpuState.S = cpu.CpuState.X;
         }
 
-        private void Op_Tya()
+        private static void Op_Tya(NewCpu cpu, IBus bus)
         {
-            CpuState.A = CpuState.Y;
+            cpu.CpuState.A = cpu.CpuState.Y;
 
-            CpuState.SetZeroFlag(CpuState.A);
-            CpuState.SetNegativeFlag(CpuState.A);
+            cpu.CpuState.SetZeroFlag(cpu.CpuState.A);
+            cpu.CpuState.SetNegativeFlag(cpu.CpuState.A);
         }
     }
 }
