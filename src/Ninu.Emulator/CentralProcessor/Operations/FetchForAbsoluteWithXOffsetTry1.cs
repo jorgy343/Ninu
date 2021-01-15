@@ -21,11 +21,12 @@
             var baseAddress = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
             var finalAddress = (ushort)((baseAddress + cpu.CpuState.X) & 0xffff); // The & prevents overflow.
 
-            // Check baseAddress and address are on the same page.
+            cpu.DataLatch = bus.Read(finalAddress);
+
+            // If the baseAddress and finalAddress are on the same page, we skip the next cycle by
+            // dequeueing the operation.
             if ((baseAddress & 0xff00) == (finalAddress & 0xff00))
             {
-                cpu.DataLatch = bus.Read(finalAddress);
-
                 cpu.Queue.Dequeue();
             }
         }

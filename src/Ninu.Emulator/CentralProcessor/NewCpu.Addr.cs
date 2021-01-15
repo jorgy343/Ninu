@@ -161,7 +161,7 @@ namespace Ninu.Emulator.CentralProcessor
         {
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
             AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-            AddOperation(IncrementEffectiveAddressLatchLowByXWithoutWrapping.Singleton, true);
+            AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
             AddOperation(IncrementEffectiveAddressLatchHighByXOnlyWithCarry.Singleton, false);
             AddFreeOperation(FetchMemoryByEffectiveAddressLatchIntoDataLatch.Singleton, false);
             AddOperation(WriteDataLatchToMemoryByEffectiveAddressLatch.Singleton, false); // Dummy write of the data we just read.

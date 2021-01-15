@@ -89,12 +89,12 @@ lsr $5000
 lda $5000
 
 ; LSR absolute with x offset
-ldx #$01
+ldx #$ff
 lda #$95
-sta $5000,x
+sta $5005,x
 
-lsr $5000,x
-lda $5000,x
+lsr $5005,x
+lda $5005,x
 
 ; LSR zero page
 lda #$97
