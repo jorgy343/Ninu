@@ -153,14 +153,14 @@ namespace Ninu.Emulator.CentralProcessor
             AddOperation(false);
 
             // Cycles 7 and 8 load the reset vector into the address latch.
-            AddOperation(false, &Operations2.Interrupts.FetchResetVectorLowIntoAddressLatchLow);
-            AddOperation(false, &Operations2.Interrupts.FetchResetVectorHighIntoAddressLatchHigh);
+            AddOperation(false, &Operations.Interrupts.FetchResetVectorLowIntoAddressLatchLow);
+            AddOperation(false, &Operations.Interrupts.FetchResetVectorHighIntoAddressLatchHigh);
 
             // Cycle 9 sets PC to the address latch and then loads the instruction found at PC and
             // gets it ready for execution. This is typically the last cycle of an instruction and
             // here it is technically the last cycle of the modified BRK instruction that is being
             // executed.
-            AddOperation(false, &Operations2.Interrupts.SetPCToAddressLatchAndFetchInstruction);
+            AddOperation(false, &Operations.Interrupts.SetPCToAddressLatchAndFetchInstruction);
         }
 
         public void CheckForNmi()
@@ -173,10 +173,10 @@ namespace Ninu.Emulator.CentralProcessor
                 AddOperation(false);
 
                 // Store the high byte of the PC onto the stack (0x100 + S) but do not touch S.
-                AddOperation(false, &Operations2.Interrupts.PushPCHighOnStack);
+                AddOperation(false, &Operations.Interrupts.PushPCHighOnStack);
 
                 // Store the low byte of the PC onto the stack (0x100 + S - 1) but do not touch S.
-                AddOperation(false, &Operations2.Interrupts.PushPCLowOnStack);
+                AddOperation(false, &Operations.Interrupts.PushPCLowOnStack);
 
                 // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
                 static void PushPOnStack(Cpu cpu, IBus bus)
@@ -193,10 +193,10 @@ namespace Ninu.Emulator.CentralProcessor
                     cpu.CpuState.S -= 3;
                 }
 
-                AddOperation(false, &DecrementStackBy3, &Operations2.Interrupts.FetchNmiVectorLowIntoAddressLatchLow);
+                AddOperation(false, &DecrementStackBy3, &Operations.Interrupts.FetchNmiVectorLowIntoAddressLatchLow);
 
                 // Fetch the high byte of the interrupt vector address.
-                AddOperation(false, &Operations2.Interrupts.FetchNmiVectorHighIntoAddressLatchHigh);
+                AddOperation(false, &Operations.Interrupts.FetchNmiVectorHighIntoAddressLatchHigh);
 
                 // Set PC to the address latch and fetch the instruction found at PC.
                 static void SetNmiToFalse(Cpu cpu, IBus bus)
@@ -205,7 +205,7 @@ namespace Ninu.Emulator.CentralProcessor
                     cpu.Nmi = false;
                 }
 
-                AddOperation(false, &SetNmiToFalse, &Operations2.Interrupts.SetPCToAddressLatchAndFetchInstruction);
+                AddOperation(false, &SetNmiToFalse, &Operations.Interrupts.SetPCToAddressLatchAndFetchInstruction);
             }
         }
 
@@ -330,13 +330,13 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Brk_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read.
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData); // Dummy read.
                     AddOperation(true, &WritePCHighToStack);
                     AddOperation(false, &WritePCLowToStackMinus1);
                     AddOperation(false, &WritePToStackMinus2, &SetInterruptFlag); // Set I after pushing P to the stack.
-                    AddOperation(false, &DecrementSByThree, &Operations2.Interrupts.FetchIrqVectorLowIntoEffectiveAddressLatchLow);
-                    AddOperation(false, &Operations2.Interrupts.FetchIrqVectorHighIntoEffectiveAddressLatchHigh);
-                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
+                    AddOperation(false, &DecrementSByThree, &Operations.Interrupts.FetchIrqVectorLowIntoEffectiveAddressLatchLow);
+                    AddOperation(false, &Operations.Interrupts.FetchIrqVectorHighIntoEffectiveAddressLatchHigh);
+                    AddOperation(false, &Op_Jmp, &Operations.FetchInstruction);
                     break;
 
                 case Bvc_Relative:
@@ -500,26 +500,26 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Jmp_Absolute:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(false, &Op_Jmp, &Operations.FetchInstruction);
                     break;
 
                 case Jmp_Indirect:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoAddressHigh);
-                    AddOperation(true, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow); // PC increment doesn't matter, but it does happen.
-                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
-                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoAddressHigh);
+                    AddOperation(true, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressLow); // PC increment doesn't matter, but it does happen.
+                    AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Op_Jmp, &Operations.FetchInstruction);
                     break;
 
                 case Jsr_Absolute:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByS.IntoData); // Discarded read.
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByS.IntoData); // Discarded read.
                     AddOperation(false, &WritePCHighToStack, &DecrementS);
                     AddOperation(false, &WritePCLowToStack, &DecrementS);
-                    AddOperation(false, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Op_Jmp, &Operations2.FetchInstruction);
+                    AddOperation(false, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Op_Jmp, &Operations.FetchInstruction);
                     break;
 
                 case Lda_Absolute:
@@ -651,29 +651,29 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Pha_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData);
                     AddOperation(false, &WriteAToStack);
-                    AddOperation(false, &DecrementS, &Operations2.FetchInstruction);
+                    AddOperation(false, &DecrementS, &Operations.FetchInstruction);
                     break;
 
                 case Php_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData);
                     AddOperation(false, &WritePToStack);
-                    AddOperation(false, &DecrementS, &Operations2.FetchInstruction);
+                    AddOperation(false, &DecrementS, &Operations.FetchInstruction);
                     break;
 
                 case Pla_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
-                    AddOperation(false, &Operations2.ReadMemory.ByS.IntoData);
-                    AddOperation(false, &IncrementS, &Operations2.ReadMemory.ByS.IntoData);
-                    AddOperation(false, &TransferDataLatchToA, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &Operations.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &IncrementS, &Operations.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &TransferDataLatchToA, &Operations.FetchInstruction);
                     break;
 
                 case Plp_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
-                    AddOperation(false, &Operations2.ReadMemory.ByS.IntoData);
-                    AddOperation(false, &IncrementS, &Operations2.ReadMemory.ByS.IntoData);
-                    AddOperation(false, &TransferDataLatchToP, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &Operations.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &IncrementS, &Operations.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &TransferDataLatchToP, &Operations.FetchInstruction);
                     break;
 
                 case Rol_Absolute:
@@ -769,12 +769,12 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Rts_Implied:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read by PC.
-                    AddOperation(true, &Operations2.ReadMemory.ByS.IntoData); // Dummy read by stack.
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoData); // Dummy read by PC.
+                    AddOperation(true, &Operations.ReadMemory.ByS.IntoData); // Dummy read by stack.
                     AddOperation(false, &ReadSPlus1IntoEffectiveAddressLatchLow);
                     AddOperation(false, &ReadSPlus2IntoEffectiveAddressLatchHigh, &IncrementSByTwo);
-                    AddOperation(false, &Op_Jmp, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read by PC after jump.
-                    AddOperation(true, &Operations2.FetchInstruction);
+                    AddOperation(false, &Op_Jmp, &Operations.ReadMemory.ByPC.IntoData); // Dummy read by PC after jump.
+                    AddOperation(true, &Operations.FetchInstruction);
                     break;
 
                 case Sbc_Absolute:
@@ -822,97 +822,97 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sta_Absolute:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_AbsoluteWithXOffset:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithoutWrapping);
-                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithoutWrapping);
+                    AddOperation(false, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_AbsoluteWithYOffset:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
-                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
+                    AddOperation(false, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_IndirectZeroPageWithXOffset:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
-                    AddOperation(true, &Operations2.Increment.AddressLow.ByX.WithWrapping);
-                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
-                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
-                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoAddressLatch);
+                    AddOperation(true, &Operations.Increment.AddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+                    AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_IndirectZeroPageWithYOffset:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
-                    AddOperation(true, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
-                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
-                    AddOperation(false, &Operations2.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
-                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoAddressLatch);
+                    AddOperation(true, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+                    AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Operations.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
+                    AddOperation(false, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_ZeroPage:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sta_ZeroPageWithXOffset:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
-                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Stx_Absolute:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Stx_ZeroPage:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Stx_ZeroPageWithYOffset:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByY.WithWrapping);
-                    AddOperation(false, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByY.WithWrapping);
+                    AddOperation(false, &Operations.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sty_Absolute:
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-                    AddOperation(true, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sty_ZeroPage:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Sty_ZeroPageWithXOffset:
-                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
-                    AddOperation(false, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
-                    AddOperation(false, &Operations2.FetchInstruction);
+                    AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations.FetchInstruction);
                     break;
 
                 case Tax_Implied:

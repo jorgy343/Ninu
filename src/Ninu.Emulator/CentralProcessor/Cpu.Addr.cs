@@ -14,221 +14,221 @@
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_Immediate(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(true, &Operations2.FetchInstruction);
+                AddOperation(true, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(true, action, &Operations2.FetchInstruction);
+                AddOperation(true, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_ZeroPage(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-            AddOperation(true, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+            AddOperation(true, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_ZeroPage_WriteBack(delegate*<Cpu, IBus, void> action)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-            AddOperation(true, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
-            AddFreeOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
-            AddOperation(false, &Operations2.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
-            AddOperation(false, action, &Operations2.WriteData.ToMemory.ByEffectiveAddress);
-            AddOperation(false, &Operations2.FetchInstruction);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+            AddOperation(true, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
+            AddFreeOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
+            AddOperation(false, &Operations.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
+            AddOperation(false, action, &Operations.WriteData.ToMemory.ByEffectiveAddress);
+            AddOperation(false, &Operations.FetchInstruction);
         }
 
         private void Addr_ZeroPageWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-            AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
-            AddOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+            AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithWrapping);
+            AddOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_ZeroPageWithXOffset_WriteBack(delegate*<Cpu, IBus, void> action)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-            AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
-            AddOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
-            AddFreeOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Do we need this?
-            AddOperation(false, &Operations2.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
-            AddOperation(false, action, &Operations2.WriteData.ToMemory.ByEffectiveAddress);
-            AddOperation(false, &Operations2.FetchInstruction);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+            AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithWrapping);
+            AddOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
+            AddFreeOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Do we need this?
+            AddOperation(false, &Operations.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
+            AddOperation(false, action, &Operations.WriteData.ToMemory.ByEffectiveAddress);
+            AddOperation(false, &Operations.FetchInstruction);
         }
 
         private void Addr_ZeroPageWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
-            AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByY.WithWrapping);
-            AddOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+            AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByY.WithWrapping);
+            AddOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_Absolute(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-            AddOperation(true, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+            AddOperation(true, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_Absolute_WriteBack(delegate*<Cpu, IBus, void> action)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-            AddOperation(true, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
-            AddFreeOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
-            AddOperation(false, &Operations2.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
-            AddOperation(false, action, &Operations2.WriteData.ToMemory.ByEffectiveAddress);
-            AddOperation(false, &Operations2.FetchInstruction);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+            AddOperation(true, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
+            AddFreeOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
+            AddOperation(false, &Operations.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
+            AddOperation(false, action, &Operations.WriteData.ToMemory.ByEffectiveAddress);
+            AddOperation(false, &Operations.FetchInstruction);
         }
 
         private void Addr_AbsoluteWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-            AddOperation(true, &Operations2.FetchForAbsoluteWithXOffsetTry1);
-            AddOperation(false, &Operations2.FetchForAbsoluteWithXOffsetTry2);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+            AddOperation(true, &Operations.FetchForAbsoluteWithXOffsetTry1);
+            AddOperation(false, &Operations.FetchForAbsoluteWithXOffsetTry2);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_AbsoluteWithXOffset_WriteBack(delegate*<Cpu, IBus, void> action)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-            AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
-            AddOperation(false, &Operations2.Increment.EffectiveAddressHigh.ByX.OnlyWithCarry);
-            AddFreeOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
-            AddOperation(false, &Operations2.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
-            AddOperation(false, action, &Operations2.WriteData.ToMemory.ByEffectiveAddress);
-            AddOperation(false, &Operations2.FetchInstruction);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+            AddOperation(true, &Operations.Increment.EffectiveaddressLow.ByX.WithWrapping);
+            AddOperation(false, &Operations.Increment.EffectiveAddressHigh.ByX.OnlyWithCarry);
+            AddFreeOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData); // TODO: Is this needed?
+            AddOperation(false, &Operations.WriteData.ToMemory.ByEffectiveAddress); // Dummy write of the data we just read.
+            AddOperation(false, action, &Operations.WriteData.ToMemory.ByEffectiveAddress);
+            AddOperation(false, &Operations.FetchInstruction);
         }
 
         private void Addr_AbsoluteWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
-            AddOperation(true, &Operations2.FetchForAbsoluteWithYOffsetTry1);
-            AddOperation(false, &Operations2.FetchForAbsoluteWithYOffsetTry2);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressLow);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+            AddOperation(true, &Operations.FetchForAbsoluteWithYOffsetTry1);
+            AddOperation(false, &Operations.FetchForAbsoluteWithYOffsetTry2);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_IndirectZeroPageWithXOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
-            AddOperation(true, &Operations2.Increment.AddressLow.ByX.WithWrapping);
-            AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
-            AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
-            AddOperation(false, &Operations2.ReadMemory.ByEffectiveAddress.IntoData);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoAddressLatch);
+            AddOperation(true, &Operations.Increment.AddressLow.ByX.WithWrapping);
+            AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+            AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+            AddOperation(false, &Operations.ReadMemory.ByEffectiveAddress.IntoData);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_IndirectZeroPageWithYOffset(delegate*<Cpu, IBus, void> action, bool delayedExecution = false)
         {
-            AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
-            AddOperation(true, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
-            AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
-            AddOperation(false, &Operations2.FetchForAbsoluteWithYOffsetTry1);
-            AddOperation(false, &Operations2.FetchForAbsoluteWithYOffsetTry2);
+            AddOperation(true, &Operations.FetchZeroPageAddressByPCIntoAddressLatch);
+            AddOperation(true, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+            AddOperation(false, &Operations.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+            AddOperation(false, &Operations.FetchForAbsoluteWithYOffsetTry1);
+            AddOperation(false, &Operations.FetchForAbsoluteWithYOffsetTry2);
 
             if (delayedExecution)
             {
-                AddOperation(false, &Operations2.FetchInstruction);
+                AddOperation(false, &Operations.FetchInstruction);
                 AddFreeOperation(false, action);
             }
             else
             {
-                AddOperation(false, action, &Operations2.FetchInstruction);
+                AddOperation(false, action, &Operations.FetchInstruction);
             }
         }
 
         private void Addr_Relative(delegate*<Cpu, IBus, void> action)
         {
-            AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData, action);
-            AddOperation(true, &Operations2.BranchWithNoPageCrossing);
-            AddOperation(false, &SetPCToEffectiveAddressLatch, &Operations2.BranchWithPageCrossed);
-            AddOperation(false, &SetPCToEffectiveAddressLatch, &Operations2.FetchInstruction);
+            AddOperation(true, &Operations.ReadMemory.ByPC.IntoData, action);
+            AddOperation(true, &Operations.BranchWithNoPageCrossing);
+            AddOperation(false, &SetPCToEffectiveAddressLatch, &Operations.BranchWithPageCrossed);
+            AddOperation(false, &SetPCToEffectiveAddressLatch, &Operations.FetchInstruction);
         }
     }
 }

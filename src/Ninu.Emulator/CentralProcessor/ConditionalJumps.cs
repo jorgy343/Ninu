@@ -20,7 +20,7 @@
                 cpu.Queue.Dequeue();
                 cpu.Queue.Dequeue();
 
-                cpu.AddOperation(true, &Operations2.FetchInstruction);
+                cpu.AddOperation(true, &Operations.FetchInstruction);
             }
 
             // Save PC + 1 into address latch because it will get clobbered.

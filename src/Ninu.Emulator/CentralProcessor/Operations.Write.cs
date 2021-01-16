@@ -1,6 +1,6 @@
 ﻿namespace Ninu.Emulator.CentralProcessor
 {
-    public static partial class Operations2
+    public static partial class Operations
     {
         public static class WriteA
         {
