@@ -1,4 +1,4 @@
-﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
+﻿.include "..\..\..\Cpu\TestFiles\std.6502.asm"
 
 ; Test an jmp indirect instruction when an indirect address with a low byte of 0xff is given. In
 ; this case, when reading the high byte of the target address from memory the low byte of the

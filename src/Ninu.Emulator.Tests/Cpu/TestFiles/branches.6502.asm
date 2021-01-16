@@ -1,4 +1,4 @@
-﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
+﻿.include "..\..\..\Cpu\TestFiles\std.6502.asm"
 
 ; Zero page data.
 * = $0000

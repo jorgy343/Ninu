@@ -7,21 +7,21 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace Ninu.Emulator.Tests.NewCpu
+namespace Ninu.Emulator.Tests.Cpu
 {
     public class GeneralTests
     {
         [Theory]
-        [AsmData("NewCpu/TestFiles/basic.6502.asm")]
-        [AsmData("NewCpu/TestFiles/arithmetic-and-comparison.6502.asm")]
-        [AsmData("NewCpu/TestFiles/flags.6502.asm")]
-        [AsmData("NewCpu/TestFiles/transfers.6502.asm")]
-        [AsmData("NewCpu/TestFiles/loads.6502.asm")]
-        [AsmData("NewCpu/TestFiles/stores.6502.asm")]
-        [AsmData("NewCpu/TestFiles/stack.6502.asm")]
-        [AsmData("NewCpu/TestFiles/branches.6502.asm")]
-        [AsmData("NewCpu/TestFiles/jmp-indirect.6502.asm")]
-        [AsmData("NewCpu/TestFiles/jmp-indirect-buggy.6502.asm")]
+        [AsmData("Cpu/TestFiles/basic.6502.asm")]
+        [AsmData("Cpu/TestFiles/arithmetic-and-comparison.6502.asm")]
+        [AsmData("Cpu/TestFiles/flags.6502.asm")]
+        [AsmData("Cpu/TestFiles/transfers.6502.asm")]
+        [AsmData("Cpu/TestFiles/loads.6502.asm")]
+        [AsmData("Cpu/TestFiles/stores.6502.asm")]
+        [AsmData("Cpu/TestFiles/stack.6502.asm")]
+        [AsmData("Cpu/TestFiles/branches.6502.asm")]
+        [AsmData("Cpu/TestFiles/jmp-indirect.6502.asm")]
+        [AsmData("Cpu/TestFiles/jmp-indirect-buggy.6502.asm")]
         public void TestInstructions(byte[] memory)
         {
             if (memory is null) throw new ArgumentNullException(nameof(memory));
@@ -121,7 +121,7 @@ namespace Ninu.Emulator.Tests.NewCpu
         //[InlineData(12)]
         public void TestNmi(int cycleToSetNmiLow)
         {
-            var asm = File.ReadAllText("NewCpu/TestFiles/nmi.6502.asm");
+            var asm = File.ReadAllText("Cpu/TestFiles/nmi.6502.asm");
 
             var assembler = new PatchAssembler();
             var memory = assembler.Assemble(0, null, asm);

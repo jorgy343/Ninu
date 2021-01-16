@@ -1,4 +1,4 @@
-﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
+﻿.include "..\..\..\Cpu\TestFiles\std.6502.asm"
 
 ; Tests all of the transfer instructions. The tests all follow the same pattern. Load a value into
 ; the source register, load a different value into the destination register, and perform the

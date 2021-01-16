@@ -1,4 +1,4 @@
-﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
+﻿.include "..\..\..\Cpu\TestFiles\std.6502.asm"
 
 ; All of the flag tests will run the clear and set instructions twice each.
 

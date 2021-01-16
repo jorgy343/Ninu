@@ -1,4 +1,4 @@
-﻿.include "..\..\..\NewCpu\TestFiles\std.6502.asm"
+﻿.include "..\..\..\Cpu\TestFiles\std.6502.asm"
 
 ; These tests do not currently purposefully test flags. All tests that have offset addressing modes
 ; are designed to wrap around to a new page to test buggy wrapping behavior where applicable.
