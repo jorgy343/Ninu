@@ -1,6 +1,4 @@
-﻿using Ninu.Emulator.CentralProcessor.Operations;
-using Ninu.Emulator.CentralProcessor.Operations.Interrupts;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using static Ninu.Emulator.CentralProcessor.Opcode;
 
@@ -33,7 +31,7 @@ namespace Ninu.Emulator.CentralProcessor
 
         // TODO: Saving this won't work out of the box.
         [Save("Operations")]
-        internal Queue<CpuOperationQueueState> Queue = new(24);
+        internal Queue<OperationQueueState> Queue = new(24);
 
         [Save]
         internal bool _nmi;
@@ -69,14 +67,14 @@ namespace Ninu.Emulator.CentralProcessor
             _bus = bus ?? throw new ArgumentNullException(nameof(bus));
         }
 
-        private void AddOperation(CpuOperation operation, bool incrementPC, delegate*<Cpu, IBus, void> preAction = null, delegate*<Cpu, IBus, void> postAction = null)
+        internal void AddOperation(bool incrementPC, delegate*<Cpu, IBus, void> preAction = null, delegate*<Cpu, IBus, void> operation = null, delegate*<Cpu, IBus, void> postAction = null)
         {
-            Queue.Enqueue(new CpuOperationQueueState(operation, preAction, postAction, incrementPC, false));
+            Queue.Enqueue(new OperationQueueState(preAction, operation, postAction, incrementPC, false));
         }
 
-        private void AddFreeOperation(CpuOperation operation, bool incrementPC, delegate*<Cpu, IBus, void> preAction = null, delegate*<Cpu, IBus, void> postAction = null)
+        internal void AddFreeOperation(bool incrementPC, delegate*<Cpu, IBus, void> preAction = null, delegate*<Cpu, IBus, void> operation = null, delegate*<Cpu, IBus, void> postAction = null)
         {
-            Queue.Enqueue(new CpuOperationQueueState(operation, preAction, postAction, incrementPC, true));
+            Queue.Enqueue(new OperationQueueState(preAction, operation, postAction, incrementPC, true));
         }
 
         public void Clock()
@@ -101,16 +99,19 @@ namespace Ninu.Emulator.CentralProcessor
                     CpuState.PC++;
                 }
 
-                if (queueState.PreAction != null)
+                if (queueState.Action1 != null)
                 {
-                    queueState.PreAction(this, _bus);
+                    queueState.Action1(this, _bus);
                 }
 
-                queueState.Operation.Execute(this, _bus);
-
-                if (queueState.PostAction != null)
+                if (queueState.Action2 != null)
                 {
-                    queueState.PostAction(this, _bus);
+                    queueState.Action2(this, _bus);
+                }
+
+                if (queueState.Action3 != null)
+                {
+                    queueState.Action3(this, _bus);
                 }
 
                 // If the operation is not free, we are done processing for this clock cycle. If
@@ -144,38 +145,38 @@ namespace Ninu.Emulator.CentralProcessor
 
             // The first seven cycles do stuff in the actual CPU. We don't care about those
             // details, we just need to take up some cycles.
-            AddOperation(Nop.Singleton, false);
-            AddOperation(Nop.Singleton, false);
-            AddOperation(Nop.Singleton, false);
-            AddOperation(Nop.Singleton, false);
-            AddOperation(Nop.Singleton, false);
-            AddOperation(Nop.Singleton, false);
+            AddOperation(false);
+            AddOperation(false);
+            AddOperation(false);
+            AddOperation(false);
+            AddOperation(false);
+            AddOperation(false);
 
             // Cycles 7 and 8 load the reset vector into the address latch.
-            AddOperation(FetchResetVectorLowIntoAddressLatchLow.Singleton, false);
-            AddOperation(FetchResetVectorHighIntoAddressLatchHigh.Singleton, false);
+            AddOperation(false, &Operations2.Interrupts.FetchResetVectorLowIntoAddressLatchLow);
+            AddOperation(false, &Operations2.Interrupts.FetchResetVectorHighIntoAddressLatchHigh);
 
             // Cycle 9 sets PC to the address latch and then loads the instruction found at PC and
             // gets it ready for execution. This is typically the last cycle of an instruction and
             // here it is technically the last cycle of the modified BRK instruction that is being
             // executed.
-            AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false);
+            AddOperation(false, &Operations2.Interrupts.SetPCToAddressLatchAndFetchInstruction);
         }
 
         public void CheckForNmi()
         {
             if (Nmi)
             {
-                // TODO: When/if do we set P.I?
+                // TODO: When/if do we set P.I? Probably after we save P to stack.
 
                 // First step is a NOP. The real CPU does some data access that gets thrown away.
-                AddOperation(Nop.Singleton, false);
+                AddOperation(false);
 
                 // Store the high byte of the PC onto the stack (0x100 + S) but do not touch S.
-                AddOperation(PushPCHighOnStack.Singleton, false);
+                AddOperation(false, &Operations2.Interrupts.PushPCHighOnStack);
 
                 // Store the low byte of the PC onto the stack (0x100 + S - 1) but do not touch S.
-                AddOperation(PushPCLowOnStack.Singleton, false);
+                AddOperation(false, &Operations2.Interrupts.PushPCLowOnStack);
 
                 // Store the status register onto the stack (0x100 + S - 2) but do not touch S.
                 static void PushPOnStack(Cpu cpu, IBus bus)
@@ -184,7 +185,7 @@ namespace Ninu.Emulator.CentralProcessor
                     bus.Write((ushort)(0x100 + cpu.CpuState.S - 2), p);
                 }
 
-                AddOperation(Nop.Singleton, false, &PushPOnStack);
+                AddOperation(false, &PushPOnStack);
 
                 // Fetch the low byte of the interrupt vector address and decrement the stack by 3.
                 static void DecrementStackBy3(Cpu cpu, IBus bus)
@@ -192,10 +193,10 @@ namespace Ninu.Emulator.CentralProcessor
                     cpu.CpuState.S -= 3;
                 }
 
-                AddOperation(FetchNmiVectorLowIntoAddressLatchLow.Singleton, false, &DecrementStackBy3);
+                AddOperation(false, &DecrementStackBy3, &Operations2.Interrupts.FetchNmiVectorLowIntoAddressLatchLow);
 
                 // Fetch the high byte of the interrupt vector address.
-                AddOperation(FetchNmiVectorHighIntoAddressLatchHigh.Singleton, false);
+                AddOperation(false, &Operations2.Interrupts.FetchNmiVectorHighIntoAddressLatchHigh);
 
                 // Set PC to the address latch and fetch the instruction found at PC.
                 static void SetNmiToFalse(Cpu cpu, IBus bus)
@@ -204,18 +205,9 @@ namespace Ninu.Emulator.CentralProcessor
                     cpu.Nmi = false;
                 }
 
-                AddOperation(SetPCToAddressLatchAndFetchInstruction.Singleton, false, &SetNmiToFalse);
+                AddOperation(false, &SetNmiToFalse, &Operations2.Interrupts.SetPCToAddressLatchAndFetchInstruction);
             }
         }
-
-        // TODO:
-        // Instructions not yet tested:
-        // All conditional jumps
-        // AND
-        // EOR
-        // ORA
-
-        // TODO: Cleanup and explain conditional jumps.
 
         public void ExecuteInstruction(byte opcode)
         {
@@ -306,15 +298,15 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Bcc_Relative:
-                    Addr_Relative(&Op_Bcc);
+                    Addr_Relative(&ConditionalJumps.Bcc);
                     break;
 
                 case Bcs_Relative:
-                    Addr_Relative(&Op_Bcs);
+                    Addr_Relative(&ConditionalJumps.Bcs);
                     break;
 
                 case Beq_Relative:
-                    Addr_Relative(&Op_Beq);
+                    Addr_Relative(&ConditionalJumps.Beq);
                     break;
 
                 case Bit_Absolute:
@@ -326,33 +318,33 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Bmi_Relative:
-                    Addr_Relative(&Op_Bmi);
+                    Addr_Relative(&ConditionalJumps.Bmi);
                     break;
 
                 case Bne_Relative:
-                    Addr_Relative(&Op_Bne);
+                    Addr_Relative(&ConditionalJumps.Bne);
                     break;
 
                 case Bpl_Relative:
-                    Addr_Relative(&Op_Bpl);
+                    Addr_Relative(&ConditionalJumps.Bpl);
                     break;
 
                 case Brk_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read.
-                    AddOperation(Nop.Singleton, true, &WritePCHighToStack);
-                    AddOperation(Nop.Singleton, false, &WritePCLowToStackMinus1);
-                    AddOperation(Nop.Singleton, false, &WritePToStackMinus2, &SetInterruptFlag); // Set I after pushing P to the stack.
-                    AddOperation(FetchIrqVectorLowIntoEffectiveAddressLatchLow.Singleton, false, &DecrementSByThree);
-                    AddOperation(FetchIrqVectorHighIntoEffectiveAddressLatchHigh.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read.
+                    AddOperation(true, &WritePCHighToStack);
+                    AddOperation(false, &WritePCLowToStackMinus1);
+                    AddOperation(false, &WritePToStackMinus2, &SetInterruptFlag); // Set I after pushing P to the stack.
+                    AddOperation(false, &DecrementSByThree, &Operations2.Interrupts.FetchIrqVectorLowIntoEffectiveAddressLatchLow);
+                    AddOperation(false, &Operations2.Interrupts.FetchIrqVectorHighIntoEffectiveAddressLatchHigh);
+                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
                     break;
 
                 case Bvc_Relative:
-                    Addr_Relative(&Op_Bvc);
+                    Addr_Relative(&ConditionalJumps.Bvc);
                     break;
 
                 case Bvs_Relative:
-                    Addr_Relative(&Op_Bvs);
+                    Addr_Relative(&ConditionalJumps.Bvs);
                     break;
 
                 case Clc_Implied:
@@ -508,26 +500,26 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Jmp_Absolute:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
                     break;
 
                 case Jmp_Indirect:
-                    AddOperation(FetchMemoryByPCIntoAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoAddressLatchHigh.Singleton, true);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true); // PC increment doesn't matter, but it does happen.
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false, &Op_Jmp);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoAddressHigh);
+                    AddOperation(true, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow); // PC increment doesn't matter, but it does happen.
+                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Op_Jmp, &Operations2.FetchInstruction);
                     break;
 
                 case Jsr_Absolute:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Discarded read.
-                    AddOperation(Nop.Singleton, false, &WritePCHighToStack, &DecrementS);
-                    AddOperation(Nop.Singleton, false, &WritePCLowToStack, &DecrementS);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, true, &Op_Jmp);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByS.IntoData); // Discarded read.
+                    AddOperation(false, &WritePCHighToStack, &DecrementS);
+                    AddOperation(false, &WritePCLowToStack, &DecrementS);
+                    AddOperation(false, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Op_Jmp, &Operations2.FetchInstruction);
                     break;
 
                 case Lda_Absolute:
@@ -659,29 +651,29 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Pha_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(Nop.Singleton, false, &WriteAToStack);
-                    AddOperation(FetchInstruction.Singleton, false, &DecrementS);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &WriteAToStack);
+                    AddOperation(false, &DecrementS, &Operations2.FetchInstruction);
                     break;
 
                 case Php_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(Nop.Singleton, false, &WritePToStack);
-                    AddOperation(FetchInstruction.Singleton, false, &DecrementS);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &WritePToStack);
+                    AddOperation(false, &DecrementS, &Operations2.FetchInstruction);
                     break;
 
                 case Pla_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, &IncrementS);
-                    AddOperation(FetchInstruction.Singleton, false, &TransferDataLatchToA);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &Operations2.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &IncrementS, &Operations2.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &TransferDataLatchToA, &Operations2.FetchInstruction);
                     break;
 
                 case Plp_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false);
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, false, &IncrementS);
-                    AddOperation(FetchInstruction.Singleton, false, &TransferDataLatchToP);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData);
+                    AddOperation(false, &Operations2.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &IncrementS, &Operations2.ReadMemory.ByS.IntoData);
+                    AddOperation(false, &TransferDataLatchToP, &Operations2.FetchInstruction);
                     break;
 
                 case Rol_Absolute:
@@ -728,8 +720,8 @@ namespace Ninu.Emulator.CentralProcessor
                     // TODO: Implement better?
 
                     // The PC increments are inconsequential but do happen.
-                    AddOperation(Nop.Singleton, true);
-                    AddOperation(Nop.Singleton, true);
+                    AddOperation(true);
+                    AddOperation(true);
 
                     // Pull P from stack and store it in the data latch but don't set P yet.
                     static void PullPFromStack(Cpu cpu, IBus bus)
@@ -742,7 +734,7 @@ namespace Ninu.Emulator.CentralProcessor
                         cpu.DataLatch = (byte)(cpu.DataLatch & ~0x30);
                     }
 
-                    AddOperation(Nop.Singleton, false, &PullPFromStack);
+                    AddOperation(false, &PullPFromStack);
 
                     // Pull PC low from the stack. Set P to the data latch.
                     static void PullPCLowFromStack(Cpu cpu, IBus bus)
@@ -752,7 +744,7 @@ namespace Ninu.Emulator.CentralProcessor
                         cpu.EffectiveAddressLatchLow = bus.Read((ushort)(0x100 + cpu.CpuState.S + 2));
                     }
 
-                    AddOperation(Nop.Singleton, false, &PullPCLowFromStack);
+                    AddOperation(false, &PullPCLowFromStack);
 
                     // Pull PC high from the stack. Increment S by 3.
                     static void PullPCHighFromStack(Cpu cpu, IBus bus)
@@ -761,7 +753,7 @@ namespace Ninu.Emulator.CentralProcessor
                         cpu.CpuState.S += 3;
                     }
 
-                    AddOperation(Nop.Singleton, false, &PullPCHighFromStack);
+                    AddOperation(false, &PullPCHighFromStack);
 
                     // Load PC and fetch the next instruction.
                     static void SetPCAndFetchInstruction(Cpu cpu, IBus bus)
@@ -772,17 +764,17 @@ namespace Ninu.Emulator.CentralProcessor
                         cpu.ExecuteInstruction(instruction);
                     }
 
-                    AddOperation(Nop.Singleton, false, &SetPCAndFetchInstruction);
+                    AddOperation(false, &SetPCAndFetchInstruction);
 
                     break;
 
                 case Rts_Implied:
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, true); // Dummy read by PC.
-                    AddOperation(FetchMemoryByStackIntoDataLatch.Singleton, true); // Dummy read by stack.
-                    AddOperation(Nop.Singleton, false, &ReadSPlus1IntoEffectiveAddressLatchLow);
-                    AddOperation(Nop.Singleton, false, &ReadSPlus2IntoEffectiveAddressLatchHigh, &IncrementSByTwo);
-                    AddOperation(FetchMemoryByPCIntoDataLatch.Singleton, false, &Op_Jmp); // Dummy read by PC after jump.
-                    AddOperation(FetchInstruction.Singleton, true);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read by PC.
+                    AddOperation(true, &Operations2.ReadMemory.ByS.IntoData); // Dummy read by stack.
+                    AddOperation(false, &ReadSPlus1IntoEffectiveAddressLatchLow);
+                    AddOperation(false, &ReadSPlus2IntoEffectiveAddressLatchHigh, &IncrementSByTwo);
+                    AddOperation(false, &Op_Jmp, &Operations2.ReadMemory.ByPC.IntoData); // Dummy read by PC after jump.
+                    AddOperation(true, &Operations2.FetchInstruction);
                     break;
 
                 case Sbc_Absolute:
@@ -830,97 +822,97 @@ namespace Ninu.Emulator.CentralProcessor
                     break;
 
                 case Sta_Absolute:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_AbsoluteWithXOffset:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(IncrementEffectiveAddressLatchLowByXWithoutWrapping.Singleton, true);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithoutWrapping);
+                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_AbsoluteWithYOffset:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(IncrementEffectiveAddressLatchLowByYWithoutWrapping.Singleton, true);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
+                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_IndirectZeroPageWithXOffset:
-                    AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
-                    AddOperation(IncrementAddressLatchLowByXWithWrapping.Singleton, true);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, false);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
+                    AddOperation(true, &Operations2.Increment.AddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_IndirectZeroPageWithYOffset:
-                    AddOperation(FetchZeroPageAddressByPCIntoAddressLatch.Singleton, true);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByAddressLatchIntoEffectiveAddressLatchHighWithWrapping.Singleton, false);
-                    AddOperation(IncrementEffectiveAddressLatchLowByYWithoutWrapping.Singleton, false);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoAddressLatch);
+                    AddOperation(true, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressLow);
+                    AddOperation(false, &Operations2.ReadMemory.ByAddress.IntoEffectiveAddressHigh.WithWrapping);
+                    AddOperation(false, &Operations2.Increment.EffectiveaddressLow.ByY.WithoutWrapping);
+                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_ZeroPage:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sta_ZeroPageWithXOffset:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
-                    AddOperation(WriteAToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations2.WriteA.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Stx_Absolute:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Stx_ZeroPage:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Stx_ZeroPageWithYOffset:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(IncrementEffectiveAddressLatchLowByYWithWrapping.Singleton, true);
-                    AddOperation(WriteXToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByY.WithWrapping);
+                    AddOperation(false, &Operations2.WriteX.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sty_Absolute:
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchLow.Singleton, true);
-                    AddOperation(FetchMemoryByPCIntoEffectiveAddressLatchHigh.Singleton, true);
-                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressLow);
+                    AddOperation(true, &Operations2.ReadMemory.ByPC.IntoEffectiveAddressHigh);
+                    AddOperation(true, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sty_ZeroPage:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, true);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Sty_ZeroPageWithXOffset:
-                    AddOperation(FetchZeroPageAddressByPCIntoEffectiveAddressLatch.Singleton, true);
-                    AddOperation(IncrementEffectiveAddressLatchLowByXWithWrapping.Singleton, true);
-                    AddOperation(WriteYToMemoryByEffectiveAddressLatch.Singleton, false);
-                    AddOperation(FetchInstruction.Singleton, false);
+                    AddOperation(true, &Operations2.FetchZeroPageAddressByPCIntoEffectiveAddressLatch);
+                    AddOperation(true, &Operations2.Increment.EffectiveaddressLow.ByX.WithWrapping);
+                    AddOperation(false, &Operations2.WriteY.ToMemory.ByEffectiveAddress);
+                    AddOperation(false, &Operations2.FetchInstruction);
                     break;
 
                 case Tax_Implied:
@@ -1101,77 +1093,11 @@ namespace Ninu.Emulator.CentralProcessor
             cpu.CpuState.PC = (ushort)(cpu.EffectiveAddressLatchLow | (cpu.EffectiveAddressLatchHigh << 8));
         }
 
-        /// <summary>
-        /// All of the conditional jump instructions call this method. When a conditional jump is
-        /// decoded onto the queue, four operations are queued (see <see cref="Addr_Relative"/>).
-        /// If the condition fails and the jump is not being taken, this method will dequeue the
-        /// next three operations and queue a new operation that simply increments <c>PC</c> and
-        /// fetches the next instruction. If the jump is being taken, then this method sets the
-        /// address latch to <c>PC + 1</c>. This way, to find the destination of the jump, just add
-        /// the offset from the instruction's operand and add it to the address latch.
-        /// </summary>
-        /// <param name="takingJump">A boolean that says whether the jump is being taken. Pass <c>true</c> if the branch condition succeeds and the jump is being taken. Otherwise, pass <c>false</c>.</param>
-        private static void PerformConditionalJumpOperation(Cpu cpu, bool takingJump)
-        {
-            if (!takingJump)
-            {
-                cpu.Queue.Dequeue();
-                cpu.Queue.Dequeue();
-                cpu.Queue.Dequeue();
-
-                cpu.AddOperation(FetchInstruction.Singleton, true);
-            }
-
-            // Save PC + 1 into address latch because it will get clobbered.
-            cpu.AddressLatchLow = (byte)((cpu.CpuState.PC + 1) & 0xff);
-            cpu.AddressLatchHigh = (byte)((cpu.CpuState.PC + 1) >> 8);
-        }
-
-        private static void Op_Bcc(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.C));
-        }
-
-        private static void Op_Bcs(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.C));
-        }
-
-        private static void Op_Beq(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.Z));
-        }
-
         private static void Op_Bit(Cpu cpu, IBus bus)
         {
             cpu.CpuState.SetZeroFlag((byte)(cpu.DataLatch & cpu.CpuState.A));
             cpu.CpuState.SetFlag(CpuFlags.V, (cpu.DataLatch & 0x40) != 0); // Set overflow flag to bit 6 of data.
             cpu.CpuState.SetNegativeFlag(cpu.DataLatch);
-        }
-
-        private static void Op_Bmi(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.N));
-        }
-
-        private static void Op_Bne(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.Z));
-        }
-
-        private static void Op_Bpl(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.N));
-        }
-
-        private static void Op_Bvc(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, !cpu.CpuState.GetFlag(CpuFlags.V));
-        }
-
-        private static void Op_Bvs(Cpu cpu, IBus bus)
-        {
-            PerformConditionalJumpOperation(cpu, cpu.CpuState.GetFlag(CpuFlags.V));
         }
 
         private static void Op_Clc(Cpu cpu, IBus bus)
