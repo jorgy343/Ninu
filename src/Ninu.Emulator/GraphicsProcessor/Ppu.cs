@@ -22,10 +22,16 @@ namespace Ninu.Emulator.GraphicsProcessor
         public PpuRegisters Registers { get; } = new();
 
         [SaveChildren]
-        public Oam Oam { get; } = new(64);
+        public Oam PrimaryOam { get; } = new(64);
 
         [SaveChildren]
-        public Oam TemporaryOam { get; } = new(8);
+        public Oam SecondaryOam { get; } = new(8);
+
+        [SaveChildren]
+        public Oam RenderingOam { get; } = new(8);
+
+        [SaveChildren]
+        private readonly SpriteEvalulationStateMachine _spriteEvalulationStateMachine;
 
         [Save("OamAddress")]
         private byte _oamAddress;
@@ -33,14 +39,17 @@ namespace Ninu.Emulator.GraphicsProcessor
         [Save("Sprite0HitPossible")]
         private bool _sprite0HitPossible;
 
+        [Save("Sprite0InLine")]
+        private bool _sprite0InLine;
+
         [Save]
         public bool Nmi { get; set; }
 
-        [Save("Cycle")]
-        private int _cycle;
-
         [Save("Scanline")]
         private int _scanline;
+
+        [Save("Cycle")]
+        private int _cycle;
 
         [Save("ReadAddress")]
         private ushort _readAddress;
@@ -58,6 +67,8 @@ namespace Ninu.Emulator.GraphicsProcessor
         {
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+            _spriteEvalulationStateMachine = new(PrimaryOam, SecondaryOam);
         }
 
         public void PowerOn()
@@ -118,6 +129,11 @@ namespace Ninu.Emulator.GraphicsProcessor
 
             if (Registers.RenderingEnabled)
             {
+                if (_scanline == 25)
+                {
+
+                }
+
                 if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
                 {
                     byte backgroundPaletteIndex = 0;
@@ -164,9 +180,9 @@ namespace Ninu.Emulator.GraphicsProcessor
                         {
                             var spriteHeight = Registers.SpriteSize ? 16 : 8;
 
-                            for (var i = 0; i < TemporaryOam.Sprites.Length; i++)
+                            for (var i = 0; i < RenderingOam.Sprites.Length; i++)
                             {
-                                var sprite = TemporaryOam.Sprites[i];
+                                var sprite = RenderingOam.Sprites[i];
 
                                 if (sprite.X == 0xff)
                                 {
@@ -178,7 +194,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                                     spritePriority = sprite.Priority;
 
                                     var xIndex = _cycle - sprite.X;
-                                    var yIndex = _scanline - sprite.Y;
+                                    var yIndex = _scanline - sprite.Y - 1; // The -1 is to compensate for the fact that sprites are drawn a scanline after they are selected.
 
                                     if (sprite.FlipHorizontal)
                                     {
@@ -264,7 +280,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                         }
 
                         // Now we need to calculate a sprite 0 hit.
-                        if (_sprite0HitPossible && spriteZeroRendered)
+                        if (_sprite0InLine && spriteZeroRendered)
                         {
                             if (Registers.RenderingEnabled)
                             {
@@ -399,68 +415,95 @@ namespace Ninu.Emulator.GraphicsProcessor
                 }
 
                 // Handle the sprites.
-                //if (Registers.RenderSprites)
-                //{
-                //    if (_scanline >= 0 && _scanline <= 239) // All of the visible scanlines.
-                //    {
-                //        // Clear secondary OAM to 0xff.
-                //        if (_cycle >= 1 && _cycle <= 64)
-                //        {
-                //            // The real hardware reads from the OAM memory and writes to the secondary OAM memory ever
-                //            // other cycle. However, the data line during the read is pulled to 0xff so the read itself
-                //            // doesn't do anything. We'll skip emulating the read and only emulate the writes.
-                //            if (_cycle % 2 == 0)
-                //            {
-                //                var secondaryOamByteIndex = (_cycle / 2) - 1;
-
-                //                TemporaryOam.Write((byte)secondaryOamByteIndex, 0xff);
-                //            }
-                //        }
-                //    }
-                //}
-
-                if (Registers.RenderSprites && _cycle == 340)
+                if (Registers.RenderSprites && _scanline >= -1 && _scanline <= 239)
                 {
-                    // TODO: Should this be called on the final visible scanline? It would load sprites for the next
-                    // scanline which isn't visible.
-
-                    // Initialize the temporary OAM to 0xff.
-                    TemporaryOam.ResetAllData(0xff);
-
-                    // Find all sprites that will need to be rendered for the next scanline.
-                    var insertIndex = 0;
-
-                    var spriteHeight = Registers.SpriteSize ? 16 : 8;
-
-                    for (var i = 0; i < Oam.Sprites.Length; i++)
+                    if (_cycle == 64)
                     {
-                        var sprite = Oam.Sprites[i];
-                        var nextScanline = _scanline + 1;
+                        // Technically the clearing of OAM memory happens during cycles 1 through 64
+                        // inclusive. The PPU register 0x2004 will 0xff during the secondary OAM
+                        // clearing. This is implemented in the CpuRead method below. Since nothing
+                        // else about this clearing is external facing, we'll just clear it all on
+                        // cycle 64. We'll also reset the state of the sprite evalulation state machine
+                        // so it is primed for the next cycle.
 
-                        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + spriteHeight - 1)
+                        _sprite0HitPossible = false;
+
+                        _spriteEvalulationStateMachine.Reset();
+                        SecondaryOam.ResetAllData(0xff);
+                    }
+
+                    if (_cycle >= 65 && _cycle <= 256)
+                    {
+                        var (sprite0HitPossible, setOverflowFlag) = _spriteEvalulationStateMachine.Tick(_scanline, _cycle, !Registers.SpriteSize);
+
+                        if (sprite0HitPossible)
                         {
-                            if (insertIndex == 8)
-                            {
-                                // We have overflowed. No need to check any other sprites.
+                            _sprite0HitPossible = true;
+                        }
 
-                                // TODO: Set the overflow flag correctly (i.e. the buggy way).
-                                Registers.SpriteOverflow = true;
-                                break;
-                            }
+                        if (setOverflowFlag)
+                        {
+                            Registers.SpriteOverflow = true;
+                        }
+                    }
 
-                            if (i == 0)
-                            {
-                                _sprite0HitPossible = true;
-                            }
+                    if (_cycle == 257)
+                    {
+                        // We can set the sprite 0 in line flag now that rendering for this
+                        // scanline has been completed.
+                        _sprite0InLine = _sprite0HitPossible;
 
-                            sprite.CopyTo(TemporaryOam.Sprites[insertIndex]);
-
-                            insertIndex++;
+                        // Copy the secondary OAM to the rendering OAM.
+                        for (var i = 0; i < 8; i++)
+                        {
+                            SecondaryOam.Sprites[i].CopyTo(RenderingOam.Sprites[i]);
                         }
                     }
                 }
+
+                //if (Registers.RenderSprites && _cycle == 340)
+                //{
+                //    // TODO: Should this be called on the final visible scanline? It would load sprites for the next
+                //    // scanline which isn't visible.
+
+                //    // Initialize the temporary OAM to 0xff.
+                //    SecondaryOam.ResetAllData(0xff);
+
+                //    // Find all sprites that will need to be rendered for the next scanline.
+                //    var insertIndex = 0;
+
+                //    var spriteHeight = Registers.SpriteSize ? 16 : 8;
+
+                //    for (var i = 0; i < PrimaryOam.Sprites.Length; i++)
+                //    {
+                //        var sprite = PrimaryOam.Sprites[i];
+                //        var nextScanline = _scanline + 1;
+
+                //        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + spriteHeight - 1)
+                //        {
+                //            if (insertIndex == 8)
+                //            {
+                //                // We have overflowed. No need to check any other sprites.
+
+                //                // TODO: Set the overflow flag correctly (i.e. the buggy way).
+                //                Registers.SpriteOverflow = true;
+                //                break;
+                //            }
+
+                //            if (i == 0)
+                //            {
+                //                _sprite0HitPossible = true;
+                //            }
+
+                //            sprite.CopyTo(SecondaryOam.Sprites[insertIndex]);
+
+                //            insertIndex++;
+                //        }
+                //    }
+                //}
             }
 
+            // Other stuff.
             if (_scanline == 241 && _cycle == 1)
             {
                 Registers.VerticalBlankStarted = true;
@@ -652,19 +695,31 @@ namespace Ninu.Emulator.GraphicsProcessor
                         data = Registers.ReadStatusRegister();
                         return true;
 
-                    case 4:
-                        // TODO: Implement the weirdness of reading this register.
-                        data = Oam.Read(_oamAddress);
+                    case 4: // Register 0x2004
+                        // When the PPU is clearing the secondary OAM, this memory address is
+                        // pinned to the value 0xff. This is because the PPU is reading from the
+                        // OAM and than writing what it read to the temproary OAM. During the
+                        // cleaing process, memory address 0x2004 is pinned to 0xff so that the PPU
+                        // will always read 0xff and always write 0xff to the secondary OAM.
+                        if (Registers.RenderingEnabled && _scanline >= -1 && _scanline <= 239 && _cycle >= 1 && _cycle <= 64)
+                        {
+                            data = 0xff;
+                        }
+                        else
+                        {
+                            data = PrimaryOam.Read(_oamAddress);
+                        }
+
                         return true;
 
                     case 7:
-                        // TODO: There is some tricky stuff that needs to be handled here dealing with what the PPU is
-                        // currently doing.
+                        // TODO: There is some tricky stuff that needs to be handled here dealing
+                        // with what the PPU is currently doing.
 
                         if (Registers.VAddress >= 0x3f00 && Registers.VAddress <= 0x3fff)
                         {
-                            // TODO: This is actually wrong. The palette data is returned directly and the read buffer
-                            // is updated with name table data.
+                            // TODO: This is actually wrong. The palette data is returned directly
+                            // and the read buffer is updated with name table data.
 
                             // Palette memory is read immediately.
                             Registers.ReadBuffer = PpuRead(Registers.VAddress);
@@ -676,11 +731,13 @@ namespace Ninu.Emulator.GraphicsProcessor
                             // All other memory is delayed by one call.
                             data = Registers.ReadBuffer;
 
-                            // Update the buffer with new data only after the current buffer is read.
+                            // Update the buffer with new data only after the current buffer is
+                            // read.
                             Registers.ReadBuffer = PpuRead(Registers.VAddress);
                         }
 
-                        // Increment the address by either 1 or 32 depending on the VRAM address increment flag.
+                        // Increment the address by either 1 or 32 depending on the VRAM address
+                        // increment flag.
                         Registers.VAddress += !Registers.VramAddressIncrement ? (ushort)1 : (ushort)32;
 
                         return true;
@@ -710,7 +767,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                         break;
 
                     case 4:
-                        Oam.Write(_oamAddress++, data); // Writing increments the OAM address, reading does not.
+                        PrimaryOam.Write(_oamAddress++, data); // Writing increments the OAM address, reading does not.
                         break;
 
                     case 5:

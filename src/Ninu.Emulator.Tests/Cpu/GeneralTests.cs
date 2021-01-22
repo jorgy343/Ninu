@@ -220,7 +220,7 @@ namespace Ninu.Emulator.Tests.Cpu
             }
         }
 
-        [Fact]
+        //[Fact]
         public void KlausTest()
         {
             var data = File.ReadAllBytes(@"C:\Users\Jorgy\Downloads\6502_functional_test.bin");

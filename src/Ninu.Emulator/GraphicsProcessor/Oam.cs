@@ -19,6 +19,12 @@ namespace Ninu.Emulator.GraphicsProcessor
             }
         }
 
+        public byte this[(byte SpriteIndex, byte SpriteDataIndex) index]
+        {
+            get => Read((byte)((index.SpriteIndex * 4 + index.SpriteDataIndex) % (Sprites.Length * 4)));
+            set => Write((byte)((index.SpriteIndex * 4 + index.SpriteDataIndex) % (Sprites.Length * 4)), value);
+        }
+
         public void ResetAllData(byte data)
         {
             foreach (var sprite in Sprites)
@@ -32,7 +38,7 @@ namespace Ninu.Emulator.GraphicsProcessor
 
         public byte Read(byte address)
         {
-            var sprite = Sprites[address / 4];
+            var sprite = Sprites[address / 4]; // Integer division to round down.
 
             return (address % 4) switch
             {
@@ -46,12 +52,12 @@ namespace Ninu.Emulator.GraphicsProcessor
 
         public void Write(byte address, byte data)
         {
-            var sprite = Sprites[address / 4];
+            var sprite = Sprites[address / 4]; // Integer division to round down.
 
             switch (address % 4)
             {
                 case 0:
-                    sprite.Y = (byte)(data + 1); // TODO: Adding one here is kind of a hack way of getting everything to work for right now.
+                    sprite.Y = data;
                     break;
 
                 case 1:
@@ -63,7 +69,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                     break;
 
                 case 3:
-                    sprite.X = (byte)(data + 1); // TODO: This seems to fix an issue where sprites appear to be shifted one to the left?
+                    sprite.X = data;
                     break;
 
                 default:

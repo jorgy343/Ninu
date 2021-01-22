@@ -97,7 +97,7 @@ namespace Ninu.Emulator
                         }
                         else // Write on odd cycles.
                         {
-                            Ppu.Oam.Write((byte)DmaState.CurrentByte, DmaState.ReadByte);
+                            Ppu.PrimaryOam.Write((byte)DmaState.CurrentByte, DmaState.ReadByte);
 
                             DmaState.CurrentByte++;
 
