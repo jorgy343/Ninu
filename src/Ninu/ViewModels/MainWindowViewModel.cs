@@ -169,8 +169,8 @@ namespace Ninu.ViewModels
                 //CpuState.Update(Console.Cpu.CpuState);
                 //UpdateInstructions(Console.Cpu);
 
-                //UpdatePaletteColors();
-                //UpdatePatternRoms();
+                UpdatePaletteColors();
+                UpdatePatternRoms();
             }
         }
 

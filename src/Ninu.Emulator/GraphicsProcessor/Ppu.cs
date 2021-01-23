@@ -67,8 +67,6 @@ namespace Ninu.Emulator.GraphicsProcessor
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
 
-        private int _counterThing = 0;
-
         public Ppu(ILoggerFactory loggerFactory, ILogger logger)
         {
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -327,7 +325,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                     CurrentImageBuffer[pixelIndex] = GetPaletteColor(pixelPaletteIndex, pixelPaletteEntryIndex);
                 }
 
-                // Perform rendering setup.
+                // Perform background rendering setup.
                 if (_scanline >= -1 && _scanline <= 239) // All of the rendering scanlines.
                 {
                     if ((_cycle >= 9 && _cycle <= 257) || (_cycle >= 329 && _cycle <= 337))
@@ -438,11 +436,6 @@ namespace Ninu.Emulator.GraphicsProcessor
             }
 
             // Handle sprite evalulation.
-            if (_cycle == 65)
-            {
-                _counterThing++;
-            }
-
             if (Registers.RenderingEnabled && _scanline >= -1 && _scanline <= 239)
             {
                 // Clear secondary OAM.
@@ -487,8 +480,8 @@ namespace Ninu.Emulator.GraphicsProcessor
 
                 if (_cycle == 257)
                 {
-                    // We can set the sprite 0 in line flag now that rendering for this
-                    // scanline has been completed.
+                    // We can set the sprite 0 in line flag now that rendering for this scanline
+                    // has been completed.
                     _sprite0InLine = _sprite0HitPossible;
 
                     // Copy the secondary OAM to the rendering OAM.
