@@ -67,6 +67,8 @@ namespace Ninu.Emulator.GraphicsProcessor
         public byte[] CurrentImageBuffer { get; private set; } = new byte[256 * 240];
         public byte[] PreviousImageBuffer { get; private set; } = new byte[256 * 240];
 
+        private int _counterThing = 0;
+
         public Ppu(ILoggerFactory loggerFactory, ILogger logger)
         {
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -431,94 +433,53 @@ namespace Ninu.Emulator.GraphicsProcessor
                 {
                     Registers.TransferY();
                 }
+            }
 
-                // Handle the sprites.
-                if (Registers.RenderSprites && _scanline >= -1 && _scanline <= 239)
+            // Handle the sprites.
+            if (_scanline >= -1 && _scanline <= 239)
+            {
+                if (_cycle == 64)
                 {
-                    if (_cycle == 64)
+                    // Technically the clearing of OAM memory happens during cycles 1 through 64
+                    // inclusive. The PPU register 0x2004 will 0xff during the secondary OAM
+                    // clearing. This is implemented in the CpuRead method below. Since nothing
+                    // else about this clearing is external facing, we'll just clear it all on
+                    // cycle 64. We'll also reset the state of the sprite evalulation state machine
+                    // so it is primed for the next cycle.
+
+                    _sprite0HitPossible = false;
+
+                    _spriteEvalulationStateMachine.Reset();
+                    SecondaryOam.ResetAllData(0xff);
+                }
+
+                if (_cycle >= 65 && _cycle <= 256)
+                {
+                    var (sprite0HitPossible, setOverflowFlag) = _spriteEvalulationStateMachine.Tick(_scanline, _cycle, !Registers.SpriteSize);
+
+                    if (sprite0HitPossible)
                     {
-                        // Technically the clearing of OAM memory happens during cycles 1 through 64
-                        // inclusive. The PPU register 0x2004 will 0xff during the secondary OAM
-                        // clearing. This is implemented in the CpuRead method below. Since nothing
-                        // else about this clearing is external facing, we'll just clear it all on
-                        // cycle 64. We'll also reset the state of the sprite evalulation state machine
-                        // so it is primed for the next cycle.
-
-                        _sprite0HitPossible = false;
-
-                        _spriteEvalulationStateMachine.Reset();
-                        SecondaryOam.ResetAllData(0xff);
+                        _sprite0HitPossible = true;
                     }
 
-                    if (_cycle >= 65 && _cycle <= 256)
+                    if (setOverflowFlag)
                     {
-                        var (sprite0HitPossible, setOverflowFlag) = _spriteEvalulationStateMachine.Tick(_scanline, _cycle, !Registers.SpriteSize);
-
-                        if (sprite0HitPossible)
-                        {
-                            _sprite0HitPossible = true;
-                        }
-
-                        if (setOverflowFlag)
-                        {
-                            Registers.SpriteOverflow = true;
-                        }
-                    }
-
-                    if (_cycle == 257)
-                    {
-                        // We can set the sprite 0 in line flag now that rendering for this
-                        // scanline has been completed.
-                        _sprite0InLine = _sprite0HitPossible;
-
-                        // Copy the secondary OAM to the rendering OAM.
-                        for (var i = 0; i < 8; i++)
-                        {
-                            SecondaryOam.Sprites[i].CopyTo(RenderingOam.Sprites[i]);
-                        }
+                        Registers.SpriteOverflow = true;
                     }
                 }
 
-                //if (Registers.RenderSprites && _cycle == 340)
-                //{
-                //    // TODO: Should this be called on the final visible scanline? It would load sprites for the next
-                //    // scanline which isn't visible.
+                if (_cycle == 257)
+                {
+                    // We can set the sprite 0 in line flag now that rendering for this
+                    // scanline has been completed.
+                    _sprite0InLine = _sprite0HitPossible;
 
-                //    // Initialize the temporary OAM to 0xff.
-                //    SecondaryOam.ResetAllData(0xff);
-
-                //    // Find all sprites that will need to be rendered for the next scanline.
-                //    var insertIndex = 0;
-
-                //    var spriteHeight = Registers.SpriteSize ? 16 : 8;
-
-                //    for (var i = 0; i < PrimaryOam.Sprites.Length; i++)
-                //    {
-                //        var sprite = PrimaryOam.Sprites[i];
-                //        var nextScanline = _scanline + 1;
-
-                //        if (nextScanline >= sprite.Y && nextScanline <= sprite.Y + spriteHeight - 1)
-                //        {
-                //            if (insertIndex == 8)
-                //            {
-                //                // We have overflowed. No need to check any other sprites.
-
-                //                // TODO: Set the overflow flag correctly (i.e. the buggy way).
-                //                Registers.SpriteOverflow = true;
-                //                break;
-                //            }
-
-                //            if (i == 0)
-                //            {
-                //                _sprite0HitPossible = true;
-                //            }
-
-                //            sprite.CopyTo(SecondaryOam.Sprites[insertIndex]);
-
-                //            insertIndex++;
-                //        }
-                //    }
-                //}
+                    // Copy the secondary OAM to the rendering OAM.
+                    for (var i = 0; i < 8; i++)
+                    {
+                        SecondaryOam.Sprites[i].CopyTo(RenderingOam.Sprites[i]);
+                    }
+                }
             }
 
             // Other stuff.
