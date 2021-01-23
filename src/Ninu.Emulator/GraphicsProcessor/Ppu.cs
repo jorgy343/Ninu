@@ -214,6 +214,8 @@ namespace Ninu.Emulator.GraphicsProcessor
                                     var xIndex = _cycle - 1 - sprite.X;
                                     var yIndex = _scanline - sprite.Y - 1; // The -1 is to compensate for the fact that sprites are drawn a scanline after they are selected.
 
+                                    yIndex %= Registers.SpriteSize ? 16 : 8;
+
                                     if (sprite.FlipHorizontal)
                                     {
                                         xIndex = 7 - xIndex;
@@ -435,9 +437,25 @@ namespace Ninu.Emulator.GraphicsProcessor
                 }
             }
 
-            // Handle the sprites.
-            if (_scanline >= -1 && _scanline <= 239)
+            // Handle sprite evalulation.
+            if (_cycle == 65)
             {
+                _counterThing++;
+            }
+
+            if (Registers.RenderingEnabled && _scanline >= -1 && _scanline <= 239)
+            {
+                // Clear secondary OAM.
+                if (_cycle >= 1 && _cycle <= 64)
+                {
+                    // Reads happen on odd cycles and writes happen on even cycles. The reads are
+                    // always 0xff so we'll just ignore that part and write 0xff.
+                    if ((_cycle & 1) == 0) // If even.
+                    {
+                        SecondaryOam.Write((byte)((_cycle / 2) - 1), 0xff);
+                    }
+                }
+
                 if (_cycle == 64)
                 {
                     // Technically the clearing of OAM memory happens during cycles 1 through 64
@@ -450,7 +468,6 @@ namespace Ninu.Emulator.GraphicsProcessor
                     _sprite0HitPossible = false;
 
                     _spriteEvalulationStateMachine.Reset();
-                    SecondaryOam.ResetAllData(0xff);
                 }
 
                 if (_cycle >= 65 && _cycle <= 256)
