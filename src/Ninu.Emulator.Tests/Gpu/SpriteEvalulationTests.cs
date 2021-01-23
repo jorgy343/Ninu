@@ -67,15 +67,28 @@ namespace Ninu.Emulator.Tests.Gpu
             // Act
             _secondaryOam.ResetAllData(0xff); // Secondary OAM clear happens just before evalulation.
 
+            var sprite0HitPossibleAny = false;
+            var setOverflowFlagAny = false;
+
             for (var cycle = 65; cycle <= 256; cycle++)
             {
                 var (sprite0HitPossible, setOverflowFlag) = _spriteEvalulator.Tick(0, cycle, true);
 
-                Assert.True(sprite0HitPossible);
-                Assert.False(setOverflowFlag);
+                if (sprite0HitPossible)
+                {
+                    sprite0HitPossibleAny = true;
+                }
+
+                if (setOverflowFlag)
+                {
+                    setOverflowFlagAny = true;
+                }
             }
 
             // Assert
+            Assert.True(sprite0HitPossibleAny);
+            Assert.False(setOverflowFlagAny);
+
             AssertSprite(sprite0, _secondaryOam.Sprites[0]);
             AssertSprite(_defaultSprite, _secondaryOam.Sprites[1]);
             AssertSprite(_defaultSprite, _secondaryOam.Sprites[2]);
@@ -97,15 +110,28 @@ namespace Ninu.Emulator.Tests.Gpu
             // Act
             _secondaryOam.ResetAllData(0xff); // Secondary OAM clear happens just before evalulation.
 
+            var sprite0HitPossibleAny = false;
+            var setOverflowFlagAny = false;
+
             for (var cycle = 65; cycle <= 256; cycle++)
             {
                 var (sprite0HitPossible, setOverflowFlag) = _spriteEvalulator.Tick(239, cycle, true);
 
-                Assert.True(sprite0HitPossible);
-                Assert.False(setOverflowFlag);
+                if (sprite0HitPossible)
+                {
+                    sprite0HitPossibleAny = true;
+                }
+
+                if (setOverflowFlag)
+                {
+                    setOverflowFlagAny = true;
+                }
             }
 
             // Assert
+            Assert.True(sprite0HitPossibleAny);
+            Assert.False(setOverflowFlagAny);
+
             AssertSprite(sprite0, _secondaryOam.Sprites[0]);
             AssertSprite(_defaultSprite, _secondaryOam.Sprites[1]);
             AssertSprite(_defaultSprite, _secondaryOam.Sprites[2]);

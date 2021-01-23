@@ -91,7 +91,9 @@ namespace Ninu.Emulator.GraphicsProcessor
                         _secondaryOam[(_secondarySpriteIndex, _spriteByteIndex)] = _readData;
 
                         // If this sprite is in range, copy the next three bytes of this sprite.
-                        if (_readData <= scanline && _readData + (spriteSizeIs8x8 ? 7 : 15) >= scanline)
+                        // Check for y being less than 0xef since anything in the 0xef to 0xff
+                        // range is not displayed.
+                        if (_readData < 0xef && _readData <= scanline && _readData + (spriteSizeIs8x8 ? 7 : 15) >= scanline)
                         {
                             _spriteByteIndex++; // The next byte read and written will be the tile index.
 
@@ -114,7 +116,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                             // wraped back to zero, go to step 4.
                             if (_spriteIndex == 0)
                             {
-                                _state = State.DoneReadGarbageData;
+                                _state = State.Done;
                             }
                         }
                     }
@@ -152,7 +154,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                             // wraped back to zero, go to step 4.
                             if (_spriteIndex == 0)
                             {
-                                _state = State.DoneReadGarbageData;
+                                _state = State.Done;
                             }
                             else
                             {
@@ -189,13 +191,15 @@ namespace Ninu.Emulator.GraphicsProcessor
                     }
                     else // Even cycle, write.
                     {
-                        // If this sprite is in range, set the overflow flag.
-                        if (_readData <= scanline && _readData + (spriteSizeIs8x8 ? 7 : 15) >= scanline)
+                        // If this sprite is in range, set the overflow flag. Check for y being
+                        // less than 0xef since anything in the 0xef to 0xff range is not
+                        // displayed.
+                        if (_readData < 0xef && _readData <= scanline && _readData + (spriteSizeIs8x8 ? 7 : 15) >= scanline)
                         {
                             // Technically the 2c02 does some incrementing of stuff but it doesn't
                             // matter since it doesn't affect secondary OAM or any other external
                             // facing memory. As such we'll just go to step 4.
-                            _state = State.DoneReadGarbageData;
+                            _state = State.Done;
 
                             // Indicate that we need to set the overflow flag.
                             return (Sprite0HitPossible: false, SetOverflowFlag: true);
@@ -217,7 +221,7 @@ namespace Ninu.Emulator.GraphicsProcessor
                             // wraped back to zero, go to step 4.
                             if (_spriteIndex == 0)
                             {
-                                _state = State.DoneReadGarbageData;
+                                _state = State.Done;
                             }
                         }
                     }
@@ -226,18 +230,7 @@ namespace Ninu.Emulator.GraphicsProcessor
 
                 // This step just reads the y coordinate from the current sprite in primary OAM and
                 // fails to write this data to secondary OAM since writes are now supressed.
-                case State.DoneReadGarbageData: // Step 4
-                    if ((cycle & 0x01) == 1) // Odd cycle, read.
-                    {
-                        _readData = _primaryOam[(_spriteIndex, _spriteByteIndex)];
-                    }
-                    else // Even cycle, write.
-                    {
-                        // No writes actually occur since writes are now supressed. Increment the
-                        // sprite index.
-                        _spriteIndex = (byte)((_spriteIndex + 1) & 0x7f); // This is a 7-bit number. Wrap accordingly.
-                    }
-
+                case State.Done: // Step 4
                     break;
             }
 
@@ -249,7 +242,7 @@ namespace Ninu.Emulator.GraphicsProcessor
             ReadWriteNextSpriteYCoordinate,
             ReadWriteNextThreeBytes,
             FindSpriteOverflow,
-            DoneReadGarbageData,
+            Done,
         }
     }
 }

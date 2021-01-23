@@ -23,12 +23,18 @@ namespace Ninu.Emulator.GraphicsProcessor
         [Save]
         public byte TileIndex { get; set; }
 
+        [Save]
+        private byte _attributes;
+
         /// <summary>
         /// Gets or sets the attribute bits of the sprites. See the specific attribute bit methods
         /// on this object further details.
         /// </summary>
-        [Save]
-        public byte Attributes { get; set; }
+        public byte Attributes
+        {
+            get => _attributes;
+            set => _attributes = (byte)(value & 0xe3); // Bits 2, 3, and 4 are not implemented in hardware and always return 0.
+        }
 
         /// <summary>
         /// Gets or sets the sprite's X coordinate. This references the sprites left edge. This

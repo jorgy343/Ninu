@@ -2,6 +2,7 @@
 using Ninu.Emulator.CentralProcessor;
 using System;
 using System.ComponentModel;
+using System.Linq;
 
 namespace Ninu.Emulator.GraphicsProcessor
 {
@@ -41,6 +42,9 @@ namespace Ninu.Emulator.GraphicsProcessor
 
         [Save("Sprite0InLine")]
         private bool _sprite0InLine;
+
+        [Save("Sprite0HitCounter")]
+        private byte _sprite0HitCounter;
 
         [Save]
         public bool Nmi { get; set; }
@@ -127,13 +131,18 @@ namespace Ninu.Emulator.GraphicsProcessor
                 Registers.VerticalBlankStarted = false;
             }
 
+            if (_sprite0HitCounter > 0)
+            {
+                _sprite0HitCounter--;
+
+                if (_sprite0HitCounter == 0)
+                {
+                    Registers.Sprite0Hit = true;
+                }
+            }
+
             if (Registers.RenderingEnabled)
             {
-                if (_scanline == 25)
-                {
-
-                }
-
                 if (_scanline >= 0 && _scanline <= 239 && _cycle >= 1 && _cycle <= 256)
                 {
                     byte backgroundPaletteIndex = 0;
@@ -189,11 +198,18 @@ namespace Ninu.Emulator.GraphicsProcessor
                                     continue;
                                 }
 
-                                if (_cycle >= sprite.X && _cycle <= sprite.X + 7)
+                                // During sprite evalulatin, the y coordinate of the sprite in
+                                // primary OAM is copied to secondary OAM before checking if the y
+                                // coordinate is in range. For this reason, we need to check to
+                                // ensure the y coordinate is within the visible range here.
+                                //
+                                // Subtract one to the cycle because the first pixel is rendered on
+                                // cycle 1 instead of cycle 0.
+                                if (sprite.Y < 0xef && _cycle - 1 >= sprite.X && _cycle - 1 <= sprite.X + 7)
                                 {
                                     spritePriority = sprite.Priority;
 
-                                    var xIndex = _cycle - sprite.X;
+                                    var xIndex = _cycle - 1 - sprite.X;
                                     var yIndex = _scanline - sprite.Y - 1; // The -1 is to compensate for the fact that sprites are drawn a scanline after they are selected.
 
                                     if (sprite.FlipHorizontal)
@@ -280,22 +296,24 @@ namespace Ninu.Emulator.GraphicsProcessor
                         }
 
                         // Now we need to calculate a sprite 0 hit.
-                        if (_sprite0InLine && spriteZeroRendered)
+                        if (_sprite0InLine && spriteZeroRendered && !Registers.Sprite0Hit)
                         {
-                            if (Registers.RenderingEnabled)
+                            if (Registers.RenderBackground && Registers.RenderSprites)
                             {
-                                if (_cycle >= 1 && _cycle <= 254)
+                                // The sprite 0 hit flag cannot be set for pixel 255 (cycle 256)
+                                // due to some weirdness in the pixel pipeline.
+                                if (_cycle >= 1 && _cycle <= 255)
                                 {
                                     if (!Registers.RenderBackgroundInLeftMost8PixelsOfScreen || !Registers.RenderSpritesInLeftMost8PixelsOfScreen)
                                     {
                                         if (_cycle >= 9)
                                         {
-                                            Registers.Sprite0Hit = true;
+                                            _sprite0HitCounter = 2;
                                         }
                                     }
                                     else
                                     {
-                                        Registers.Sprite0Hit = true;
+                                        _sprite0HitCounter = 2;
                                     }
                                 }
                             }
